@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Food Delivery App</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Header with Logo and Cart -->
+    <header>
+        <div class="logo">Village Food</div>
+        <div class="search-container">
+            <input type="text" id="food-search" placeholder="Search for food...">
+            <button onclick="searchFood()">Search</button>
+        </div>
+        <div class="cart-container" onclick="toggleCart()">
+            <img src="images/cart-icon.png" alt="Cart" id="cart-icon">
+            <span id="cart-count">0</span>
+        </div>
+    </header>
+    <!-- Offer Banner -->
+<div class="offer-banner">
+    <p>🔥 Flat 20% Off on Your First Order! Use Code: FIRST20 🔥</p>
+</div>
+
+    <!-- Main Menu Section -->
+    <section class="menu">
+        <h2>Our Menu</h2>
+        <div class="menu-items">
+            <div class="menu-item" data-id="1" data-name="Burger" data-price="100.00">
+                <img src="images/burger.jpg" alt="Burger">
+                <h3>Burger</h3>
+                <p>₹100.00</p>
+                <button class="add-to-cart">Add to Cart</button>
+            </div>
+            <div class="menu-item" data-id="2" data-name="Pizza" data-price="150.00">
+                <img src="images/pizza.jpg" alt="Pizza">
+                <h3>Pizza</h3>
+                <p>₹150.00</p>
+                <button class="add-to-cart">Add to Cart</button>
+            </div>
+            <div class="menu-item" data-id="2" data-name="Pizza" data-price="150.00">
+                <img src="images/pizza.jpg" alt="Pizza">
+                <h3>Pizza</h3>
+                <p>₹150.00</p>
+                <button class="add-to-cart">Add to Cart</button>
+            </div>
+            <div class="menu-item" data-id="1" data-name="Burger" data-price="100.00">
+                <img src="images/burger.jpg" alt="Burger">
+                <h3>Burger</h3>
+                <p>₹100.00</p>
+                <button class="add-to-cart">Add to Cart</button>
+            </div>
+            <div class="menu-item" data-id="1" data-name="Burger" data-price="100.00">
+                <img src="images/burger.jpg" alt="Burger">
+                <h3>Burger</h3>
+                <p>₹100.00</p>
+                <button class="add-to-cart">Add to Cart</button>
+            </div>
+            <div class="menu-item" data-id="1" data-name="Burger" data-price="100.00">
+                <img src="images/burger.jpg" alt="Burger">
+                <h3>Burger</h3>
+                <p>₹100.00</p>
+                <button class="add-to-cart">Add to Cart</button>
+            </div>
+            <!-- Add more food items -->
+        </div>
+    </section>
+
+    <!-- Cart Section -->
+    <section class="cart" id="cart-dropdown">
+        <h2>Your Cart</h2>
+        <div id="cart-items">
+            <p>No items in cart</p>
+        </div>
+        <div class="cart-total">
+            <h3>Total: ₹<span id="total-price">0.00</span></h3>
+            <button id="checkout-btn" onclick="checkout()">Checkout</button>
+        </div>
+    </section>
+
+    <script src="script.js"></script>
+</body>
+</html>
+<!-- Popular Items Section -->
+<section class="menu popular">
+    <h2>Popular Items</h2>
+    <div class="menu-items">
+        <div class="menu-item" data-id="3" data-name="Pasta" data-price="120.00">
+            <img src="images/pasta.jpg" alt="Pasta">
+            <h3>Pasta</h3>
+            <p>₹120.00</p>
+            <button class="add-to-cart">Add to Cart</button>
+        </div>
+        <div class="menu-item" data-id="4" data-name="Fries" data-price="80.00">
+            <img src="images/fries.jpg" alt="Fries">
+            <h3>Fries</h3>
+            <p>₹80.00</p>
+            <button class="add-to-cart">Add to Cart</button>
+        </div>
+    </div>
+</section>
+
+<!-- Chef's Special Section -->
+<section class="menu special">
+    <h2>Chef's Special</h2>
+    <div class="menu-items">
+        <div class="menu-item" data-id="5" data-name="Paneer Tikka" data-price="180.00">
+            <img src="images/paneer.jpg" alt="Paneer Tikka">
+            <h3>Paneer Tikka</h3>
+            <p>₹180.00</p>
+            <button class="add-to-cart">Add to Cart</button>
+        </div>
+        <div class="menu-item" data-id="6" data-name="Chicken Biryani" data-price="200.00">
+            <img src="images/biryani.jpg" alt="Chicken Biryani">
+            <h3>Chicken Biryani</h3>
+            <p>₹200.00</p>
+            <button class="add-to-cart">Add to Cart</button>
+        </div>
+    </div>
+</section>
