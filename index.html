@@ -10,7 +10,7 @@
 
   <!-- Top Bar -->
   <div class="flex justify-between items-center px-4 pt-4">
-    <div class="text-sm text-gray-700">📍 Albuquerque, NM</div>
+    <div class="text-sm text-gray-700" id="location">📍 Detecting location...</div>
     <div class="text-2xl">🔔</div>
   </div>
 
@@ -74,6 +74,31 @@
     <div class="text-center">🛒<br><span class="text-xs">Cart</span></div>
     <div class="text-center">👤<br><span class="text-xs">Account</span></div>
   </div>
+
+  <script>
+    // Get user location and update text
+    function getLocation() {
+      const locationEl = document.getElementById("location");
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(async (pos) => {
+          const lat = pos.coords.latitude;
+          const lon = pos.coords.longitude;
+          try {
+            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
+            const data = await res.json();
+            locationEl.innerText = `📍 ${data.address.city || data.address.town || data.address.village || 'Location'}`;
+          } catch (e) {
+            locationEl.innerText = "📍 Location found";
+          }
+        }, () => {
+          locationEl.innerText = "📍 Location permission denied";
+        });
+      } else {
+        locationEl.innerText = "📍 Geolocation not supported";
+      }
+    }
+    getLocation();
+  </script>
 
 </body>
 </html>
