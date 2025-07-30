@@ -1,122 +1,75 @@
-<!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Food Delivery App</title>
-    <link rel="stylesheet" href="style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background: #fefefe;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    .banner {
+      background: #ff5722;
+      color: white;
+      padding: 1rem;
+      border-radius: 15px;
+      margin-bottom: 1rem;
+    }
+    .food-icons img {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+    }
+    .product-card {
+      border-radius: 15px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      margin-bottom: 1.5rem;
+    }
+    .product-card img {
+      width: 100%;
+      height: auto;
+    }
+    .price-tag {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: #ff5722;
+      color: #fff;
+      padding: 5px 10px;
+      border-radius: 20px;
+      font-weight: bold;
+    }
+  </style>
 </head>
-<body>
-    <!-- Header with Logo and Cart -->
-    <header>
-        <div class="logo">Village Food</div>
-        <div class="search-container">
-            <input type="text" id="food-search" placeholder="Search for food...">
-            <button onclick="searchFood()">Search</button>
-        </div>
-        <div class="cart-container" onclick="toggleCart()">
-            <img src="images/cart-icon.png" alt="Cart" id="cart-icon">
-            <span id="cart-count">0</span>
-        </div>
-    </header>
-    <!-- Offer Banner -->
-<div class="offer-banner">
-    <p>🔥 Flat 20% Off on Your First Order! Use Code: FIRST20 🔥</p>
-</div>
+<body class="p-3">
 
-    <!-- Main Menu Section -->
-    <section class="menu">
-        <h2>Our Menu</h2>
-        <div class="menu-items">
-            <div class="menu-item" data-id="1" data-name="Burger" data-price="100.00">
-                <img src="images/burger.jpg" alt="Burger">
-                <h3>Burger</h3>
-                <p>₹100.00</p>
-                <button class="add-to-cart">Add to Cart</button>
-            </div>
-            <div class="menu-item" data-id="2" data-name="Pizza" data-price="150.00">
-                <img src="images/pizza.jpg" alt="Pizza">
-                <h3>Pizza</h3>
-                <p>₹150.00</p>
-                <button class="add-to-cart">Add to Cart</button>
-            </div>
-            <div class="menu-item" data-id="2" data-name="Pizza" data-price="150.00">
-                <img src="images/pizza.jpg" alt="Pizza">
-                <h3>Pizza</h3>
-                <p>₹150.00</p>
-                <button class="add-to-cart">Add to Cart</button>
-            </div>
-            <div class="menu-item" data-id="1" data-name="Burger" data-price="100.00">
-                <img src="images/burger.jpg" alt="Burger">
-                <h3>Burger</h3>
-                <p>₹100.00</p>
-                <button class="add-to-cart">Add to Cart</button>
-            </div>
-            <div class="menu-item" data-id="1" data-name="Burger" data-price="100.00">
-                <img src="images/burger.jpg" alt="Burger">
-                <h3>Burger</h3>
-                <p>₹100.00</p>
-                <button class="add-to-cart">Add to Cart</button>
-            </div>
-            <div class="menu-item" data-id="1" data-name="Burger" data-price="100.00">
-                <img src="images/burger.jpg" alt="Burger">
-                <h3>Burger</h3>
-                <p>₹100.00</p>
-                <button class="add-to-cart">Add to Cart</button>
-            </div>
-            <!-- Add more food items -->
-        </div>
-    </section>
+  <h4>🍔 FoodExpress</h4>
+  <p class="text-muted">Location: Albuquerque, NM</p>
 
-    <!-- Cart Section -->
-    <section class="cart" id="cart-dropdown">
-        <h2>Your Cart</h2>
-        <div id="cart-items">
-            <p>No items in cart</p>
-        </div>
-        <div class="cart-total">
-            <h3>Total: ₹<span id="total-price">0.00</span></h3>
-            <button id="checkout-btn" onclick="checkout()">Checkout</button>
-        </div>
-    </section>
+  <div class="banner text-center">
+    <h5>🔥 Get 50% Off Your First Order!</h5>
+    <small>Use code <strong>FIRST50</strong> at checkout</small>
+    <div><button class="btn btn-light btn-sm mt-2">Order Now</button></div>
+  </div>
 
-    <script src="script.js"></script>
+  <div class="d-flex justify-content-between mb-3">
+    <span>🍕 Pizza</span>
+    <span>🥗 Salad</span>
+    <span>🍣 Sushi</span>
+    <span>🥪 Sandwich</span>
+  </div>
+
+  <div class="product-card">
+    <div class="position-relative">
+      <img src="https://img.freepik.com/free-photo/front-view-burger-stand_141793-15542.jpg" alt="Cheeseburger">
+      <div class="price-tag">$8.99</div>
+    </div>
+    <div class="p-3">
+      <h5 class="mb-1">Cheese Burger</h5>
+      <p class="text-muted mb-2">Juicy beef, lettuce, tomato, pickles, mustard</p>
+      <button class="btn btn-warning btn-sm w-100">Add to Cart</button>
+    </div>
+  </div>
+
 </body>
 </html>
-<!-- Popular Items Section -->
-<section class="menu popular">
-    <h2>Popular Items</h2>
-    <div class="menu-items">
-        <div class="menu-item" data-id="3" data-name="Pasta" data-price="120.00">
-            <img src="images/pasta.jpg" alt="Pasta">
-            <h3>Pasta</h3>
-            <p>₹120.00</p>
-            <button class="add-to-cart">Add to Cart</button>
-        </div>
-        <div class="menu-item" data-id="4" data-name="Fries" data-price="80.00">
-            <img src="images/fries.jpg" alt="Fries">
-            <h3>Fries</h3>
-            <p>₹80.00</p>
-            <button class="add-to-cart">Add to Cart</button>
-        </div>
-    </div>
-</section>
-
-<!-- Chef's Special Section -->
-<section class="menu special">
-    <h2>Chef's Special</h2>
-    <div class="menu-items">
-        <div class="menu-item" data-id="5" data-name="Paneer Tikka" data-price="180.00">
-            <img src="images/paneer.jpg" alt="Paneer Tikka">
-            <h3>Paneer Tikka</h3>
-            <p>₹180.00</p>
-            <button class="add-to-cart">Add to Cart</button>
-        </div>
-        <div class="menu-item" data-id="6" data-name="Chicken Biryani" data-price="200.00">
-            <img src="images/biryani.jpg" alt="Chicken Biryani">
-            <h3>Chicken Biryani</h3>
-            <p>₹200.00</p>
-            <button class="add-to-cart">Add to Cart</button>
-        </div>
-    </div>
-</section>
