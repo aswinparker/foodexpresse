@@ -15,18 +15,49 @@
     <div id="order-summary" class="bg-white p-4 rounded-lg shadow mb-4">
       <h2 class="text-lg font-semibold mb-2">Your Items</h2>
       <ul id="cart-items" class="space-y-2"></ul>
-      <p class="mt-2 text-right font-bold text-lg">Total: $<span id="total-price">0.00</span></p>
+      <p class="mt-2 text-right font-bold text-lg">Total: ₹<span id="total-price">0.00</span></p>
     </div>
 
     <button id="confirmOrderBtn" class="bg-orange-500 hover:bg-orange-600 text-white font-semibold w-full py-2 rounded">
       ✅ Confirm Order
     </button>
+    
 
-    <div id="successMsg" class="hidden text-green-600 font-medium mt-4 text-center">🎉 Order placed successfully!</div>
+    <!-- Payment Section -->
+    <div id="successMsg" class="hidden text-green-600 font-medium mt-4 text-center">
+      🎉 Order placed successfully!<br/>
+      <span class="text-gray-700 text-sm">Please pay to complete your order.</span>
+
+      <div class="mt-4 space-y-3">
+        <a id="gpayLink" target="_blank">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Google_Pay_Logo.svg/512px-Google_Pay_Logo.svg.png"
+               alt="Pay with GPay"
+               class="h-12 mx-auto cursor-pointer hover:scale-105 transition-transform duration-150">
+        </a>
+        <p class="text-sm text-gray-500">UPI ID: <span class="font-mono text-black">yourupi@upi</span></p>
+      </div>
+    </div>
   </div>
 
   <!-- Firebase Config & Logic -->
   <script>
+    document.getElementById("confirmOrderBtn").addEventListener("click", () => {
+  if (cartItems.length === 0) return alert("Cart is empty!");
+  
+  const order = {
+    items: cartItems,
+    total: total,
+    createdAt: new Date().toISOString()
+  };
+
+  // Optional: Save to Firebase
+  db.collection("orders").add(order);
+
+  // Store the order temporarily and redirect to payment page
+  localStorage.setItem("currentOrder", JSON.stringify(order));
+  window.location.href = "payment.html";
+});
+
     const firebaseConfig = {
       apiKey: "YOUR_API_KEY",
       authDomain: "YOUR_AUTH_DOMAIN",
@@ -47,7 +78,7 @@
     cartItems.forEach(item => {
       const li = document.createElement("li");
       li.className = "flex justify-between border-b pb-1";
-      li.innerHTML = `<span>${item.name}</span><span>$${item.price.toFixed(2)}</span>`;
+      li.innerHTML = `<span>${item.name}</span><span>₹${item.price.toFixed(2)}</span>`;
       total += item.price;
       cartList.appendChild(li);
     });
@@ -56,7 +87,7 @@
     document.getElementById("confirmOrderBtn").addEventListener("click", async () => {
       if (cartItems.length === 0) return alert("Cart is empty!");
 
-      await db.collection("orders").add({
+      const docRef = await db.collection("orders").add({
         items: cartItems,
         total: total,
         status: "pending",
@@ -65,7 +96,15 @@
 
       document.getElementById("successMsg").classList.remove("hidden");
       localStorage.removeItem("cart");
+
+      // UPI link generation
+      const upiId = "agroffcl-1@okaxis"; // Replace with real UPI ID
+      const payeeName = "Kalki Foods";
+      const txnNote = `Order-${docRef.id}`;
+      const upiLink = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(payeeName)}&am=${total.toFixed(2)}&cu=INR&tn=${encodeURIComponent(txnNote)}`;
+      document.getElementById("gpayLink").href = upiLink;
     });
+    
   </script>
 </body>
 </html>
