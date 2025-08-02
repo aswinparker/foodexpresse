@@ -59,7 +59,7 @@
         <p class="text-gray-500 text-sm">Burger Haven • 31 min • 4.8★</p>
         <p class="text-orange-600 font-bold mt-1">$8.99</p>
         <p class="text-green-600 text-xs">$0 Delivery fee over $26</p>
-        <button class="bg-orange-500 text-white rounded-full w-full py-1 mt-2">Add to Cart</button>
+        <button onclick="addToCart('BBQ Bacon Burger', 9.49)" class="bg-orange-500 text-white rounded-full w-full py-1 mt-2">Add to Cart</button>
       </div>
 
       <!-- Food Card 2 -->
@@ -69,7 +69,7 @@
         <p class="text-gray-500 text-sm">Burger Haven • 27 min • 4.6★</p>
         <p class="text-orange-600 font-bold mt-1">$9.49</p>
         <p class="text-green-600 text-xs">$0 Delivery fee</p>
-        <button class="bg-orange-500 text-white rounded-full w-full py-1 mt-2">Add to Cart</button>
+        <button onclick="addToCart('Cheese Burger', 8.99)" class="bg-orange-500 text-white rounded-full w-full py-1 mt-2">Add to Cart</button>
       </div>
     </div>
   </div>
@@ -78,9 +78,14 @@
   <div class="fixed bottom-0 left-0 right-0 bg-white shadow-t p-2 flex justify-around items-center border-t">
     <div class="text-center text-orange-500">🏠<br><span class="text-xs">Home</span></div>
     <div class="text-center">📦<br><span class="text-xs">Orders</span></div>
-    <div class="text-center">🛒<br><span class="text-xs">Cart</span></div>
+    <div class="text-center relative" onclick="showCart()">
+      🛒
+      <span id="cart-count" class="absolute -top-1 -right-2 bg-red-500 text-white text-xs rounded-full px-1"></span>
+      <br><span class="text-xs">Cart</span>
+    </div>
     <div class="text-center">👤<br><span class="text-xs">Account</span></div>
   </div>
+  
 
   <script>
     // Get user location and update text
@@ -108,4 +113,37 @@
   </script>
 
 </body>
+<!-- Add this inside <body> at the end -->
+  <script>
+    const cart = JSON.parse(localStorage.getItem("cart")) || [];
+  
+    function updateCartCount() {
+      const count = cart.length;
+      document.getElementById("cart-count").innerText = count > 0 ? count : "";
+    }
+  
+    function addToCart(name, price) {
+      cart.push({ name, price });
+      localStorage.setItem("cart", JSON.stringify(cart));
+      updateCartCount();
+      alert(`${name} added to cart`);
+    }
+  
+    function showCart() {
+      if (cart.length === 0) return alert("🛒 Your cart is empty");
+      let message = "🛒 Your Cart:\n";
+      cart.forEach((item, i) => {
+        message += `${i + 1}. ${item.name} - $${item.price}\n`;
+      });
+      message += "\nProceed to place order?";
+      if (confirm(message)) {
+        localStorage.removeItem("cart");
+        alert("✅ Order placed successfully!");
+        location.reload();
+      }
+    }
+  
+    updateCartCount();
+  </script>
+  
 </html>
