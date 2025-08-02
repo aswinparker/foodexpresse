@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Order Confirmation</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans">
+  <div class="max-w-xl mx-auto p-4">
+    <h1 class="text-2xl font-bold mb-4">🧾 Order Confirmation</h1>
+
+    <div id="order-summary" class="bg-white p-4 rounded-lg shadow mb-4">
+      <h2 class="text-lg font-semibold mb-2">Your Items</h2>
+      <ul id="cart-items" class="space-y-2"></ul>
+      <p class="mt-2 text-right font-bold text-lg">Total: $<span id="total-price">0.00</span></p>
+    </div>
+
+    <button id="confirmOrderBtn" class="bg-orange-500 hover:bg-orange-600 text-white font-semibold w-full py-2 rounded">
+      ✅ Confirm Order
+    </button>
+
+    <div id="successMsg" class="hidden text-green-600 font-medium mt-4 text-center">🎉 Order placed successfully!</div>
+  </div>
+
+  <!-- Firebase Config & Logic -->
+  <script>
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_AUTH_DOMAIN",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_BUCKET",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    const cartItems = JSON.parse(localStorage.getItem("cart") || "[]");
+    const cartList = document.getElementById("cart-items");
+    const totalPriceEl = document.getElementById("total-price");
+
+    let total = 0;
+    cartItems.forEach(item => {
+      const li = document.createElement("li");
+      li.className = "flex justify-between border-b pb-1";
+      li.innerHTML = `<span>${item.name}</span><span>$${item.price.toFixed(2)}</span>`;
+      total += item.price;
+      cartList.appendChild(li);
+    });
+    totalPriceEl.innerText = total.toFixed(2);
+
+    document.getElementById("confirmOrderBtn").addEventListener("click", async () => {
+      if (cartItems.length === 0) return alert("Cart is empty!");
+
+      await db.collection("orders").add({
+        items: cartItems,
+        total: total,
+        status: "pending",
+        createdAt: new Date().toISOString()
+      });
+
+      document.getElementById("successMsg").classList.remove("hidden");
+      localStorage.removeItem("cart");
+    });
+  </script>
+</body>
+</html>
