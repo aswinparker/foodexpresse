@@ -3,132 +3,63 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Food Express</title>
+  <title>Your Cart - Food Express</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    .snap-x::-webkit-scrollbar {
-      display: none;
-    }
-  </style>
 </head>
-<body class="bg-white font-sans">
+<body class="bg-white text-gray-800 font-sans flex flex-col min-h-screen">
 
   <!-- Top Bar -->
-  <div class="flex justify-between items-center px-4 pt-4">
-    <div class="text-sm text-gray-700" id="location">📍 Detecting location...</div>
-    <div class="text-2xl">🔔</div>
+  <div class="flex justify-between items-center px-4 py-3 shadow">
+    <h1 class="text-xl font-bold">🛒 Your Cart</h1>
+    <a href="index.html" class="text-blue-500 text-sm">← Back</a>
   </div>
 
-  <!-- Search Bar -->
-  <div class="flex items-center space-x-2 px-4 py-2">
-    <div class="text-xl">🔍</div>
-    <input type="text" placeholder="Search delivo™" class="flex-1 p-2 rounded-lg bg-gray-100" />
-    <div class="text-xl">🎤</div>
+  <!-- Cart Content -->
+  <div id="cart-container" class="flex-1 flex flex-col items-center justify-center px-4 text-center">
+    <img src="https://i.imgur.com/DRyGWex.png" alt="Empty Cart" class="w-40 mb-4 opacity-70" />
+    <h2 class="text-xl font-semibold mb-2">Your cart is empty</h2>
+    <p class="text-gray-500">Looks like you haven't added anything yet.</p>
   </div>
 
-  <!-- Promo Banner with scroll, snapping, clickable -->
-  <div class="overflow-x-auto px-4 snap-x snap-mandatory scroll-smooth">
-    <div class="flex space-x-3 mt-2 w-max">
-      <a href="#" class="snap-start"><img src="https://i.postimg.cc/1tyQKPD9/promo.jpg" class="h-[180px] w-[320px] min-w-[320px] rounded-lg flex-shrink-0" alt="Promo1" /></a>
-      <a href="#" class="snap-start"><img src="https://i.imgur.com/MH2a8rD.jpg" class="h-[180px] w-[320px] min-w-[320px] rounded-lg flex-shrink-0" alt="Promo2" /></a>
-      <a href="#" class="snap-start"><img src="https://i.imgur.com/q8Aaw0m.jpg" class="h-[180px] w-[320px] min-w-[320px] rounded-lg flex-shrink-0" alt="Promo3" /></a>
-    </div>
-  </div>
-
-  <!-- Categories Scroll -->
-  <div class="flex overflow-x-auto space-x-3 p-4">
-    <div class="flex-shrink-0 bg-orange-200 rounded-full px-4 py-2">🍔 Burger</div>
-    <div class="flex-shrink-0 bg-orange-200 rounded-full px-4 py-2">🍕 Pizza</div>
-    <div class="flex-shrink-0 bg-orange-200 rounded-full px-4 py-2">🥗 Salad</div>
-    <div class="flex-shrink-0 bg-orange-200 rounded-full px-4 py-2">🍣 Sushi</div>
-    <div class="flex-shrink-0 bg-orange-200 rounded-full px-4 py-2">🌮 Tacos</div>
-  </div>
-
-  <!-- Top Picks Section -->
-  <div class="px-4">
-    <div class="flex justify-between items-center mb-2">
-      <h2 class="text-lg font-bold">Top picks on delivo™</h2>
-      <span class="text-yellow-600 text-sm cursor-pointer">See all</span>
-    </div>
-
-    <div class="flex overflow-x-auto space-x-4 pb-4">
-    <!-- Food Card 1 -->
-   <div class="w-64 flex-shrink-0 bg-white shadow rounded-xl p-3">
-   <img src="https://i.imgur.com/0y8Ftya.jpg" class="w-full h-32 object-cover rounded-lg" />
-   <h3 class="mt-2 font-bold">Cheese Burger</h3>
-   <p class="text-gray-500 text-sm">Burger Haven • 31 min • 4.8★</p>
-   <p class="text-orange-600 font-bold mt-1">$8.99</p>
-   <p class="text-green-600 text-xs">$0 Delivery fee over $26</p>
-   <button onclick="addToCart('Cheese Burger', 8.99)"
-    class="bg-orange-500 hover:bg-orange-600 text-white rounded-full w-full py-2 mt-2 text-sm font-semibold shadow">
-    Add to Cart
-  </button>
-  <button style="border: 2px solid red;" ...>Add to Cart</button>
-</div>
-
-<!-- Food Card 2 -->
-<div class="w-64 flex-shrink-0 bg-white shadow rounded-xl p-3">
-  <img src="https://i.imgur.com/nQF2zWb.jpg" class="w-full h-32 object-cover rounded-lg" />
-  <h3 class="mt-2 font-bold">BBQ Bacon Burger</h3>
-  <p class="text-gray-500 text-sm">Burger Haven • 27 min • 4.6★</p>
-  <p class="text-orange-600 font-bold mt-1">$9.49</p>
-  <p class="text-green-600 text-xs">$0 Delivery fee</p>
-  <button onclick="addToCart('BBQ Bacon Burger', 9.49)"
-    class="bg-orange-500 hover:bg-orange-600 text-white rounded-full w-full py-2 mt-2 text-sm font-semibold shadow">
-    Add to Cart
-  </button>
-</div>
-
-    </div>
-  </div>
-
-  <!-- Bottom Navigation (fake static example) -->
+  <!-- Bottom Navigation -->
   <div class="fixed bottom-0 left-0 right-0 bg-white shadow-t p-2 flex justify-around items-center border-t">
-    <div class="text-center text-orange-500">🏠<br><span class="text-xs">Home</span></div>
+    <div class="text-center"><a href="index.html">🏠<br><span class="text-xs">Home</span></a></div>
     <div class="text-center">📦<br><span class="text-xs">Orders</span></div>
-    <div class="text-center cursor-pointer" onclick="window.location.href='cart.html'">🛒<br><span class="text-xs">Cart</span></div>
+    <div class="text-center text-orange-500">🛒<br><span class="text-xs">Cart</span></div>
     <div class="text-center">👤<br><span class="text-xs">Account</span></div>
   </div>
-  
-
-  <script>
-    // Get user location and update text
-    function getLocation() {
-      const locationEl = document.getElementById("location");
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(async (pos) => {
-          const lat = pos.coords.latitude;
-          const lon = pos.coords.longitude;
-          try {
-            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
-            const data = await res.json();
-            locationEl.innerText = `📍 ${data.address.city || data.address.town || data.address.village || 'Location'}`;
-          } catch (e) {
-            locationEl.innerText = "📍 Location found";
-          }
-        }, () => {
-          locationEl.innerText = "📍 Location permission denied";
-        });
-      } else {
-        locationEl.innerText = "📍 Geolocation not supported";
-      }
-    }
-    getLocation();
-  </script>
 
 </body>
-<script>
-  function addToCart(name, price) {
-    let cart = JSON.parse(localStorage.getItem("cart")) || [];
-
-    cart.push({ name, price });
-
-    localStorage.setItem("cart", JSON.stringify(cart));
-
-    window.location.href = "cart.html"; // redirect after adding
-  }
-</script>
-
-
-  
+<!-- Add this inside <body> at the end -->
+    <script>
+        const cart = JSON.parse(localStorage.getItem("cart")) || [];
+      
+        function updateCartCount() {
+          const count = cart.length;
+          document.getElementById("cart-count").innerText = count > 0 ? count : "";
+        }
+      
+        function addToCart(name, price) {
+          cart.push({ name, price });
+          localStorage.setItem("cart", JSON.stringify(cart));
+          updateCartCount();
+          alert(`${name} added to cart`);
+        }
+      
+        function showCart() {
+          if (cart.length === 0) return alert("🛒 Your cart is empty");
+          let message = "🛒 Your Cart:\n";
+          cart.forEach((item, i) => {
+            message += `${i + 1}. ${item.name} - $${item.price}\n`;
+          });
+          message += "\nProceed to place order?";
+          if (confirm(message)) {
+            localStorage.removeItem("cart");
+            alert("✅ Order placed successfully!");
+            location.reload();
+          }
+        }
+      
+        updateCartCount();
+      </script>
 </html>
