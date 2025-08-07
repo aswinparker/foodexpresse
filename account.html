@@ -3,108 +3,68 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Food Express - Login</title>
+  <title>Food Express - Account</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 </head>
-<body class="bg-white flex items-center justify-center min-h-screen px-4">
+<body class="bg-gray-100 flex items-center justify-center h-screen">
 
-  <!-- Login Container -->
-  <div class="w-full max-w-md space-y-6 bg-white p-6 rounded-xl shadow-xl text-center">
-    <h1 class="text-3xl font-bold text-red-500">Food Express</h1>
-    
-    <!-- Phone number input -->
-    <div id="login-form" class="space-y-4">
-      <input type="text" id="firstName" placeholder="First Name" class="w-full px-4 py-2 border rounded-md" />
-      <input type="text" id="lastName" placeholder="Last Name" class="w-full px-4 py-2 border rounded-md" />
-      <input type="tel" id="phoneNumber" placeholder="Enter Mobile Number" class="w-full px-4 py-2 border rounded-md" />
-      <div id="recaptcha-container"></div>
-      <button onclick="sendOTP()" class="w-full bg-red-500 text-white py-2 rounded-md hover:bg-red-600">
-        Send OTP
-      </button>
-    </div>
-
-    <!-- OTP Verification -->
-    <div id="otp-form" class="space-y-4 hidden">
-      <input type="text" id="otp" placeholder="Enter OTP" class="w-full px-4 py-2 border rounded-md" />
-      <button onclick="verifyOTP()" class="w-full bg-green-500 text-white py-2 rounded-md hover:bg-green-600">
-        Verify OTP
-      </button>
-    </div>
-
-    <div id="status" class="text-sm text-gray-500 mt-2"></div>
+  <div class="bg-white p-6 rounded-xl shadow-lg w-80 text-center">
+    <img src="https://img.icons8.com/color/96/000000/google-logo.png" class="mx-auto mb-4" />
+    <h2 class="text-xl font-semibold mb-4">Login with Google</h2>
+    <button onclick="googleLogin()" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded w-full">
+      Sign in with Google
+    </button>
+    <p class="text-xs text-gray-500 mt-4">Food Express Account</p>
   </div>
 
-  <!-- Firebase Config + Script -->
   <script>
-    // TODO: Replace this with your actual Firebase config
+    // 🔐 Firebase Config
     const firebaseConfig = {
-     apiKey: "AIzaSyCAGirQsFfQNInhUc9yuMD-QElaDnmRbKE",
-     authDomain: "foodexpress-9b0ff.firebaseapp.com",
-     projectId: "foodexpress-9b0ff",
-     storageBucket: "foodexpress-9b0ff.firebasestorage.app",
-     messagingSenderId: "818281594225",
-     appId: "1:818281594225:web:205774c2914ae2b9b08ad0"
+      apiKey: "AIzaSyCAGirQsFfQNInhUc9yuMD-QElaDnmRbKE",
+      authDomain: "foodexpress-9b0ff.firebaseapp.com",
+      projectId: "foodexpress-9b0ff",
+      storageBucket: "foodexpress-9b0ff.firebasestorage.app",
+      messagingSenderId: "818281594225",
+      appId: "1:818281594225:web:205774c2914ae2b9b08ad0"
     };
+
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    // Check if user already logged in
-    auth.onAuthStateChanged(async user => {
+    // ☁️ Google Login Function
+    async function googleLogin() {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      try {
+        const result = await auth.signInWithPopup(provider);
+        const user = result.user;
+
+        // Save user data to Firestore
+        const userRef = db.collection("users").doc(user.uid);
+        const userData = {
+          name: user.displayName,
+          email: user.email,
+          photo: user.photoURL,
+          lastLogin: new Date()
+        };
+        await userRef.set(userData, { merge: true });
+
+        // Redirect to app
+        window.location.href = "/index.html";
+      } catch (error) {
+        alert("Login error: " + error.message);
+      }
+    }
+
+    // Auto-detect logged-in user
+    auth.onAuthStateChanged(user => {
       if (user) {
-        const doc = await db.collection("users").doc(user.uid).get();
-        if (doc.exists) {
-          document.getElementById("status").innerText = "Welcome back, " + doc.data().firstName + "!";
-          setTimeout(() => window.location.href = "/index.html", 1000); // Redirect
-        }
+        window.location.href = "/index.html";
       }
     });
-
-    // Show OTP box
-    let confirmationResult;
-    function sendOTP() {
-      const phone = document.getElementById("phoneNumber").value;
-      const firstName = document.getElementById("firstName").value;
-      const lastName = document.getElementById("lastName").value;
-      if (!phone || !firstName || !lastName) return alert("Fill all fields");
-
-      window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier("recaptcha-container", {
-        size: "invisible"
-      });
-
-      auth.signInWithPhoneNumber("+91" + phone, window.recaptchaVerifier)
-        .then(result => {
-          confirmationResult = result;
-          document.getElementById("otp-form").classList.remove("hidden");
-          document.getElementById("login-form").classList.add("hidden");
-          document.getElementById("status").innerText = "OTP sent!";
-        })
-        .catch(e => {
-          document.getElementById("status").innerText = "Error: " + e.message;
-        });
-    }
-
-    function verifyOTP() {
-      const otp = document.getElementById("otp").value;
-      confirmationResult.confirm(otp).then(async (result) => {
-        const user = result.user;
-        // Save user data to Firestore
-        await db.collection("users").doc(user.uid).set({
-          firstName: document.getElementById("firstName").value,
-          lastName: document.getElementById("lastName").value,
-          phone: user.phoneNumber,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        document.getElementById("status").innerText = "Welcome!";
-        setTimeout(() => window.location.href = "/index.html", 1000); // Redirect
-      }).catch(e => {
-        document.getElementById("status").innerText = "Invalid OTP";
-      });
-    }
   </script>
 </body>
 </html>
