@@ -16,14 +16,16 @@
       Proceed to Checkout →
     </a>
   </div>
+  
 
-  <!-- Bottom Navigation (like index) -->
-  <div class="fixed bottom-0 left-0 right-0 bg-white shadow-t p-2 flex justify-around items-center border-t">
-    <div class="text-center cursor-pointer" onclick="location.href='index.html'">🏠<br><span class="text-xs">Home</span></div>
-    <div class="text-center cursor-pointer" onclick="location.href='menu.html'">📋<br><span class="text-xs">Menu</span></div>
-    <div class="text-center text-orange-500 font-bold cursor-pointer" onclick="location.href='cart.html'">🛒<br><span class="text-xs">Cart</span></div>
-    <div class="text-center cursor-pointer" onclick="location.href='account.html'">👤<br><span class="text-xs">Account</span></div>
-  </div>
+<!-- Bottom Navigation -->
+<div class="fixed bottom-0 left-0 right-0 bg-white shadow-t p-2 flex justify-around items-center border-t">
+  <a href="index.html" class="text-center">🏠<br><span class="text-xs">Home</span></a>
+  <a href="orders.html" class="text-center">📦<br><span class="text-xs">Orders</span></a>
+  <a href="cart.html" class="text-center text-orange-500">🛒<br><span class="text-xs">Cart</span></a>
+  <a href="account.html" class="text-center">👤<br><span class="text-xs">Account</span></a>
+</div>
+
 
   <script>
     let cart = JSON.parse(localStorage.getItem("cart") || "[]");
@@ -96,5 +98,6 @@
     cart = cart.map(item => ({ ...item, quantity: item.quantity || 1 }));
     renderCart();
   </script>
+  
 </body>
 </html>
