@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign Up - Food Express</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-white font-sans flex flex-col items-center justify-center min-h-screen pb-20">
+
+  <div class="w-80 bg-white p-6 rounded-lg shadow">
+    <h2 class="text-lg font-bold mb-4">Create Account</h2>
+    <input type="text" id="name" placeholder="Name" class="border p-2 w-full mb-2" />
+    <input type="email" id="email" placeholder="Email" class="border p-2 w-full mb-2" />
+    <input type="password" id="password" placeholder="Password" class="border p-2 w-full mb-2" />
+    <input type="password" id="confirmPassword" placeholder="Confirm Password" class="border p-2 w-full mb-4" />
+    <button onclick="signup()" class="bg-orange-500 text-white py-2 px-4 w-full rounded">Sign Up</button>
+    <p class="text-center text-sm mt-3">Already have an account? <a href="login.html" class="text-blue-500">Login</a></p>
+  </div>
+
+  <!-- Bottom Navigation -->
+  <div class="fixed bottom-0 left-0 right-0 bg-white shadow-t p-2 flex justify-around items-center border-t">
+    <a href="index.html" class="text-center">🏠<br><span class="text-xs">Home</span></a>
+    <a href="orders.html" class="text-center">📦<br><span class="text-xs">Orders</span></a>
+    <a href="cart.html" class="text-center relative">🛒<br><span class="text-xs">Cart</span></a>
+    <a href="account.html" class="text-center text-orange-500">👤<br><span class="text-xs">Account</span></a>
+  </div>
+
+  <script>
+    function signup() {
+      const name = document.getElementById("name").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+      const confirmPassword = document.getElementById("confirmPassword").value;
+
+      if (!name || !email || !password || !confirmPassword) {
+        return alert("Please fill all fields");
+      }
+      if (password !== confirmPassword) {
+        return alert("Passwords do not match");
+      }
+
+      let users = JSON.parse(localStorage.getItem("users") || "[]");
+      if (users.find(u => u.email === email)) {
+        return alert("Email already exists");
+      }
+
+      const avatars = [
+        "https://i.imgur.com/0y8Ftya.jpg",
+        "https://i.imgur.com/nQF2zWb.jpg",
+        "https://i.imgur.com/q8Aaw0m.jpg"
+      ];
+      const avatar = avatars[Math.floor(Math.random() * avatars.length)];
+
+      users.push({ name, email, password, avatar, cart: [] });
+      localStorage.setItem("users", JSON.stringify(users));
+
+      alert("Account created! Please log in.");
+      window.location.href = "login.html";
+    }
+  </script>
+</body>
+</html>
