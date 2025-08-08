@@ -1,18 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Login - Food Express</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bcryptjs@2.4.3/dist/bcrypt.min.js"></script>
 </head>
 <body class="bg-white font-sans flex flex-col items-center justify-center min-h-screen pb-20">
 
   <div class="w-80 bg-white p-6 rounded-lg shadow">
     <h2 class="text-lg font-bold mb-4">Login</h2>
-    <input type="email" id="email" placeholder="Email" class="border p-2 w-full mb-2" />
-    <input type="password" id="password" placeholder="Password" class="border p-2 w-full mb-4" />
+    
+    <input type="email" id="email" placeholder="Email" class="border p-2 w-full mb-1" />
+    <p id="emailError" class="text-red-500 text-xs mb-2 hidden"></p>
+    
+    <input type="password" id="password" placeholder="Password" class="border p-2 w-full mb-1" />
+    <p id="passwordError" class="text-red-500 text-xs mb-4 hidden"></p>
+    
     <button onclick="login()" class="bg-orange-500 text-white py-2 px-4 w-full rounded">Login</button>
+    
     <p class="text-center text-sm mt-3">Don't have an account? <a href="signup.html" class="text-blue-500">Sign Up</a></p>
   </div>
 
@@ -25,28 +32,57 @@
   </div>
 
   <script>
+    function clearErrors() {
+      ["emailError", "passwordError"].forEach(id => {
+        const el = document.getElementById(id);
+        el.innerText = "";
+        el.classList.add("hidden");
+      });
+    }
+
     function login() {
+      clearErrors();
+
       const email = document.getElementById("email").value.trim();
       const password = document.getElementById("password").value;
 
+      let hasError = false;
+      if (!email) {
+        const el = document.getElementById("emailError");
+        el.innerText = "Email is required";
+        el.classList.remove("hidden");
+        hasError = true;
+      }
+      if (!password) {
+        const el = document.getElementById("passwordError");
+        el.innerText = "Password is required";
+        el.classList.remove("hidden");
+        hasError = true;
+      }
+      if (hasError) return;
+
       let users = JSON.parse(localStorage.getItem("users") || "[]");
-      let user = users.find(u => u.email === email && u.password === password);
+      let user = users.find(u => u.email === email);
 
       if (!user) {
-        return alert("Invalid email or password");
+        const el = document.getElementById("emailError");
+        el.innerText = "Invalid email or password";
+        el.classList.remove("hidden");
+        return;
+      }
+
+      // Verify hashed password
+      if (!bcrypt.compareSync(password, user.password)) {
+        const el = document.getElementById("passwordError");
+        el.innerText = "Invalid email or password";
+        el.classList.remove("hidden");
+        return;
       }
 
       localStorage.setItem("loggedInUser", email);
       window.location.href = "account.html";
     }
   </script>
-  <!-- Bottom Navigation -->
-<div class="fixed bottom-0 left-0 right-0 bg-white shadow-t p-2 flex justify-around items-center border-t">
-    <a href="index.html" class="text-center text-orange-500">🏠<br><span class="text-xs">Home</span></a>
-    <a href="orders.html" class="text-center">📦<br><span class="text-xs">Orders</span></a>
-    <a href="cart.html" class="text-center relative">🛒<br><span class="text-xs">Cart</span></a>
-    <a href="account.html" class="text-center">👤<br><span class="text-xs">Account</span></a>
-  </div>
-  
+
 </body>
 </html>
