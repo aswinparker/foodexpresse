@@ -1,70 +1,142 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Food Express - Account</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Account - Food Express</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 </head>
-<body class="bg-gray-100 flex items-center justify-center h-screen">
+<body class="bg-white font-sans">
 
-  <div class="bg-white p-6 rounded-xl shadow-lg w-80 text-center">
-    <img src="https://img.icons8.com/color/96/000000/google-logo.png" class="mx-auto mb-4" />
-    <h2 class="text-xl font-semibold mb-4">Login with Google</h2>
-    <button onclick="googleLogin()" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded w-full">
-      Sign in with Google
-    </button>
-    <p class="text-xs text-gray-500 mt-4">Food Express Account</p>
+  <!-- Main Account Section -->
+  <div class="flex flex-col items-center justify-start min-h-screen pb-20 pt-10">
+    <div id="profileSection" class="hidden text-center mb-6">
+      <img id="profilePic" src="" class="w-24 h-24 rounded-full mb-3 shadow" />
+      <h2 id="profileName" class="text-xl font-bold"></h2>
+      <button onclick="logout()" class="mt-4 bg-red-500 text-white px-4 py-2 rounded">Logout</button>
+    </div>
+
+    <div id="guestSection" class="hidden text-center">
+      <p class="mb-4 text-gray-600">You are not logged in</p>
+      <button onclick="openAccountPanel()" class="bg-orange-500 text-white px-4 py-2 rounded">Login / Sign Up</button>
+    </div>
+
+    <!-- Extra Account Options -->
+    <div id="accountOptions" class="hidden w-full max-w-md mx-auto mt-6">
+      <div class="bg-white rounded-lg shadow divide-y">
+        <a href="orders.html" class="flex items-center p-4 hover:bg-gray-50">
+          📦 <span class="ml-3">My Orders</span>
+        </a>
+        <a href="favorites.html" class="flex items-center p-4 hover:bg-gray-50">
+          ❤️ <span class="ml-3">Favorites</span>
+        </a>
+        <a href="payments.html" class="flex items-center p-4 hover:bg-gray-50">
+          💳 <span class="ml-3">Payment Methods</span>
+        </a>
+        <a href="addresses.html" class="flex items-center p-4 hover:bg-gray-50">
+          📍 <span class="ml-3">Manage Addresses</span>
+        </a>
+        <a href="support.html" class="flex items-center p-4 hover:bg-gray-50">
+          🛠 <span class="ml-3">Help & Support</span>
+        </a>
+      </div>
+    </div>
+  </div>
+  
+<!-- Bottom Navigation -->
+<div class="fixed bottom-0 left-0 right-0 bg-white shadow-t p-2 flex justify-around items-center border-t">
+    <a href="index.html" class="text-center">🏠<br><span class="text-xs">Home</span></a>
+    <a href="orders.html" class="text-center">📦<br><span class="text-xs">Orders</span></a>
+    <a href="cart.html" class="text-center relative">🛒<br><span class="text-xs">Cart</span></a>
+    <a href="account.html" class="text-center text-orange-500">👤<br><span class="text-xs">Account</span></a>
+  </div>
+  
+
+  <!-- Slide-Up Account Panel -->
+  <div id="accountPanel" class="fixed bottom-[-100%] left-0 w-full bg-white rounded-t-2xl shadow-lg p-6 transition-all duration-300 z-50">
+    <div id="accountContent"></div>
+    <button onclick="closeAccountPanel()" class="mt-4 w-full py-2 bg-gray-200 rounded-lg">Close</button>
   </div>
 
   <script>
-    // 🔐 Firebase Config
-    const firebaseConfig = {
-      apiKey: "AIzaSyCAGirQsFfQNInhUc9yuMD-QElaDnmRbKE",
-      authDomain: "foodexpress-9b0ff.firebaseapp.com",
-      projectId: "foodexpress-9b0ff",
-      storageBucket: "foodexpress-9b0ff.firebasestorage.app",
-      messagingSenderId: "818281594225",
-      appId: "1:818281594225:web:205774c2914ae2b9b08ad0"
-    };
+    let currentUser = localStorage.getItem("loggedInUser");
 
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
+    function renderAccountPage() {
+      const users = JSON.parse(localStorage.getItem("users") || "[]");
+      const user = users.find(u => u.email === currentUser);
 
-    // ☁️ Google Login Function
-    async function googleLogin() {
-      const provider = new firebase.auth.GoogleAuthProvider();
-      try {
-        const result = await auth.signInWithPopup(provider);
-        const user = result.user;
-
-        // Save user data to Firestore
-        const userRef = db.collection("users").doc(user.uid);
-        const userData = {
-          name: user.displayName,
-          email: user.email,
-          photo: user.photoURL,
-          lastLogin: new Date()
-        };
-        await userRef.set(userData, { merge: true });
-
-        // Redirect to app
-        window.location.href = "/index.html";
-      } catch (error) {
-        alert("Login error: " + error.message);
+      if (user) {
+        document.getElementById("profileSection").style.display = "block";
+        document.getElementById("guestSection").style.display = "none";
+        document.getElementById("accountOptions").style.display = "block";
+        document.getElementById("profileName").innerText = user.name;
+        document.getElementById("profilePic").src = user.avatar || "https://i.postimg.cc/SK7cPYdB/cartoon-avatar.png";
+      } else {
+        document.getElementById("guestSection").style.display = "block";
+        document.getElementById("profileSection").style.display = "none";
+        document.getElementById("accountOptions").style.display = "none";
       }
     }
 
-    // Auto-detect logged-in user
-    auth.onAuthStateChanged(user => {
-      if (user) {
-        window.location.href = "/index.html";
+    function openAccountPanel() {
+      const content = document.getElementById("accountContent");
+
+      content.innerHTML = `
+        <h2 class="text-lg font-bold mb-4">Login / Signup</h2>
+        <input type="text" id="nameField" placeholder="Name" class="border p-2 w-full mb-2" />
+        <input type="email" id="emailField" placeholder="Email" class="border p-2 w-full mb-2" />
+        <input type="password" id="passwordField" placeholder="Password" class="border p-2 w-full mb-4" />
+        <button onclick="submitAuth()" class="bg-orange-500 text-white py-2 px-4 w-full rounded">Submit</button>
+      `;
+
+      document.getElementById("accountPanel").style.bottom = "0";
+    }
+
+    function closeAccountPanel() {
+      document.getElementById("accountPanel").style.bottom = "-100%";
+    }
+
+    function submitAuth() {
+      let name = document.getElementById("nameField").value.trim();
+      let email = document.getElementById("emailField").value.trim();
+      let pass = document.getElementById("passwordField").value.trim();
+
+      if (!name || !email || !pass) {
+        alert("Please fill all fields");
+        return;
       }
-    });
+
+      let users = JSON.parse(localStorage.getItem("users") || "[]");
+      let existing = users.find(u => u.email === email);
+
+      if (!existing) {
+        users.push({ name, email, pass, avatar: "https://i.postimg.cc/SK7cPYdB/cartoon-avatar.png" });
+        localStorage.setItem("users", JSON.stringify(users));
+        localStorage.setItem("loggedInUser", email);
+        currentUser = email;
+        alert("Account created successfully!");
+      } else {
+        if (existing.pass === pass) {
+          localStorage.setItem("loggedInUser", email);
+          currentUser = email;
+          alert("Logged in successfully!");
+        } else {
+          alert("Wrong password!");
+          return;
+        }
+      }
+
+      closeAccountPanel();
+      renderAccountPage();
+    }
+
+    function logout() {
+      localStorage.removeItem("loggedInUser");
+      currentUser = null;
+      renderAccountPage();
+    }
+
+    renderAccountPage();
   </script>
 </body>
 </html>
