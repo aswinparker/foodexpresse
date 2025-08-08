@@ -184,7 +184,42 @@
     window.location.href = "cart.html";
   }
 }
+async function reverseGeocode(lat, lng) {
+  try {
+    const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`);
+    const data = await response.json();
+    return data.address.city || data.address.town || data.address.village || data.address.county || "Unknown location";
+  } catch (error) {
+    console.error("Reverse geocode error:", error);
+    return "Unknown location";
+  }
+}
+
+const locationDiv = document.getElementById("location");
+
+if ("geolocation" in navigator) {
+  navigator.geolocation.watchPosition(
+    async (pos) => {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      const placeName = await reverseGeocode(lat, lng);
+      locationDiv.textContent = `📍 ${placeName}`;
+    },
+    (err) => {
+      locationDiv.textContent = "📍 Location access denied";
+      console.error(err);
+    },
+    {
+      enableHighAccuracy: true,
+      maximumAge: 0,
+      timeout: 5000,
+    }
+  );
+} else {
+  locationDiv.textContent = "📍 Geolocation not supported";
+}
 
   </script>
+  
 </body>
 </html>
