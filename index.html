@@ -1,13 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Food Express</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    .snap-x::-webkit-scrollbar {
-      display: none;
+    .snap-x::-webkit-scrollbar { display: none; }
+    .overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center;
+      z-index: 50;
     }
   </style>
 </head>
@@ -22,16 +25,16 @@
   <!-- Search Bar -->
   <div class="flex items-center space-x-2 px-4 py-2">
     <div class="text-xl">🔍</div>
-    <input type="text" placeholder="Search delivo™" class="flex-1 p-2 rounded-lg bg-gray-100" />
+    <input type="text" placeholder="Search Food Express" class="flex-1 p-2 rounded-lg bg-gray-100" />
     <div class="text-xl">🎤</div>
   </div>
 
   <!-- Promo Banners -->
   <div class="overflow-x-auto px-4 snap-x snap-mandatory scroll-smooth">
     <div class="flex space-x-3 mt-2 w-max">
-      <a href="#" class="snap-start"><img src="https://i.postimg.cc/1tyQKPD9/promo.jpg" class="h-[180px] w-[320px] rounded-lg" alt="Promo1" /></a>
-      <a href="#" class="snap-start"><img src="https://i.imgur.com/MH2a8rD.jpg" class="h-[180px] w-[320px] rounded-lg" alt="Promo2" /></a>
-      <a href="#" class="snap-start"><img src="https://i.imgur.com/q8Aaw0m.jpg" class="h-[180px] w-[320px] rounded-lg" alt="Promo3" /></a>
+      <img src="https://i.postimg.cc/1tyQKPD9/promo.jpg" class="h-[180px] w-[320px] rounded-lg" />
+      <img src="https://i.imgur.com/MH2a8rD.jpg" class="h-[180px] w-[320px] rounded-lg" />
+      <img src="https://i.imgur.com/q8Aaw0m.jpg" class="h-[180px] w-[320px] rounded-lg" />
     </div>
   </div>
 
@@ -46,29 +49,21 @@
 
   <!-- Top Picks -->
   <div class="px-4">
-    <div class="flex justify-between items-center mb-2">
-      <h2 class="text-lg font-bold">Top picks on delivo™</h2>
-      <span class="text-yellow-600 text-sm cursor-pointer">See all</span>
-    </div>
-
+    <h2 class="text-lg font-bold mb-2">Top picks</h2>
     <div class="flex overflow-x-auto space-x-4 pb-24">
-      <!-- Card 1 -->
       <div class="w-64 bg-white shadow rounded-xl p-3 flex-shrink-0">
         <img src="https://i.imgur.com/0y8Ftya.jpg" class="w-full h-32 object-cover rounded-lg" />
         <h3 class="mt-2 font-bold">Cheese Burger</h3>
         <p class="text-gray-500 text-sm">Burger Haven • 31 min • 4.8★</p>
         <p class="text-orange-600 font-bold mt-1">$8.99</p>
-        <p class="text-green-600 text-xs">$0 Delivery fee over $26</p>
         <button onclick="addToCart('Cheese Burger', 8.99)" class="bg-orange-500 text-white rounded-full w-full py-1 mt-2">Add to Cart</button>
       </div>
 
-      <!-- Card 2 -->
       <div class="w-64 bg-white shadow rounded-xl p-3 flex-shrink-0">
         <img src="https://i.imgur.com/nQF2zWb.jpg" class="w-full h-32 object-cover rounded-lg" />
         <h3 class="mt-2 font-bold">BBQ Bacon Burger</h3>
         <p class="text-gray-500 text-sm">Burger Haven • 27 min • 4.6★</p>
         <p class="text-orange-600 font-bold mt-1">$9.49</p>
-        <p class="text-green-600 text-xs">$0 Delivery fee</p>
         <button onclick="addToCart('BBQ Bacon Burger', 9.49)" class="bg-orange-500 text-white rounded-full w-full py-1 mt-2">Add to Cart</button>
       </div>
     </div>
@@ -83,61 +78,113 @@
       <span class="absolute -top-1 -right-2 bg-red-500 text-white rounded-full text-xs px-1" id="cartCount">0</span>
       <br><span class="text-xs">Cart</span>
     </div>
-    <div class="text-center cursor-pointer" onclick="goToAccount()">👤<br><span class="text-xs">Account</span></div>
+    <div class="text-center cursor-pointer" onclick="openLoginPopup()">👤<br><span class="text-xs" id="accountLabel">Account</span></div>
+  </div>
+
+  <!-- Login/Signup Popup -->
+  <div id="loginPopup" class="overlay">
+    <div class="bg-white p-6 rounded-lg w-80">
+      <h2 class="text-lg font-bold mb-4" id="popupTitle">Login</h2>
+      <input type="text" id="nameField" placeholder="Name" class="border p-2 w-full mb-2 hidden" />
+      <input type="email" id="emailField" placeholder="Email" class="border p-2 w-full mb-2" />
+      <input type="password" id="passwordField" placeholder="Password" class="border p-2 w-full mb-4" />
+      <button onclick="submitAuth()" class="bg-orange-500 text-white py-2 px-4 w-full rounded">Submit</button>
+      <p class="text-center text-sm mt-3 cursor-pointer text-blue-500" onclick="toggleAuthMode()" id="toggleText">Create account</p>
+      <p class="text-center text-sm mt-3 cursor-pointer text-gray-500" onclick="closeLoginPopup()">Cancel</p>
+    </div>
   </div>
 
   <script>
-    let cart = [];
+    let authMode = "login"; // or signup
+    let currentUser = localStorage.getItem("loggedInUser");
 
+    function openLoginPopup() {
+      if (currentUser) {
+        window.location.href = "account.html";
+      } else {
+        document.getElementById("loginPopup").style.display = "flex";
+      }
+    }
+    function closeLoginPopup() { document.getElementById("loginPopup").style.display = "none"; }
+
+    function toggleAuthMode() {
+      authMode = authMode === "login" ? "signup" : "login";
+      document.getElementById("popupTitle").innerText = authMode === "login" ? "Login" : "Signup";
+      document.getElementById("toggleText").innerText = authMode === "login" ? "Create account" : "Already have an account?";
+      document.getElementById("nameField").classList.toggle("hidden", authMode === "login");
+    }
+
+    function submitAuth() {
+      const email = document.getElementById("emailField").value;
+      const password = document.getElementById("passwordField").value;
+      if (authMode === "signup") {
+        const name = document.getElementById("nameField").value;
+        if (!name || !email || !password) return alert("All fields required");
+        let users = JSON.parse(localStorage.getItem("users") || "[]");
+        if (users.find(u => u.email === email)) return alert("Email already exists");
+        users.push({ name, email, password, cart: [] });
+        localStorage.setItem("users", JSON.stringify(users));
+        alert("Account created, please login");
+        toggleAuthMode();
+      } else {
+        let users = JSON.parse(localStorage.getItem("users") || "[]");
+        let user = users.find(u => u.email === email && u.password === password);
+        if (!user) return alert("Invalid credentials");
+        localStorage.setItem("loggedInUser", email);
+        currentUser = email;
+        loadUserCart();
+        closeLoginPopup();
+        document.getElementById("accountLabel").innerText = user.name;
+      }
+    }
+
+    let cart = [];
+    function loadUserCart() {
+      if (!currentUser) return;
+      let users = JSON.parse(localStorage.getItem("users") || "[]");
+      let user = users.find(u => u.email === currentUser);
+      cart = user ? user.cart : [];
+      updateCartCount();
+    }
+    function saveUserCart() {
+      if (!currentUser) return;
+      let users = JSON.parse(localStorage.getItem("users") || "[]");
+      let idx = users.findIndex(u => u.email === currentUser);
+      if (idx !== -1) {
+        users[idx].cart = cart;
+        localStorage.setItem("users", JSON.stringify(users));
+      }
+    }
     function addToCart(name, price) {
       cart.push({ name, price });
       updateCartCount();
+      saveUserCart();
     }
+    function updateCartCount() { document.getElementById("cartCount").innerText = cart.length; }
+    function goToCart() { alert("Cart: " + JSON.stringify(cart)); }
 
-    function updateCartCount() {
-      document.getElementById("cartCount").innerText = cart.length;
-      localStorage.setItem("cart", JSON.stringify(cart));
-    }
-
-    function goToCart() {
-      window.location.href = 'cart.html';
-    }
-
-    function getLocation() {
-      const locationEl = document.getElementById("location");
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(async (pos) => {
-          const lat = pos.coords.latitude;
-          const lon = pos.coords.longitude;
-          try {
-            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
-            const data = await res.json();
-            locationEl.innerText = `📍 ${data.address.city || data.address.town || data.address.village || 'Location'}`;
-          } catch {
-            locationEl.innerText = "📍 Location found";
-          }
-        }, () => {
-          locationEl.innerText = "📍 Location permission denied";
-        });
-      } else {
-        locationEl.innerText = "📍 Geolocation not supported";
-      }
-    }
-
-    // Preload cart from localStorage
+    // Init
     window.onload = () => {
-      const saved = localStorage.getItem("cart");
-      if (saved) {
-        cart = JSON.parse(saved);
-        updateCartCount();
+      currentUser = localStorage.getItem("loggedInUser");
+      if (currentUser) {
+        let users = JSON.parse(localStorage.getItem("users") || "[]");
+        let user = users.find(u => u.email === currentUser);
+        if (user) {
+          document.getElementById("accountLabel").innerText = user.name;
+          cart = user.cart || [];
+          updateCartCount();
+        }
       }
-      getLocation();
-    }
-    function goToAccount() {
-  window.location.href = 'account.html';
+    };
+    
+    function goToCart() {
+  if (!currentUser) {
+    openLoginPopup();
+  } else {
+    window.location.href = "cart.html";
+  }
 }
 
   </script>
-
 </body>
 </html>
