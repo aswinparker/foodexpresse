@@ -3,139 +3,212 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My Account - Food Express</title>
+  <title>Food Express</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .snap-x::-webkit-scrollbar { display: none; }
+    .overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center;
+      z-index: 50;
+    }
+  </style>
 </head>
 <body class="bg-white font-sans">
 
-  <!-- Main Account Section -->
-  <div class="flex flex-col items-center justify-start min-h-screen pb-20 pt-10">
-    <div id="profileSection" class="hidden text-center mb-6">
-      <img id="profilePic" src="" class="w-24 h-24 rounded-full mb-3 shadow" />
-      <h2 id="profileName" class="text-xl font-bold"></h2>
-      <button onclick="logout()" class="mt-4 bg-red-500 text-white px-4 py-2 rounded">Logout</button>
-    </div>
+  <!-- Top Bar -->
+  <div class="flex justify-between items-center px-4 pt-4">
+    <div class="text-sm text-gray-700" id="location">📍 Detecting location...</div>
+    <div class="text-2xl">🔔</div>
+  </div>
 
-    <div id="guestSection" class="hidden text-center">
-      <p class="mb-4 text-gray-600">You are not logged in</p>
-      <button onclick="openAccountPanel()" class="bg-orange-500 text-white px-4 py-2 rounded">Login / Sign Up</button>
-    </div>
+  <!-- Search Bar -->
+  <div class="flex items-center space-x-2 px-4 py-2">
+    <div class="text-xl">🔍</div>
+    <input type="text" placeholder="Search Food Express" class="flex-1 p-2 rounded-lg bg-gray-100" />
+    <div class="text-xl">🎤</div>
+  </div>
 
-    <!-- Extra Account Options -->
-    <div id="accountOptions" class="hidden w-full max-w-md mx-auto mt-6">
-      <div class="bg-white rounded-lg shadow divide-y">
-        <a href="orders.html" class="flex items-center p-4 hover:bg-gray-50">
-          📦 <span class="ml-3">My Orders</span>
-        </a>
-        <a href="favorites.html" class="flex items-center p-4 hover:bg-gray-50">
-          ❤️ <span class="ml-3">Favorites</span>
-        </a>
-        <a href="payments.html" class="flex items-center p-4 hover:bg-gray-50">
-          💳 <span class="ml-3">Payment Methods</span>
-        </a>
-        <a href="addresses.html" class="flex items-center p-4 hover:bg-gray-50">
-          📍 <span class="ml-3">Manage Addresses</span>
-        </a>
-        <a href="support.html" class="flex items-center p-4 hover:bg-gray-50">
-          🛠 <span class="ml-3">Help & Support</span>
-        </a>
+  <!-- Promo Banners -->
+  <div class="overflow-x-auto px-4 snap-x snap-mandatory scroll-smooth">
+    <div class="flex space-x-3 mt-2 w-max">
+      <img src="https://i.postimg.cc/1tyQKPD9/promo.jpg" class="h-[180px] w-[320px] rounded-lg" />
+      <img src="https://i.imgur.com/MH2a8rD.jpg" class="h-[180px] w-[320px] rounded-lg" />
+      <img src="https://i.imgur.com/q8Aaw0m.jpg" class="h-[180px] w-[320px] rounded-lg" />
+    </div>
+  </div>
+
+  <!-- Categories -->
+  <div class="flex overflow-x-auto space-x-3 p-4">
+    <div class="bg-orange-200 rounded-full px-4 py-2">🍔 Burger</div>
+    <div class="bg-orange-200 rounded-full px-4 py-2">🍕 Pizza</div>
+    <div class="bg-orange-200 rounded-full px-4 py-2">🥗 Salad</div>
+    <div class="bg-orange-200 rounded-full px-4 py-2">🍣 Sushi</div>
+    <div class="bg-orange-200 rounded-full px-4 py-2">🌮 Tacos</div>
+  </div>
+
+  <!-- Top Picks -->
+  <div class="px-4">
+    <h2 class="text-lg font-bold mb-2">Top picks</h2>
+    <div class="flex overflow-x-auto space-x-4 pb-24">
+      <div class="w-64 bg-white shadow rounded-xl p-3 flex-shrink-0">
+        <img src="https://i.imgur.com/0y8Ftya.jpg" class="w-full h-32 object-cover rounded-lg" />
+        <h3 class="mt-2 font-bold">Cheese Burger</h3>
+        <p class="text-gray-500 text-sm">Burger Haven • 31 min • 4.8★</p>
+        <p class="text-orange-600 font-bold mt-1">$8.99</p>
+        <button onclick="addToCart('Cheese Burger', 8.99)" class="bg-orange-500 text-white rounded-full w-full py-1 mt-2">Add to Cart</button>
+      </div>
+
+      <div class="w-64 bg-white shadow rounded-xl p-3 flex-shrink-0">
+        <img src="https://i.imgur.com/nQF2zWb.jpg" class="w-full h-32 object-cover rounded-lg" />
+        <h3 class="mt-2 font-bold">BBQ Bacon Burger</h3>
+        <p class="text-gray-500 text-sm">Burger Haven • 27 min • 4.6★</p>
+        <p class="text-orange-600 font-bold mt-1">$9.49</p>
+        <button onclick="addToCart('BBQ Bacon Burger', 9.49)" class="bg-orange-500 text-white rounded-full w-full py-1 mt-2">Add to Cart</button>
       </div>
     </div>
   </div>
 
   <!-- Bottom Navigation -->
   <div class="fixed bottom-0 left-0 right-0 bg-white shadow-t p-2 flex justify-around items-center border-t">
-    <a href="index.html" class="text-center">🏠<br><span class="text-xs">Home</span></a>
-    <a href="orders.html" class="text-center">📦<br><span class="text-xs">Orders</span></a>
-    <a href="cart.html" class="text-center">🛒<br><span class="text-xs">Cart</span></a>
-    <a href="account.html" class="text-center text-orange-500">👤<br><span class="text-xs">Account</span></a>
+    <div class="text-center text-orange-500">🏠<br><span class="text-xs">Home</span></div>
+    <div class="text-center">📦<br><span class="text-xs">Orders</span></div>
+    <div class="text-center relative cursor-pointer" onclick="goToCart()">
+      🛒
+      <span class="absolute -top-1 -right-2 bg-red-500 text-white rounded-full text-xs px-1" id="cartCount">0</span>
+      <br><span class="text-xs">Cart</span>
+    </div>
+    <div class="text-center cursor-pointer" onclick="openLoginPopup()">👤<br><span class="text-xs" id="accountLabel">Account</span></div>
   </div>
 
-  <!-- Slide-Up Account Panel -->
-  <div id="accountPanel" class="fixed bottom-[-100%] left-0 w-full bg-white rounded-t-2xl shadow-lg p-6 transition-all duration-300 z-50">
-    <div id="accountContent"></div>
-    <button onclick="closeAccountPanel()" class="mt-4 w-full py-2 bg-gray-200 rounded-lg">Close</button>
+  <!-- Login/Signup Popup -->
+  <div id="loginPopup" class="overlay">
+    <div class="bg-white p-6 rounded-lg w-80">
+      <h2 class="text-lg font-bold mb-4" id="popupTitle">Login</h2>
+      <input type="text" id="nameField" placeholder="Name" class="border p-2 w-full mb-2 hidden" />
+      <input type="email" id="emailField" placeholder="Email" class="border p-2 w-full mb-2" />
+      <input type="password" id="passwordField" placeholder="Password" class="border p-2 w-full mb-1" />
+      <p id="errorMsg" class="text-red-500 text-sm mb-3 hidden">Incorrect email or password</p>
+      <button onclick="submitAuth()" class="bg-orange-500 text-white py-2 px-4 w-full rounded">Submit</button>
+      <p class="text-center text-sm mt-3 cursor-pointer text-blue-500" onclick="toggleAuthMode()" id="toggleText">Create account</p>
+      <p class="text-center text-sm mt-3 cursor-pointer text-gray-500" onclick="closeLoginPopup()">Cancel</p>
+    </div>
   </div>
 
   <script>
+    let authMode = "login"; 
     let currentUser = localStorage.getItem("loggedInUser");
+    let cart = [];
 
-    function renderAccountPage() {
-      const users = JSON.parse(localStorage.getItem("users") || "[]");
-      const user = users.find(u => u.email === currentUser);
-
-      if (user) {
-        document.getElementById("profileSection").style.display = "block";
-        document.getElementById("guestSection").style.display = "none";
-        document.getElementById("accountOptions").style.display = "block";
-        document.getElementById("profileName").innerText = user.name;
-        document.getElementById("profilePic").src = user.avatar || "https://i.postimg.cc/SK7cPYdB/cartoon-avatar.png";
+    function openLoginPopup() {
+      if (currentUser) {
+        window.location.href = "account.html";
       } else {
-        document.getElementById("guestSection").style.display = "block";
-        document.getElementById("profileSection").style.display = "none";
-        document.getElementById("accountOptions").style.display = "none";
+        document.getElementById("loginPopup").style.display = "flex";
       }
     }
-
-    function openAccountPanel() {
-      const content = document.getElementById("accountContent");
-
-      content.innerHTML = `
-        <h2 class="text-lg font-bold mb-4">Login / Signup</h2>
-        <input type="text" id="nameField" placeholder="Name" class="border p-2 w-full mb-2" />
-        <input type="email" id="emailField" placeholder="Email" class="border p-2 w-full mb-2" />
-        <input type="password" id="passwordField" placeholder="Password" class="border p-2 w-full mb-4" />
-        <button onclick="submitAuth()" class="bg-orange-500 text-white py-2 px-4 w-full rounded">Submit</button>
-      `;
-
-      document.getElementById("accountPanel").style.bottom = "0";
+    function closeLoginPopup() { 
+      document.getElementById("loginPopup").style.display = "none"; 
+      document.getElementById("errorMsg").classList.add("hidden");
     }
 
-    function closeAccountPanel() {
-      document.getElementById("accountPanel").style.bottom = "-100%";
+    function toggleAuthMode() {
+      authMode = authMode === "login" ? "signup" : "login";
+      document.getElementById("popupTitle").innerText = authMode === "login" ? "Login" : "Signup";
+      document.getElementById("toggleText").innerText = authMode === "login" ? "Create account" : "Already have an account?";
+      document.getElementById("nameField").classList.toggle("hidden", authMode === "login");
+      document.getElementById("errorMsg").classList.add("hidden");
     }
 
     function submitAuth() {
-      let name = document.getElementById("nameField").value.trim();
-      let email = document.getElementById("emailField").value.trim();
-      let pass = document.getElementById("passwordField").value.trim();
+      const email = document.getElementById("emailField").value.trim();
+      const password = document.getElementById("passwordField").value.trim();
+      const errorMsg = document.getElementById("errorMsg");
 
-      if (!name || !email || !pass) {
-        alert("Please fill all fields");
-        return;
-      }
-
-      let users = JSON.parse(localStorage.getItem("users") || "[]");
-      let existing = users.find(u => u.email === email);
-
-      if (!existing) {
-        users.push({ name, email, pass, avatar: "https://i.postimg.cc/SK7cPYdB/cartoon-avatar.png" });
-        localStorage.setItem("users", JSON.stringify(users));
-        localStorage.setItem("loggedInUser", email);
-        currentUser = email;
-        alert("Account created successfully!");
-      } else {
-        if (existing.pass === pass) {
-          localStorage.setItem("loggedInUser", email);
-          currentUser = email;
-          alert("Logged in successfully!");
-        } else {
-          alert("Wrong password!");
+      if (authMode === "signup") {
+        const name = document.getElementById("nameField").value.trim();
+        if (!name || !email || !password) {
+          errorMsg.innerText = "All fields are required";
+          errorMsg.classList.remove("hidden");
           return;
         }
+        let users = JSON.parse(localStorage.getItem("users") || "[]");
+        if (users.find(u => u.email === email)) {
+          errorMsg.innerText = "Email already exists";
+          errorMsg.classList.remove("hidden");
+          return;
+        }
+        users.push({ name, email, password, cart: [] });
+        localStorage.setItem("users", JSON.stringify(users));
+        toggleAuthMode();
+        errorMsg.classList.add("hidden");
+      } else {
+        let users = JSON.parse(localStorage.getItem("users") || "[]");
+        let user = users.find(u => u.email === email && u.password === password);
+        if (!user) {
+          errorMsg.innerText = "Incorrect email or password";
+          errorMsg.classList.remove("hidden");
+          return;
+        }
+        localStorage.setItem("loggedInUser", email);
+        currentUser = email;
+        loadUserCart();
+        closeLoginPopup();
+        document.getElementById("accountLabel").innerText = user.name;
+        window.location.href = "cart.html"; // Go to cart after login
       }
-
-      closeAccountPanel();
-      renderAccountPage();
     }
 
-    function logout() {
-      localStorage.removeItem("loggedInUser");
-      currentUser = null;
-      renderAccountPage();
+    ["nameField", "emailField", "passwordField"].forEach(id => {
+      document.getElementById(id).addEventListener("input", () => {
+        document.getElementById("errorMsg").classList.add("hidden");
+      });
+    });
+
+    function loadUserCart() {
+      if (!currentUser) return;
+      let users = JSON.parse(localStorage.getItem("users") || "[]");
+      let user = users.find(u => u.email === currentUser);
+      cart = user ? user.cart : [];
+      updateCartCount();
+    }
+    function saveUserCart() {
+      if (!currentUser) return;
+      let users = JSON.parse(localStorage.getItem("users") || "[]");
+      let idx = users.findIndex(u => u.email === currentUser);
+      if (idx !== -1) {
+        users[idx].cart = cart;
+        localStorage.setItem("users", JSON.stringify(users));
+      }
+    }
+    function addToCart(name, price) {
+      cart.push({ name, price });
+      updateCartCount();
+      saveUserCart();
+    }
+    function updateCartCount() { 
+      document.getElementById("cartCount").innerText = cart.length; 
+    }
+    function goToCart() { 
+      if (!currentUser) {
+        openLoginPopup();
+      } else {
+        window.location.href = "cart.html";
+      }
     }
 
-    renderAccountPage();
+    window.onload = () => {
+      currentUser = localStorage.getItem("loggedInUser");
+      if (currentUser) {
+        let users = JSON.parse(localStorage.getItem("users") || "[]");
+        let user = users.find(u => u.email === currentUser);
+        if (user) {
+          document.getElementById("accountLabel").innerText = user.name;
+          cart = user.cart || [];
+          updateCartCount();
+        }
+      }
+    };
   </script>
 </body>
 </html>
