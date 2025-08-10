@@ -87,7 +87,8 @@
       <h2 class="text-lg font-bold mb-4" id="popupTitle">Login</h2>
       <input type="text" id="nameField" placeholder="Name" class="border p-2 w-full mb-2 hidden" />
       <input type="email" id="emailField" placeholder="Email" class="border p-2 w-full mb-2" />
-      <input type="password" id="passwordField" placeholder="Password" class="border p-2 w-full mb-4" />
+      <input type="password" id="passwordField" placeholder="Password" class="border p-2 w-full mb-1" />
+      <p id="errorMsg" class="text-red-500 text-sm mb-3 hidden">Incorrect email or password</p>
       <button onclick="submitAuth()" class="bg-orange-500 text-white py-2 px-4 w-full rounded">Submit</button>
       <p class="text-center text-sm mt-3 cursor-pointer text-blue-500" onclick="toggleAuthMode()" id="toggleText">Create account</p>
       <p class="text-center text-sm mt-3 cursor-pointer text-gray-500" onclick="closeLoginPopup()">Cancel</p>
@@ -97,6 +98,7 @@
   <script>
     let authMode = "login"; 
     let currentUser = localStorage.getItem("loggedInUser");
+    let cart = [];
 
     function openLoginPopup() {
       if (currentUser) {
@@ -107,6 +109,7 @@
     }
     function closeLoginPopup() { 
       document.getElementById("loginPopup").style.display = "none"; 
+      document.getElementById("errorMsg").classList.add("hidden");
     }
 
     function toggleAuthMode() {
@@ -114,34 +117,54 @@
       document.getElementById("popupTitle").innerText = authMode === "login" ? "Login" : "Signup";
       document.getElementById("toggleText").innerText = authMode === "login" ? "Create account" : "Already have an account?";
       document.getElementById("nameField").classList.toggle("hidden", authMode === "login");
+      document.getElementById("errorMsg").classList.add("hidden");
     }
 
     function submitAuth() {
-      const email = document.getElementById("emailField").value;
-      const password = document.getElementById("passwordField").value;
+      const email = document.getElementById("emailField").value.trim();
+      const password = document.getElementById("passwordField").value.trim();
+      const errorMsg = document.getElementById("errorMsg");
+
       if (authMode === "signup") {
-        const name = document.getElementById("nameField").value;
-        if (!name || !email || !password) return alert("All fields required");
+        const name = document.getElementById("nameField").value.trim();
+        if (!name || !email || !password) {
+          errorMsg.innerText = "All fields are required";
+          errorMsg.classList.remove("hidden");
+          return;
+        }
         let users = JSON.parse(localStorage.getItem("users") || "[]");
-        if (users.find(u => u.email === email)) return alert("Email already exists");
+        if (users.find(u => u.email === email)) {
+          errorMsg.innerText = "Email already exists";
+          errorMsg.classList.remove("hidden");
+          return;
+        }
         users.push({ name, email, password, cart: [] });
         localStorage.setItem("users", JSON.stringify(users));
-        alert("Account created, please login");
         toggleAuthMode();
+        errorMsg.classList.add("hidden");
       } else {
         let users = JSON.parse(localStorage.getItem("users") || "[]");
         let user = users.find(u => u.email === email && u.password === password);
-        if (!user) return alert("Invalid credentials");
+        if (!user) {
+          errorMsg.innerText = "Incorrect email or password";
+          errorMsg.classList.remove("hidden");
+          return;
+        }
         localStorage.setItem("loggedInUser", email);
         currentUser = email;
         loadUserCart();
         closeLoginPopup();
         document.getElementById("accountLabel").innerText = user.name;
-        window.location.href = "cart.html"; // ✅ Redirect to cart after login
+        window.location.href = "cart.html"; // Go to cart after login
       }
     }
 
-    let cart = [];
+    ["nameField", "emailField", "passwordField"].forEach(id => {
+      document.getElementById(id).addEventListener("input", () => {
+        document.getElementById("errorMsg").classList.add("hidden");
+      });
+    });
+
     function loadUserCart() {
       if (!currentUser) return;
       let users = JSON.parse(localStorage.getItem("users") || "[]");
@@ -174,7 +197,6 @@
       }
     }
 
-    // Init
     window.onload = () => {
       currentUser = localStorage.getItem("loggedInUser");
       if (currentUser) {
