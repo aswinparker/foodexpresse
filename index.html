@@ -87,8 +87,31 @@
       <h2 class="text-lg font-bold mb-4" id="popupTitle">Login</h2>
       <input type="text" id="nameField" placeholder="Name" class="border p-2 w-full mb-2 hidden" />
       <input type="email" id="emailField" placeholder="Email" class="border p-2 w-full mb-2" />
-      <input type="password" id="passwordField" placeholder="Password" class="border p-2 w-full mb-1" />
-      <p id="errorMsg" class="text-red-500 text-sm mb-3 hidden">Incorrect email or password</p>
+      
+      <div class="relative mb-2">
+        <input type="password" id="passwordField" placeholder="Password" class="border p-2 w-full" />
+        <button type="button" onclick="togglePassword('passwordField', this)" class="absolute right-2 top-2 text-gray-500">
+          <!-- Eye Icon -->
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="relative mb-4 hidden" id="confirmPasswordContainer">
+        <input type="password" id="confirmPasswordField" placeholder="Confirm Password" class="border p-2 w-full" />
+        <button type="button" onclick="togglePassword('confirmPasswordField', this)" class="absolute right-2 top-2 text-gray-500">
+          <!-- Eye Icon -->
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+          </svg>
+        </button>
+      </div>
+
+      <p id="errorText" class="text-red-500 text-sm mb-2 hidden"></p>
+
       <button onclick="submitAuth()" class="bg-orange-500 text-white py-2 px-4 w-full rounded">Submit</button>
       <p class="text-center text-sm mt-3 cursor-pointer text-blue-500" onclick="toggleAuthMode()" id="toggleText">Create account</p>
       <p class="text-center text-sm mt-3 cursor-pointer text-gray-500" onclick="closeLoginPopup()">Cancel</p>
@@ -98,7 +121,6 @@
   <script>
     let authMode = "login"; 
     let currentUser = localStorage.getItem("loggedInUser");
-    let cart = [];
 
     function openLoginPopup() {
       if (currentUser) {
@@ -109,7 +131,6 @@
     }
     function closeLoginPopup() { 
       document.getElementById("loginPopup").style.display = "none"; 
-      document.getElementById("errorMsg").classList.add("hidden");
     }
 
     function toggleAuthMode() {
@@ -117,37 +138,75 @@
       document.getElementById("popupTitle").innerText = authMode === "login" ? "Login" : "Signup";
       document.getElementById("toggleText").innerText = authMode === "login" ? "Create account" : "Already have an account?";
       document.getElementById("nameField").classList.toggle("hidden", authMode === "login");
-      document.getElementById("errorMsg").classList.add("hidden");
+      document.getElementById("confirmPasswordContainer").classList.toggle("hidden", authMode === "login");
+    }
+
+    function togglePassword(fieldId, btn) {
+      let field = document.getElementById(fieldId);
+      let svgEye = `
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+        </svg>`;
+      let svgEyeOff = `
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a10.05 10.05 0 011.663-3.043m3.238-2.724A9.978 9.978 0 0112 5c4.477 0 8.268 2.943 9.542 7a9.978 9.978 0 01-4.252 5.053M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3l18 18" />
+        </svg>`;
+      
+      field.type = "text";
+      btn.innerHTML = svgEyeOff;
+
+      setTimeout(() => {
+        field.type = "password";
+        btn.innerHTML = svgEye;
+      }, 2000);
     }
 
     function submitAuth() {
-      const email = document.getElementById("emailField").value.trim();
-      const password = document.getElementById("passwordField").value.trim();
-      const errorMsg = document.getElementById("errorMsg");
+      const email = document.getElementById("emailField").value;
+      const password = document.getElementById("passwordField").value;
+      const errorText = document.getElementById("errorText");
 
       if (authMode === "signup") {
-        const name = document.getElementById("nameField").value.trim();
-        if (!name || !email || !password) {
-          errorMsg.innerText = "All fields are required";
-          errorMsg.classList.remove("hidden");
+        const name = document.getElementById("nameField").value;
+        const confirmPassword = document.getElementById("confirmPasswordField").value;
+
+        if (!name || !email || !password || !confirmPassword) {
+          errorText.innerText = "All fields are required";
+          errorText.classList.remove("hidden");
           return;
         }
+        if (password.length < 6) {
+          errorText.innerText = "Password must be at least 6 characters";
+          errorText.classList.remove("hidden");
+          return;
+        }
+        if (password !== confirmPassword) {
+          errorText.innerText = "Passwords do not match";
+          errorText.classList.remove("hidden");
+          return;
+        }
+
         let users = JSON.parse(localStorage.getItem("users") || "[]");
         if (users.find(u => u.email === email)) {
-          errorMsg.innerText = "Email already exists";
-          errorMsg.classList.remove("hidden");
+          errorText.innerText = "Email already exists";
+          errorText.classList.remove("hidden");
           return;
         }
+
         users.push({ name, email, password, cart: [] });
         localStorage.setItem("users", JSON.stringify(users));
+        alert("Account created, please login");
         toggleAuthMode();
-        errorMsg.classList.add("hidden");
+        errorText.classList.add("hidden");
+
       } else {
         let users = JSON.parse(localStorage.getItem("users") || "[]");
         let user = users.find(u => u.email === email && u.password === password);
         if (!user) {
-          errorMsg.innerText = "Incorrect email or password";
-          errorMsg.classList.remove("hidden");
+          errorText.innerText = "Incorrect email or password";
+          errorText.classList.remove("hidden");
           return;
         }
         localStorage.setItem("loggedInUser", email);
@@ -155,16 +214,11 @@
         loadUserCart();
         closeLoginPopup();
         document.getElementById("accountLabel").innerText = user.name;
-        window.location.href = "cart.html"; // Go to cart after login
+        window.location.href = "cart.html";
       }
     }
 
-    ["nameField", "emailField", "passwordField"].forEach(id => {
-      document.getElementById(id).addEventListener("input", () => {
-        document.getElementById("errorMsg").classList.add("hidden");
-      });
-    });
-
+    let cart = [];
     function loadUserCart() {
       if (!currentUser) return;
       let users = JSON.parse(localStorage.getItem("users") || "[]");
@@ -197,6 +251,7 @@
       }
     }
 
+    // Init
     window.onload = () => {
       currentUser = localStorage.getItem("loggedInUser");
       if (currentUser) {
