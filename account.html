@@ -16,7 +16,6 @@
       cursor: pointer;
       user-select: none;
     }
-    /* simple visual for "crossed-eye" (you can style or replace svg to your liking) */
     .crossed-eye { opacity: 0.95; transform: rotate(0deg); }
     .crossed-eye path.cross-line { display: inline; }
     .eye-icon path.cross-line { display: none; }
@@ -64,14 +63,10 @@
   </div>
 
   <script>
-    // default cartoon avatar
     const DEFAULT_AVATAR = "https://i.postimg.cc/SK7cPYdB/cartoon-avatar.png";
-
-    // login state
     let currentUser = localStorage.getItem("loggedInUser");
     let passwordTimers = {};
 
-    // render profile / guest / options blocks
     function renderAccountPage() {
       const users = JSON.parse(localStorage.getItem("users") || "[]");
       const user = users.find(u => u.email === currentUser);
@@ -82,7 +77,6 @@
         document.getElementById("accountOptions").style.display = "block";
         document.getElementById("profileName").innerText = user.name;
         document.getElementById("profilePic").src = user.avatar || DEFAULT_AVATAR;
-        // ensure stored user has avatar and normalized password key for future compatibility
         normalizeUserRecord(user.email);
       } else {
         document.getElementById("guestSection").style.display = "block";
@@ -91,7 +85,6 @@
       }
     }
 
-    // open panel with signup or login
     function openAccountPanel(mode) {
       const content = document.getElementById("accountContent");
       content.innerHTML = mode === "signup" ? getSignupForm() : getLoginForm();
@@ -102,47 +95,44 @@
       document.getElementById("accountPanel").style.bottom = "-100%";
     }
 
-    // Signup form html
     function getSignupForm() {
       return `
         <h2 class="text-lg font-bold mb-4">Sign Up</h2>
-        <input type="text" id="nameField" placeholder="Name" class="border p-2 w-full mb-2 rounded" />
-        <input type="email" id="emailField" placeholder="Email" class="border p-2 w-full mb-2 rounded" />
-        
+        <input type="text" id="nameField" placeholder="Name" class="border p-2 w-full mb-2 rounded" oninput="clearSignupMessage()" />
+        <input type="email" id="emailField" placeholder="Email" class="border p-2 w-full mb-2 rounded" oninput="clearSignupMessage()" />
         <div class="relative mb-2">
-          <input type="password" id="passwordField" placeholder="Password (min 6 chars)" class="border p-2 w-full rounded" />
+          <input type="password" id="passwordField" placeholder="Password (min 6 chars)" class="border p-2 w-full rounded" oninput="clearSignupMessage()" />
           ${eyeIconHTML("passwordField")}
         </div>
-
         <div class="relative mb-4">
-          <input type="password" id="confirmPasswordField" placeholder="Confirm Password" class="border p-2 w-full rounded" />
+          <input type="password" id="confirmPasswordField" placeholder="Confirm Password" class="border p-2 w-full rounded" oninput="clearSignupMessage()" />
           ${eyeIconHTML("confirmPasswordField")}
         </div>
+
+        <div id="signupMessage" class="min-h-[1.25rem] mb-4 text-sm"></div>
 
         <button onclick="submitSignup()" class="bg-orange-500 text-white py-2 px-4 w-full rounded">Sign Up</button>
         <p class="mt-4 text-sm text-center">Already have an account? <a href="#" onclick="openAccountPanel('login')" class="text-orange-500">Login</a></p>
       `;
     }
 
-    // Login form html
     function getLoginForm() {
       return `
         <h2 class="text-lg font-bold mb-4">Login</h2>
-        <input type="email" id="loginEmailField" placeholder="Email" class="border p-2 w-full mb-2 rounded" />
-        
+        <input type="email" id="loginEmailField" placeholder="Email" class="border p-2 w-full mb-2 rounded" oninput="clearLoginMessage()" />
         <div class="relative mb-4">
-          <input type="password" id="loginPasswordField" placeholder="Password" class="border p-2 w-full rounded" />
+          <input type="password" id="loginPasswordField" placeholder="Password" class="border p-2 w-full rounded" oninput="clearLoginMessage()" />
           ${eyeIconHTML("loginPasswordField")}
         </div>
+
+        <div id="loginMessage" class="min-h-[1.25rem] mb-4 text-sm"></div>
 
         <button onclick="submitLogin()" class="bg-orange-500 text-white py-2 px-4 w-full rounded">Login</button>
         <p class="mt-4 text-sm text-center">Don't have an account? <a href="#" onclick="openAccountPanel('signup')" class="text-orange-500">Sign Up</a></p>
       `;
     }
 
-    // Generates SVG eye icon with event handlers.
     function eyeIconHTML(fieldId) {
-      // svg includes a path with class "cross-line" used for cross line styling if needed
       return `
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
           class="eye-icon"
@@ -157,20 +147,16 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 
             4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-          <!-- cross line (hidden by default via CSS). We keep it here for possible visual toggle -->
           <path class="cross-line" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3l18 18" />
         </svg>
       `;
     }
 
-    // Hold-to-show: shows text for 2s or until release.
     function startShowPassword(id, icon) {
-      // clear any existing timer
       clearTimeout(passwordTimers[id]);
       const el = document.getElementById(id);
       if (!el) return;
       el.type = "text";
-      // if user holds, after 2s auto-hide (unless user toggled permanently)
       passwordTimers[id] = setTimeout(() => {
         if (!icon.classList.contains("crossed-eye")) {
           el.type = "password";
@@ -179,7 +165,6 @@
       }, 2000);
     }
 
-    // on release/mouseleave/touchend: hide unless permanent toggle
     function hidePassword(id, icon) {
       clearTimeout(passwordTimers[id]);
       const el = document.getElementById(id);
@@ -189,7 +174,6 @@
       }
     }
 
-    // click toggles permanent show/hide
     function togglePassword(id, icon) {
       const el = document.getElementById(id);
       if (!el) return;
@@ -202,47 +186,32 @@
       }
     }
 
-    // Helper: find user index with flexible email matching (exact, with/without @gmail.com, case-insensitive)
     function findUserIndexByEmailInput(emailInput, users) {
       if (!users) users = JSON.parse(localStorage.getItem("users") || "[]");
-      // exact match
       let idx = users.findIndex(u => (u.email && u.email === emailInput));
       if (idx !== -1) return idx;
-
-      // if input doesn't contain '@', try appending @gmail.com
       if (!emailInput.includes('@')) {
         idx = users.findIndex(u => (u.email && u.email === (emailInput + "@gmail.com")));
         if (idx !== -1) return idx;
       }
-
-      // if input contains @gmail.com, try searching for stored email without domain
       if (emailInput.toLowerCase().endsWith("@gmail.com")) {
         const short = emailInput.replace(/@gmail\.com$/i, "");
         idx = users.findIndex(u => (u.email && u.email === short));
         if (idx !== -1) return idx;
       }
-
-      // case-insensitive match fallback
       idx = users.findIndex(u => (u.email && u.email.toLowerCase() === emailInput.toLowerCase()));
       if (idx !== -1) return idx;
-
-      // nothing found
       return -1;
     }
 
-    // Normalize user record: ensure pass/password present and avatar present, then save back.
     function normalizeUserRecord(email) {
       let users = JSON.parse(localStorage.getItem("users") || "[]");
       let idx = users.findIndex(u => u.email === email);
       if (idx === -1) {
-        // try flexible lookup
         idx = findUserIndexByEmailInput(email, users);
       }
       if (idx === -1) return;
-
       const u = users[idx];
-      const stored = u.pass ?? u.password ?? u.pwd ?? u.pw ?? u;
-      // if password stored under different key, unify to 'pass' and 'password'
       const storedPassword = u.pass || u.password || u.pwd || u.pw || undefined;
       if (storedPassword) {
         users[idx].pass = storedPassword;
@@ -252,31 +221,42 @@
       localStorage.setItem("users", JSON.stringify(users));
     }
 
-    // Signup submission: uses normalized keys and stores both 'pass' and 'password'
     function submitSignup() {
       let name = (document.getElementById("nameField")?.value || "").trim();
       let email = (document.getElementById("emailField")?.value || "").trim();
       let pass = (document.getElementById("passwordField")?.value || "").trim();
       let confirm = (document.getElementById("confirmPasswordField")?.value || "").trim();
+      const msgDiv = document.getElementById("signupMessage");
 
       if (!name || !email || !pass || !confirm) {
-        alert("Please fill all fields");
+        if (msgDiv) {
+          msgDiv.innerText = "Please fill all fields";
+          msgDiv.style.color = "red";
+        }
         return;
       }
       if (pass.length < 6) {
-        alert("Password must be at least 6 characters");
+        if (msgDiv) {
+          msgDiv.innerText = "Password must be at least 6 characters";
+          msgDiv.style.color = "red";
+        }
         return;
       }
       if (pass !== confirm) {
-        alert("Passwords do not match");
+        if (msgDiv) {
+          msgDiv.innerText = "Passwords do not match";
+          msgDiv.style.color = "red";
+        }
         return;
       }
 
       let users = JSON.parse(localStorage.getItem("users") || "[]");
-      // flexible existing check
       let alreadyIdx = findUserIndexByEmailInput(email, users);
       if (alreadyIdx !== -1) {
-        alert("Email already exists. Please login.");
+        if (msgDiv) {
+          msgDiv.innerText = "Email already exists. Please login.";
+          msgDiv.style.color = "red";
+        }
         return;
       }
 
@@ -292,43 +272,76 @@
       localStorage.setItem("users", JSON.stringify(users));
       localStorage.setItem("loggedInUser", email);
       currentUser = email;
-      alert("Account created successfully!");
-      closeAccountPanel();
-      renderAccountPage();
+
+      if (msgDiv) {
+        msgDiv.innerText = "Account created successfully!";
+        msgDiv.style.color = "green";
+      }
+
+      setTimeout(() => {
+        closeAccountPanel();
+        renderAccountPage();
+      }, 1000);
     }
 
-    // Login submission: flexible email lookup + password key normalization
+    function clearLoginMessage() {
+      const msgDiv = document.getElementById("loginMessage");
+      if (msgDiv) {
+        msgDiv.innerText = "";
+        msgDiv.style.color = "";
+      }
+    }
+
+    function clearSignupMessage() {
+      const msgDiv = document.getElementById("signupMessage");
+      if (msgDiv) {
+        msgDiv.innerText = "";
+        msgDiv.style.color = "";
+      }
+    }
+
     function submitLogin() {
       let email = (document.getElementById("loginEmailField")?.value || "").trim();
       let pass = (document.getElementById("loginPasswordField")?.value || "").trim();
+      const msgDiv = document.getElementById("loginMessage");
 
       if (!email || !pass) {
-        alert("Please fill all fields");
+        if (msgDiv) {
+          msgDiv.innerText = "Please fill all fields";
+          msgDiv.style.color = "red";
+        }
         return;
       }
 
       let users = JSON.parse(localStorage.getItem("users") || "[]");
       let idx = findUserIndexByEmailInput(email, users);
       if (idx === -1) {
-        alert("Account not found. Please sign up.");
+        if (msgDiv) {
+          msgDiv.innerText = "Account not found. Please sign up.";
+          msgDiv.style.color = "red";
+        }
         return;
       }
 
       const existing = users[idx];
-      // try different stored password keys
       const storedPass = existing.pass ?? existing.password ?? existing.pwd ?? existing.pw ?? undefined;
 
       if (!storedPass) {
-        alert("No password stored for this account. Please sign up again.");
+        if (msgDiv) {
+          msgDiv.innerText = "No password stored for this account. Please sign up again.";
+          msgDiv.style.color = "red";
+        }
         return;
       }
 
       if (storedPass !== pass) {
-        alert("Wrong password!");
+        if (msgDiv) {
+          msgDiv.innerText = "Incorrect password!";
+          msgDiv.style.color = "red";
+        }
         return;
       }
 
-      // normalize & ensure avatar saved for old accounts
       users[idx].pass = storedPass;
       users[idx].password = storedPass;
       if (!users[idx].avatar) users[idx].avatar = DEFAULT_AVATAR;
@@ -336,9 +349,16 @@
 
       localStorage.setItem("loggedInUser", existing.email || email);
       currentUser = existing.email || email;
-      alert("Logged in successfully!");
-      closeAccountPanel();
-      renderAccountPage();
+
+      if (msgDiv) {
+        msgDiv.innerText = "Login successful!";
+        msgDiv.style.color = "green";
+      }
+
+      setTimeout(() => {
+        closeAccountPanel();
+        renderAccountPage();
+      }, 1000);
     }
 
     function logout() {
@@ -347,7 +367,6 @@
       renderAccountPage();
     }
 
-    // init
     renderAccountPage();
   </script>
 </body>
