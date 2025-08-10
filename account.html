@@ -1,10 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>My Account - Food Express</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .eye-icon {
+      width: 1.5rem;
+      height: 1.5rem;
+      position: absolute;
+      right: 0.5rem;
+      top: 0.5rem;
+      color: gray;
+      cursor: pointer;
+      user-select: none;
+    }
+    /* simple visual for "crossed-eye" (you can style or replace svg to your liking) */
+    .crossed-eye { opacity: 0.95; transform: rotate(0deg); }
+    .crossed-eye path.cross-line { display: inline; }
+    .eye-icon path.cross-line { display: none; }
+  </style>
 </head>
 <body class="bg-white font-sans">
 
@@ -18,27 +34,17 @@
 
     <div id="guestSection" class="hidden text-center">
       <p class="mb-4 text-gray-600">You are not logged in</p>
-      <button onclick="openAccountPanel()" class="bg-orange-500 text-white px-4 py-2 rounded">Login / Sign Up</button>
+      <button onclick="openAccountPanel('signup')" class="bg-orange-500 text-white px-4 py-2 rounded">Login / Sign Up</button>
     </div>
 
     <!-- Extra Account Options -->
     <div id="accountOptions" class="hidden w-full max-w-md mx-auto mt-6">
       <div class="bg-white rounded-lg shadow divide-y">
-        <a href="orders.html" class="flex items-center p-4 hover:bg-gray-50">
-          📦 <span class="ml-3">My Orders</span>
-        </a>
-        <a href="favorites.html" class="flex items-center p-4 hover:bg-gray-50">
-          ❤️ <span class="ml-3">Favorites</span>
-        </a>
-        <a href="payments.html" class="flex items-center p-4 hover:bg-gray-50">
-          💳 <span class="ml-3">Payment Methods</span>
-        </a>
-        <a href="addresses.html" class="flex items-center p-4 hover:bg-gray-50">
-          📍 <span class="ml-3">Manage Addresses</span>
-        </a>
-        <a href="support.html" class="flex items-center p-4 hover:bg-gray-50">
-          🛠 <span class="ml-3">Help & Support</span>
-        </a>
+        <a href="orders.html" class="flex items-center p-4 hover:bg-gray-50">📦 <span class="ml-3">My Orders</span></a>
+        <a href="favorites.html" class="flex items-center p-4 hover:bg-gray-50">❤️ <span class="ml-3">Favorites</span></a>
+        <a href="payments.html" class="flex items-center p-4 hover:bg-gray-50">💳 <span class="ml-3">Payment Methods</span></a>
+        <a href="addresses.html" class="flex items-center p-4 hover:bg-gray-50">📍 <span class="ml-3">Manage Addresses</span></a>
+        <a href="support.html" class="flex items-center p-4 hover:bg-gray-50">🛠 <span class="ml-3">Help & Support</span></a>
       </div>
     </div>
   </div>
@@ -58,8 +64,14 @@
   </div>
 
   <script>
-    let currentUser = localStorage.getItem("loggedInUser");
+    // default cartoon avatar
+    const DEFAULT_AVATAR = "https://i.postimg.cc/SK7cPYdB/cartoon-avatar.png";
 
+    // login state
+    let currentUser = localStorage.getItem("loggedInUser");
+    let passwordTimers = {};
+
+    // render profile / guest / options blocks
     function renderAccountPage() {
       const users = JSON.parse(localStorage.getItem("users") || "[]");
       const user = users.find(u => u.email === currentUser);
@@ -69,7 +81,9 @@
         document.getElementById("guestSection").style.display = "none";
         document.getElementById("accountOptions").style.display = "block";
         document.getElementById("profileName").innerText = user.name;
-        document.getElementById("profilePic").src = user.avatar || "https://i.postimg.cc/SK7cPYdB/cartoon-avatar.png";
+        document.getElementById("profilePic").src = user.avatar || DEFAULT_AVATAR;
+        // ensure stored user has avatar and normalized password key for future compatibility
+        normalizeUserRecord(user.email);
       } else {
         document.getElementById("guestSection").style.display = "block";
         document.getElementById("profileSection").style.display = "none";
@@ -77,17 +91,10 @@
       }
     }
 
-    function openAccountPanel() {
+    // open panel with signup or login
+    function openAccountPanel(mode) {
       const content = document.getElementById("accountContent");
-
-      content.innerHTML = `
-        <h2 class="text-lg font-bold mb-4">Login / Signup</h2>
-        <input type="text" id="nameField" placeholder="Name" class="border p-2 w-full mb-2" />
-        <input type="email" id="emailField" placeholder="Email" class="border p-2 w-full mb-2" />
-        <input type="password" id="passwordField" placeholder="Password" class="border p-2 w-full mb-4" />
-        <button onclick="submitAuth()" class="bg-orange-500 text-white py-2 px-4 w-full rounded">Submit</button>
-      `;
-
+      content.innerHTML = mode === "signup" ? getSignupForm() : getLoginForm();
       document.getElementById("accountPanel").style.bottom = "0";
     }
 
@@ -95,36 +102,241 @@
       document.getElementById("accountPanel").style.bottom = "-100%";
     }
 
-    function submitAuth() {
-      let name = document.getElementById("nameField").value.trim();
-      let email = document.getElementById("emailField").value.trim();
-      let pass = document.getElementById("passwordField").value.trim();
+    // Signup form html
+    function getSignupForm() {
+      return `
+        <h2 class="text-lg font-bold mb-4">Sign Up</h2>
+        <input type="text" id="nameField" placeholder="Name" class="border p-2 w-full mb-2 rounded" />
+        <input type="email" id="emailField" placeholder="Email" class="border p-2 w-full mb-2 rounded" />
+        
+        <div class="relative mb-2">
+          <input type="password" id="passwordField" placeholder="Password (min 6 chars)" class="border p-2 w-full rounded" />
+          ${eyeIconHTML("passwordField")}
+        </div>
 
-      if (!name || !email || !pass) {
+        <div class="relative mb-4">
+          <input type="password" id="confirmPasswordField" placeholder="Confirm Password" class="border p-2 w-full rounded" />
+          ${eyeIconHTML("confirmPasswordField")}
+        </div>
+
+        <button onclick="submitSignup()" class="bg-orange-500 text-white py-2 px-4 w-full rounded">Sign Up</button>
+        <p class="mt-4 text-sm text-center">Already have an account? <a href="#" onclick="openAccountPanel('login')" class="text-orange-500">Login</a></p>
+      `;
+    }
+
+    // Login form html
+    function getLoginForm() {
+      return `
+        <h2 class="text-lg font-bold mb-4">Login</h2>
+        <input type="email" id="loginEmailField" placeholder="Email" class="border p-2 w-full mb-2 rounded" />
+        
+        <div class="relative mb-4">
+          <input type="password" id="loginPasswordField" placeholder="Password" class="border p-2 w-full rounded" />
+          ${eyeIconHTML("loginPasswordField")}
+        </div>
+
+        <button onclick="submitLogin()" class="bg-orange-500 text-white py-2 px-4 w-full rounded">Login</button>
+        <p class="mt-4 text-sm text-center">Don't have an account? <a href="#" onclick="openAccountPanel('signup')" class="text-orange-500">Sign Up</a></p>
+      `;
+    }
+
+    // Generates SVG eye icon with event handlers.
+    function eyeIconHTML(fieldId) {
+      // svg includes a path with class "cross-line" used for cross line styling if needed
+      return `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          class="eye-icon"
+          onmousedown="startShowPassword('${fieldId}', this)"
+          onmouseup="hidePassword('${fieldId}', this)"
+          onmouseleave="hidePassword('${fieldId}', this)"
+          ontouchstart="startShowPassword('${fieldId}', this)"
+          ontouchend="hidePassword('${fieldId}', this)"
+          onclick="togglePassword('${fieldId}', this)">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 
+            4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+          <!-- cross line (hidden by default via CSS). We keep it here for possible visual toggle -->
+          <path class="cross-line" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3l18 18" />
+        </svg>
+      `;
+    }
+
+    // Hold-to-show: shows text for 2s or until release.
+    function startShowPassword(id, icon) {
+      // clear any existing timer
+      clearTimeout(passwordTimers[id]);
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.type = "text";
+      // if user holds, after 2s auto-hide (unless user toggled permanently)
+      passwordTimers[id] = setTimeout(() => {
+        if (!icon.classList.contains("crossed-eye")) {
+          el.type = "password";
+        }
+        clearTimeout(passwordTimers[id]);
+      }, 2000);
+    }
+
+    // on release/mouseleave/touchend: hide unless permanent toggle
+    function hidePassword(id, icon) {
+      clearTimeout(passwordTimers[id]);
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (!icon.classList.contains("crossed-eye")) {
+        el.type = "password";
+      }
+    }
+
+    // click toggles permanent show/hide
+    function togglePassword(id, icon) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (icon.classList.contains("crossed-eye")) {
+        icon.classList.remove("crossed-eye");
+        el.type = "password";
+      } else {
+        icon.classList.add("crossed-eye");
+        el.type = "text";
+      }
+    }
+
+    // Helper: find user index with flexible email matching (exact, with/without @gmail.com, case-insensitive)
+    function findUserIndexByEmailInput(emailInput, users) {
+      if (!users) users = JSON.parse(localStorage.getItem("users") || "[]");
+      // exact match
+      let idx = users.findIndex(u => (u.email && u.email === emailInput));
+      if (idx !== -1) return idx;
+
+      // if input doesn't contain '@', try appending @gmail.com
+      if (!emailInput.includes('@')) {
+        idx = users.findIndex(u => (u.email && u.email === (emailInput + "@gmail.com")));
+        if (idx !== -1) return idx;
+      }
+
+      // if input contains @gmail.com, try searching for stored email without domain
+      if (emailInput.toLowerCase().endsWith("@gmail.com")) {
+        const short = emailInput.replace(/@gmail\.com$/i, "");
+        idx = users.findIndex(u => (u.email && u.email === short));
+        if (idx !== -1) return idx;
+      }
+
+      // case-insensitive match fallback
+      idx = users.findIndex(u => (u.email && u.email.toLowerCase() === emailInput.toLowerCase()));
+      if (idx !== -1) return idx;
+
+      // nothing found
+      return -1;
+    }
+
+    // Normalize user record: ensure pass/password present and avatar present, then save back.
+    function normalizeUserRecord(email) {
+      let users = JSON.parse(localStorage.getItem("users") || "[]");
+      let idx = users.findIndex(u => u.email === email);
+      if (idx === -1) {
+        // try flexible lookup
+        idx = findUserIndexByEmailInput(email, users);
+      }
+      if (idx === -1) return;
+
+      const u = users[idx];
+      const stored = u.pass ?? u.password ?? u.pwd ?? u.pw ?? u;
+      // if password stored under different key, unify to 'pass' and 'password'
+      const storedPassword = u.pass || u.password || u.pwd || u.pw || undefined;
+      if (storedPassword) {
+        users[idx].pass = storedPassword;
+        users[idx].password = storedPassword;
+      }
+      if (!users[idx].avatar) users[idx].avatar = DEFAULT_AVATAR;
+      localStorage.setItem("users", JSON.stringify(users));
+    }
+
+    // Signup submission: uses normalized keys and stores both 'pass' and 'password'
+    function submitSignup() {
+      let name = (document.getElementById("nameField")?.value || "").trim();
+      let email = (document.getElementById("emailField")?.value || "").trim();
+      let pass = (document.getElementById("passwordField")?.value || "").trim();
+      let confirm = (document.getElementById("confirmPasswordField")?.value || "").trim();
+
+      if (!name || !email || !pass || !confirm) {
+        alert("Please fill all fields");
+        return;
+      }
+      if (pass.length < 6) {
+        alert("Password must be at least 6 characters");
+        return;
+      }
+      if (pass !== confirm) {
+        alert("Passwords do not match");
+        return;
+      }
+
+      let users = JSON.parse(localStorage.getItem("users") || "[]");
+      // flexible existing check
+      let alreadyIdx = findUserIndexByEmailInput(email, users);
+      if (alreadyIdx !== -1) {
+        alert("Email already exists. Please login.");
+        return;
+      }
+
+      const newUser = {
+        name,
+        email,
+        pass,
+        password: pass,
+        avatar: DEFAULT_AVATAR,
+        cart: []
+      };
+      users.push(newUser);
+      localStorage.setItem("users", JSON.stringify(users));
+      localStorage.setItem("loggedInUser", email);
+      currentUser = email;
+      alert("Account created successfully!");
+      closeAccountPanel();
+      renderAccountPage();
+    }
+
+    // Login submission: flexible email lookup + password key normalization
+    function submitLogin() {
+      let email = (document.getElementById("loginEmailField")?.value || "").trim();
+      let pass = (document.getElementById("loginPasswordField")?.value || "").trim();
+
+      if (!email || !pass) {
         alert("Please fill all fields");
         return;
       }
 
       let users = JSON.parse(localStorage.getItem("users") || "[]");
-      let existing = users.find(u => u.email === email);
-
-      if (!existing) {
-        users.push({ name, email, pass, avatar: "https://i.postimg.cc/SK7cPYdB/cartoon-avatar.png" });
-        localStorage.setItem("users", JSON.stringify(users));
-        localStorage.setItem("loggedInUser", email);
-        currentUser = email;
-        alert("Account created successfully!");
-      } else {
-        if (existing.pass === pass) {
-          localStorage.setItem("loggedInUser", email);
-          currentUser = email;
-          alert("Logged in successfully!");
-        } else {
-          alert("Wrong password!");
-          return;
-        }
+      let idx = findUserIndexByEmailInput(email, users);
+      if (idx === -1) {
+        alert("Account not found. Please sign up.");
+        return;
       }
 
+      const existing = users[idx];
+      // try different stored password keys
+      const storedPass = existing.pass ?? existing.password ?? existing.pwd ?? existing.pw ?? undefined;
+
+      if (!storedPass) {
+        alert("No password stored for this account. Please sign up again.");
+        return;
+      }
+
+      if (storedPass !== pass) {
+        alert("Wrong password!");
+        return;
+      }
+
+      // normalize & ensure avatar saved for old accounts
+      users[idx].pass = storedPass;
+      users[idx].password = storedPass;
+      if (!users[idx].avatar) users[idx].avatar = DEFAULT_AVATAR;
+      localStorage.setItem("users", JSON.stringify(users));
+
+      localStorage.setItem("loggedInUser", existing.email || email);
+      currentUser = existing.email || email;
+      alert("Logged in successfully!");
       closeAccountPanel();
       renderAccountPage();
     }
@@ -135,6 +347,7 @@
       renderAccountPage();
     }
 
+    // init
     renderAccountPage();
   </script>
 </body>
