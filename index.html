@@ -109,64 +109,69 @@
   </div>
 
 <!-- Bottom Navigation -->
-<div class="fixed bottom-0 left-0 right-0 bg-white shadow-md border-t rounded-t-2xl">
-  <div id="bottomNav" class="flex justify-around items-center py-2">
+<div class="fixed bottom-0 left-0 right-0 bg-white shadow-lg border-t rounded-t-2xl">
+  <div id="bottomNav" class="relative flex justify-around items-center py-2">
     
     <!-- Home -->
-    <div class="nav-item flex flex-col items-center text-orange-500 cursor-pointer transition-colors duration-300" data-tab="home">
-      <span class="text-2xl transition-transform duration-300">🏠</span>
+    <div class="nav-item flex flex-col items-center cursor-pointer text-orange-500 transition-all duration-300 transform" data-tab="home">
+      <span class="text-2xl">🏠</span>
       <span class="text-xs font-medium">Home</span>
     </div>
     
     <!-- Orders -->
-    <div class="nav-item flex flex-col items-center text-gray-500 cursor-pointer transition-colors duration-300" data-tab="orders">
-      <span class="text-2xl transition-transform duration-300">📦</span>
+    <div class="nav-item flex flex-col items-center cursor-pointer text-gray-500 transition-all duration-300 transform" data-tab="orders">
+      <span class="text-2xl">📦</span>
       <span class="text-xs font-medium">Orders</span>
     </div>
     
     <!-- Cart -->
-    <div class="nav-item flex flex-col items-center relative cursor-pointer text-gray-500 transition-colors duration-300" data-tab="cart" onclick="goToCart()">
-      <span class="text-2xl transition-transform duration-300">🛒</span>
+    <div class="nav-item flex flex-col items-center relative cursor-pointer text-gray-500 transition-all duration-300 transform" data-tab="cart" onclick="goToCart()">
+      <span class="text-2xl">🛒</span>
       <span class="absolute -top-1 -right-2 bg-red-500 text-white rounded-full text-[10px] px-1" id="cartCount">0</span>
       <span class="text-xs font-medium">Cart</span>
     </div>
     
     <!-- Account -->
-    <div class="nav-item flex flex-col items-center cursor-pointer text-gray-500 transition-colors duration-300" data-tab="account" onclick="openLoginPopup()">
-      <span class="text-2xl transition-transform duration-300">👤</span>
+    <div class="nav-item flex flex-col items-center cursor-pointer text-gray-500 transition-all duration-300 transform" data-tab="account" onclick="openLoginPopup()">
+      <span class="text-2xl">👤</span>
       <span class="text-xs font-medium" id="accountLabel">Account</span>
     </div>
-    
+
+    <!-- Sliding Underline -->
+    <div id="navUnderline" class="absolute bottom-0 h-[3px] bg-orange-500 rounded-full transition-all duration-300"></div>
   </div>
 </div>
 
 <script>
-  // highlight active tab with smooth transitions
   function setActiveTab(tabName) {
-    document.querySelectorAll("#bottomNav .nav-item").forEach(item => {
-      const icon = item.querySelector("span:first-child");
-
+    const navItems = document.querySelectorAll("#bottomNav .nav-item");
+    navItems.forEach(item => {
       if (item.dataset.tab === tabName) {
-        item.classList.remove("text-gray-500");
-        item.classList.add("text-orange-500");
-        icon.classList.add("scale-110"); // slight zoom effect on active
+        item.classList.remove("text-gray-500", "scale-100");
+        item.classList.add("text-orange-500", "scale-110");
       } else {
-        item.classList.remove("text-orange-500");
-        item.classList.add("text-gray-500");
-        icon.classList.remove("scale-110");
+        item.classList.remove("text-orange-500", "scale-110");
+        item.classList.add("text-gray-500", "scale-100");
       }
     });
+
+    // Move underline
+    const activeItem = document.querySelector(`#bottomNav .nav-item[data-tab="${tabName}"]`);
+    const underline = document.getElementById("navUnderline");
+    underline.style.width = activeItem.offsetWidth + "px";
+    underline.style.left = activeItem.offsetLeft + "px";
   }
 
   // default active = home
-  setActiveTab("home");
+  window.onload = () => {
+    setActiveTab("home");
+  };
 
   // handle clicks
   document.querySelectorAll("#bottomNav .nav-item").forEach(item => {
     item.addEventListener("click", () => {
       const tab = item.dataset.tab;
       setActiveTab(tab);
-      // optional navigation
       if (tab === "orders") window.location.href = "orders.html";
       if (tab === "home") window.location.href = "index.html";
     });
