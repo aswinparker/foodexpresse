@@ -23,13 +23,76 @@
     </button>
   </div>
 
-  <!-- Bottom Navigation -->
-  <div class="fixed bottom-0 left-0 right-0 bg-white shadow-t p-2 flex justify-around items-center border-t">
-    <a href="index.html" class="text-center">🏠<br><span class="text-xs">Home</span></a>
-    <a href="orders.html" class="text-center">📦<br><span class="text-xs">Orders</span></a>
-    <a href="cart.html" class="text-center text-orange-500">🛒<br><span class="text-xs">Cart</span></a>
-    <a href="account.html" class="text-center">👤<br><span class="text-xs">Account</span></a>
+<!-- Bottom Navigation -->
+<div class="fixed bottom-0 left-0 right-0 bg-white shadow-lg border-t rounded-t-2xl">
+  <div id="bottomNav" class="relative flex justify-around items-center py-2">
+    
+    <!-- Home -->
+    <div class="nav-item flex flex-col items-center cursor-pointer text-orange-500 transition-all duration-300 transform" data-tab="home">
+      <span class="text-2xl">🏠</span>
+      <span class="text-xs font-medium">Home</span>
+    </div>
+    
+    <!-- Orders -->
+    <div class="nav-item flex flex-col items-center cursor-pointer text-gray-500 transition-all duration-300 transform" data-tab="orders">
+      <span class="text-2xl">📦</span>
+      <span class="text-xs font-medium">Orders</span>
+    </div>
+    
+    <!-- Cart -->
+    <div class="nav-item flex flex-col items-center relative cursor-pointer text-gray-500 transition-all duration-300 transform" data-tab="cart" onclick="goToCart()">
+      <span class="text-2xl">🛒</span>
+      <span class="absolute -top-1 -right-2 bg-red-500 text-white rounded-full text-[10px] px-1" id="cartCount">0</span>
+      <span class="text-xs font-medium">Cart</span>
+    </div>
+    
+    <!-- Account -->
+    <div class="nav-item flex flex-col items-center cursor-pointer text-gray-500 transition-all duration-300 transform" data-tab="account" onclick="openLoginPopup()">
+      <span class="text-2xl">👤</span>
+      <span class="text-xs font-medium" id="accountLabel">Account</span>
+    </div>
+
+    <!-- Sliding Underline -->
+    <div id="navUnderline" class="absolute bottom-0 h-[3px] bg-orange-500 rounded-full transition-all duration-300"></div>
   </div>
+</div>
+
+<script>
+  function setActiveTab(tabName) {
+    const navItems = document.querySelectorAll("#bottomNav .nav-item");
+    navItems.forEach(item => {
+      if (item.dataset.tab === tabName) {
+        item.classList.remove("text-gray-500", "scale-100");
+        item.classList.add("text-orange-500", "scale-110");
+      } else {
+        item.classList.remove("text-orange-500", "scale-110");
+        item.classList.add("text-gray-500", "scale-100");
+      }
+    });
+
+    // Move underline
+    const activeItem = document.querySelector(`#bottomNav .nav-item[data-tab="${tabName}"]`);
+    const underline = document.getElementById("navUnderline");
+    underline.style.width = activeItem.offsetWidth + "px";
+    underline.style.left = activeItem.offsetLeft + "px";
+  }
+
+  // default active = home
+  window.onload = () => {
+    setActiveTab("home");
+  };
+
+  // handle clicks
+  document.querySelectorAll("#bottomNav .nav-item").forEach(item => {
+    item.addEventListener("click", () => {
+      const tab = item.dataset.tab;
+      setActiveTab(tab);
+      if (tab === "orders") window.location.href = "orders.html";
+      if (tab === "home") window.location.href = "index.html";
+    });
+  });
+</script>
+
 
   <!-- Firebase SDK + app logic -->
   <script type="module">
