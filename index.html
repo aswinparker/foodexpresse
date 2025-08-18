@@ -1,24 +1,52 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Food Express</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     .snap-x::-webkit-scrollbar { display: none; }
-    .overlay {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center;
-      z-index: 50;
-    }
+    .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: none; align-items: center; justify-content: center; z-index: 50; }
   </style>
+
+  <!-- Firebase SDKs (v11) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+    import { 
+      getAuth, onAuthStateChanged, createUserWithEmailAndPassword, 
+      signInWithEmailAndPassword, signOut 
+    } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+    import { 
+      getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot 
+    } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+    // TODO: paste your config here
+    const firebaseConfig = {
+   apiKey: "AIzaSyCAGirQsFfQNInhUc9yuMD-QElaDnmRbKE",
+   authDomain: "foodexpress-9b0ff.firebaseapp.com",
+   projectId: "foodexpress-9b0ff",
+   storageBucket: "foodexpress-9b0ff.firebasestorage.app",
+   messagingSenderId: "818281594225",
+   appId: "1:818281594225:web:205774c2914ae2b9b08ad0"
+    };
+
+    // init
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // expose for inline handlers
+    window.__fe = { auth, db, 
+      onAuthStateChanged, createUserWithEmailAndPassword, 
+      signInWithEmailAndPassword, signOut, doc, getDoc, setDoc, updateDoc, onSnapshot };
+  </script>
 </head>
 <body class="bg-white font-sans">
 
   <!-- Top Bar -->
   <div class="flex justify-between items-center px-4 pt-4">
-    <div class="text-sm text-gray-700" id="location">📍 Detecting location...</div>
+    <div class="text-sm text-gray-700" id="location">📍 Welcome to Food Express</div>
     <div class="text-2xl">🔔</div>
   </div>
 
@@ -91,7 +119,6 @@
       <div class="relative mb-2">
         <input type="password" id="passwordField" placeholder="Password" class="border p-2 w-full" />
         <button type="button" onclick="togglePassword('passwordField', this)" class="absolute right-2 top-2 text-gray-500">
-          <!-- Eye Icon -->
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -102,7 +129,6 @@
       <div class="relative mb-4 hidden" id="confirmPasswordContainer">
         <input type="password" id="confirmPasswordField" placeholder="Confirm Password" class="border p-2 w-full" />
         <button type="button" onclick="togglePassword('confirmPasswordField', this)" class="absolute right-2 top-2 text-gray-500">
-          <!-- Eye Icon -->
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -119,151 +145,129 @@
   </div>
 
   <script>
-    let authMode = "login"; 
-    let currentUser = localStorage.getItem("loggedInUser");
+    // UI state
+    let authMode = "login";
+    let cart = [];
 
     function openLoginPopup() {
-      if (currentUser) {
+      const { auth } = window.__fe;
+      if (auth.currentUser) {
+        // go to account page if you have one
         window.location.href = "account.html";
       } else {
         document.getElementById("loginPopup").style.display = "flex";
       }
     }
-    function closeLoginPopup() { 
-      document.getElementById("loginPopup").style.display = "none"; 
-    }
-
+    function closeLoginPopup(){ document.getElementById("loginPopup").style.display = "none"; }
     function toggleAuthMode() {
       authMode = authMode === "login" ? "signup" : "login";
       document.getElementById("popupTitle").innerText = authMode === "login" ? "Login" : "Signup";
       document.getElementById("toggleText").innerText = authMode === "login" ? "Create account" : "Already have an account?";
       document.getElementById("nameField").classList.toggle("hidden", authMode === "login");
       document.getElementById("confirmPasswordContainer").classList.toggle("hidden", authMode === "login");
+      document.getElementById("errorText").classList.add("hidden");
+    }
+    function togglePassword(id, btn) {
+      const field = document.getElementById(id);
+      const eye = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>`;
+      const eyeOff = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a10.05 10.05 0 011.663-3.043m3.238-2.724A9.978 9.978 0 0112 5c4.477 0 8.268 2.943 9.542 7a9.978 9.978 0 01-4.252 5.053M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3l18 18"/></svg>`;
+      field.type = "text"; btn.innerHTML = eyeOff;
+      setTimeout(()=>{ field.type="password"; btn.innerHTML=eye; }, 2000);
     }
 
-    function togglePassword(fieldId, btn) {
-      let field = document.getElementById(fieldId);
-      let svgEye = `
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-        </svg>`;
-      let svgEyeOff = `
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a10.05 10.05 0 011.663-3.043m3.238-2.724A9.978 9.978 0 0112 5c4.477 0 8.268 2.943 9.542 7a9.978 9.978 0 01-4.252 5.053M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3l18 18" />
-        </svg>`;
-      
-      field.type = "text";
-      btn.innerHTML = svgEyeOff;
-
-      setTimeout(() => {
-        field.type = "password";
-        btn.innerHTML = svgEye;
-      }, 2000);
-    }
-
-    function submitAuth() {
-      const email = document.getElementById("emailField").value;
+    async function submitAuth() {
+      const { auth, db, createUserWithEmailAndPassword, signInWithEmailAndPassword, doc, setDoc, getDoc } = window.__fe;
+      const email = document.getElementById("emailField").value.trim();
       const password = document.getElementById("passwordField").value;
       const errorText = document.getElementById("errorText");
 
+      errorText.classList.add("hidden"); errorText.innerText = "";
+
       if (authMode === "signup") {
-        const name = document.getElementById("nameField").value;
+        const name = document.getElementById("nameField").value.trim();
         const confirmPassword = document.getElementById("confirmPasswordField").value;
 
-        if (!name || !email || !password || !confirmPassword) {
-          errorText.innerText = "All fields are required";
-          errorText.classList.remove("hidden");
-          return;
-        }
-        if (password.length < 6) {
-          errorText.innerText = "Password must be at least 6 characters";
-          errorText.classList.remove("hidden");
-          return;
-        }
-        if (password !== confirmPassword) {
-          errorText.innerText = "Passwords do not match";
-          errorText.classList.remove("hidden");
-          return;
-        }
+        if (!name || !email || !password || !confirmPassword) return showErr("All fields are required");
+        if (password.length < 6) return showErr("Password must be at least 6 characters");
+        if (password !== confirmPassword) return showErr("Passwords do not match");
 
-        let users = JSON.parse(localStorage.getItem("users") || "[]");
-        if (users.find(u => u.email === email)) {
-          errorText.innerText = "Email already exists";
-          errorText.classList.remove("hidden");
-          return;
-        }
-
-        users.push({ name, email, password, cart: [] });
-        localStorage.setItem("users", JSON.stringify(users));
-        alert("Account created, please login");
-        toggleAuthMode();
-        errorText.classList.add("hidden");
+        try {
+          const cred = await createUserWithEmailAndPassword(auth, email, password);
+          await setDoc(doc(db, "users", cred.user.uid), { name, email, cart: [] });
+          alert("Account created, please login");
+          toggleAuthMode();
+        } catch (e) { showErr(cleanFirebaseMsg(e.message)); }
 
       } else {
-        let users = JSON.parse(localStorage.getItem("users") || "[]");
-        let user = users.find(u => u.email === email && u.password === password);
-        if (!user) {
-          errorText.innerText = "Incorrect email or password";
-          errorText.classList.remove("hidden");
-          return;
-        }
-        localStorage.setItem("loggedInUser", email);
-        currentUser = email;
-        loadUserCart();
-        closeLoginPopup();
-        document.getElementById("accountLabel").innerText = user.name;
-        window.location.href = "cart.html";
+        try {
+          const cred = await signInWithEmailAndPassword(auth, email, password);
+          const uid = cred.user.uid;
+          const snap = await getDoc(doc(db, "users", uid));
+          const profile = snap.exists() ? snap.data() : { name: "User", cart: [] };
+          document.getElementById("accountLabel").innerText = profile.name || "Account";
+          cart = profile.cart || [];
+          updateCartCount();
+          closeLoginPopup();
+          window.location.href = "cart.html";
+        } catch (e) { showErr("Invalid email or password"); }
+      }
+
+      function showErr(msg){ errorText.innerText = msg; errorText.classList.remove("hidden"); }
+      function cleanFirebaseMsg(m){ return m.replace("Firebase:", "").trim(); }
+    }
+
+    async function saveUserCart() {
+      const { auth, db, doc, updateDoc, setDoc, getDoc } = window.__fe;
+      const user = auth.currentUser;
+      if (!user) return;
+      const ref = doc(db, "users", user.uid);
+      const snap = await getDoc(ref);
+      if (snap.exists()) {
+        await updateDoc(ref, { cart });
+      } else {
+        await setDoc(ref, { cart });
       }
     }
 
-    let cart = [];
-    function loadUserCart() {
-      if (!currentUser) return;
-      let users = JSON.parse(localStorage.getItem("users") || "[]");
-      let user = users.find(u => u.email === currentUser);
-      cart = user ? user.cart : [];
-      updateCartCount();
-    }
-    function saveUserCart() {
-      if (!currentUser) return;
-      let users = JSON.parse(localStorage.getItem("users") || "[]");
-      let idx = users.findIndex(u => u.email === currentUser);
-      if (idx !== -1) {
-        users[idx].cart = cart;
-        localStorage.setItem("users", JSON.stringify(users));
-      }
-    }
     function addToCart(name, price) {
       cart.push({ name, price });
       updateCartCount();
       saveUserCart();
     }
-    function updateCartCount() { 
-      document.getElementById("cartCount").innerText = cart.length; 
-    }
-    function goToCart() { 
-      if (!currentUser) {
-        openLoginPopup();
-      } else {
-        window.location.href = "cart.html";
-      }
+    function updateCartCount(){ document.getElementById("cartCount").innerText = cart.length; }
+    function goToCart(){
+      const { auth } = window.__fe;
+      if (!auth.currentUser) openLoginPopup(); else window.location.href = "cart.html";
     }
 
-    // Init
-    window.onload = () => {
-      currentUser = localStorage.getItem("loggedInUser");
-      if (currentUser) {
-        let users = JSON.parse(localStorage.getItem("users") || "[]");
-        let user = users.find(u => u.email === currentUser);
-        if (user) {
-          document.getElementById("accountLabel").innerText = user.name;
-          cart = user.cart || [];
-          updateCartCount();
+    // auth state → keep UI in sync + live cart
+    window.addEventListener("load", () => {
+      const { auth, onAuthStateChanged, db, doc, onSnapshot } = window.__fe;
+      onAuthStateChanged(auth, (user) => {
+        if (!user) {
+          document.getElementById("accountLabel").innerText = "Account";
+          cart = []; updateCartCount();
+          return;
         }
-      }
-    };
+        // live subscribe to profile to reflect cart changes across tabs/devices
+        const ref = doc(db, "users", user.uid);
+        onSnapshot(ref, (snap) => {
+          const data = snap.data() || {};
+          document.getElementById("accountLabel").innerText = data.name || "Account";
+          cart = data.cart || [];
+          updateCartCount();
+        });
+      });
+    });
+
+    // expose handlers for inline HTML
+    window.submitAuth = submitAuth;
+    window.addToCart = addToCart;
+    window.goToCart = goToCart;
+    window.openLoginPopup = openLoginPopup;
+    window.closeLoginPopup = closeLoginPopup;
+    window.toggleAuthMode = toggleAuthMode;
+    window.togglePassword = togglePassword;
   </script>
 </body>
 </html>
