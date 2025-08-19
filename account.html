@@ -28,7 +28,6 @@
 
   <!-- Account Options -->
   <main class="flex-1 p-4 space-y-4">
-
     <a href="orders.html" class="block bg-white rounded-xl shadow p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50">
       <span class="font-medium">My Orders</span>
       <span class="text-gray-400">›</span>
@@ -53,70 +52,40 @@
       Logout
       <span class="text-gray-400">›</span>
     </div>
-
   </main>
 
-<!-- Bottom Navigation -->
-<div class="fixed bottom-0 left-0 right-0 bg-white shadow-lg border-t rounded-t-2xl">
-  <div id="bottomNav" class="flex justify-around items-center py-2">
-    
-    <!-- Home -->
-    <div class="nav-item flex flex-col items-center cursor-pointer text-orange-500 transition-all duration-300 transform" data-tab="home">
-      <span class="text-2xl">🏠</span>
-      <span class="text-xs font-medium">Home</span>
+  <!-- Bottom Navigation -->
+  <div class="fixed bottom-0 left-0 right-0 bg-white shadow-lg border-t rounded-t-2xl">
+    <div id="bottomNav" class="flex justify-around items-center py-2">
+      
+      <!-- Home -->
+      <div class="nav-item flex flex-col items-center cursor-pointer text-gray-500 transition-all duration-300 transform" data-tab="home">
+        <span class="text-2xl">🏠</span>
+        <span class="text-xs font-medium">Home</span>
+      </div>
+      
+      <!-- Orders -->
+      <div class="nav-item flex flex-col items-center cursor-pointer text-gray-500 transition-all duration-300 transform" data-tab="orders">
+        <span class="text-2xl">📦</span>
+        <span class="text-xs font-medium">Orders</span>
+      </div>
+      
+      <!-- Cart -->
+      <div class="nav-item flex flex-col items-center relative cursor-pointer text-gray-500 transition-all duration-300 transform" data-tab="cart">
+        <span class="text-2xl">🛒</span>
+        <span class="absolute -top-1 -right-2 bg-red-500 text-white rounded-full text-[10px] px-1" id="cartCount">0</span>
+        <span class="text-xs font-medium">Cart</span>
+      </div>
+      
+      <!-- Account -->
+      <div class="nav-item flex flex-col items-center cursor-pointer text-orange-500 transition-all duration-300 transform scale-110" data-tab="account">
+        <span class="text-2xl">👤</span>
+        <span class="text-xs font-medium" id="accountLabel">Account</span>
+      </div>
     </div>
-    
-    <!-- Orders -->
-    <div class="nav-item flex flex-col items-center cursor-pointer text-gray-500 transition-all duration-300 transform" data-tab="orders">
-      <span class="text-2xl">📦</span>
-      <span class="text-xs font-medium">Orders</span>
-    </div>
-    
-    <!-- Cart -->
-    <div class="nav-item flex flex-col items-center relative cursor-pointer text-gray-500 transition-all duration-300 transform" data-tab="cart" onclick="goToCart()">
-      <span class="text-2xl">🛒</span>
-      <span class="absolute -top-1 -right-2 bg-red-500 text-white rounded-full text-[10px] px-1" id="cartCount">0</span>
-      <span class="text-xs font-medium">Cart</span>
-    </div>
-    
-    <!-- Account -->
-    <div class="nav-item flex flex-col items-center cursor-pointer text-gray-500 transition-all duration-300 transform" data-tab="account" onclick="openLoginPopup()">
-      <span class="text-2xl">👤</span>
-      <span class="text-xs font-medium" id="accountLabel">Account</span>
-    </div>
-    
   </div>
-</div>
 
-<script>
-  function setActiveTab(tabName) {
-    document.querySelectorAll("#bottomNav .nav-item").forEach(item => {
-      if (item.dataset.tab === tabName) {
-        item.classList.remove("text-gray-500", "scale-100");
-        item.classList.add("text-orange-500", "scale-110"); // active = orange + slightly bigger
-      } else {
-        item.classList.remove("text-orange-500", "scale-110");
-        item.classList.add("text-gray-500", "scale-100"); // inactive = gray + normal size
-      }
-    });
-  }
-
-  // default active = home
-  setActiveTab("home");
-
-  // handle clicks
-  document.querySelectorAll("#bottomNav .nav-item").forEach(item => {
-    item.addEventListener("click", () => {
-      const tab = item.dataset.tab;
-      setActiveTab(tab);
-      // Optional navigation
-      if (tab === "orders") window.location.href = "orders.html";
-      if (tab === "home") window.location.href = "index.html";
-    });
-  });
-</script>
-
-  <!-- Firebase -->
+  <!-- ✅ One unified script -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -137,23 +106,74 @@
     const userEmail = document.getElementById("userEmail");
     const profilePic = document.getElementById("profilePic");
     const logoutBtn = document.getElementById("logoutBtn");
+    const accountLabel = document.getElementById("accountLabel");
 
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        userName.textContent = user.displayName || "User";
-        userEmail.textContent = user.email || "No Email";
-        profilePic.src = user.photoURL || "assets/user.png";
+    // Pastel avatar setup
+    const pastelColors = ["#FFB3BA","#FFDFBA","#FFFFBA","#BAFFC9","#BAE1FF","#E0BBFF","#C2F0FC","#F1CBFF","#FFD6A5"];
+    function getPastelColor(name){ return pastelColors[name.charCodeAt(0)%pastelColors.length]; }
+    function setAvatarInitial(firstName){
+      profilePic.style.display="none";
+      let avatar=document.getElementById("avatarInitial");
+      if(!avatar){
+        avatar=document.createElement("div");
+        avatar.id="avatarInitial";
+        avatar.className="w-20 h-20 rounded-full flex items-center justify-center text-white text-2xl font-bold";
+        profilePic.parentNode.insertBefore(avatar,profilePic);
+      }
+      avatar.style.background=getPastelColor(firstName);
+      avatar.textContent=firstName.charAt(0).toUpperCase();
+    }
+
+    // ✅ Handle Firebase login state
+    onAuthStateChanged(auth,(user)=>{
+      if(user){
+        const fullName=user.displayName||user.email?.split("@")[0]||"User";
+        const firstNameRaw=fullName.split(" ")[0];
+        const firstName=firstNameRaw.charAt(0).toUpperCase()+firstNameRaw.slice(1).toLowerCase();
+        userName.textContent=firstName;
+        userEmail.textContent=user.email||"No Email";
+        accountLabel.textContent=firstName;
+        if(user.photoURL){
+          profilePic.src=user.photoURL;
+          profilePic.style.display="block";
+          const avatar=document.getElementById("avatarInitial"); if(avatar) avatar.remove();
+        } else { setAvatarInitial(firstName); }
       } else {
-        userName.textContent = "Guest User";
-        userEmail.textContent = "";
+        userName.textContent="Guest User";
+        userEmail.textContent="";
+        accountLabel.textContent="Account";
+        profilePic.src="assets/user.png";
+        profilePic.style.display="block";
+        const avatar=document.getElementById("avatarInitial"); if(avatar) avatar.remove();
       }
     });
 
-    logoutBtn.addEventListener("click", () => {
-      signOut(auth).then(() => {
-        window.location.href = "index.html";
-      }).catch((error) => {
-        console.error("Logout Error:", error);
+    logoutBtn.addEventListener("click",()=>{
+      signOut(auth).then(()=>{ window.location.href="index.html"; }).catch((error)=>console.error("Logout Error:",error));
+    });
+
+    // ✅ Bottom navigation
+    function setActiveTab(tabName){
+      document.querySelectorAll("#bottomNav .nav-item").forEach(item=>{
+        if(item.dataset.tab===tabName){
+          item.classList.remove("text-gray-500","scale-100");
+          item.classList.add("text-orange-500","scale-110");
+        } else {
+          item.classList.remove("text-orange-500","scale-110");
+          item.classList.add("text-gray-500","scale-100");
+        }
+      });
+    }
+    setActiveTab("account");
+
+    document.querySelectorAll("#bottomNav .nav-item").forEach(item=>{
+      item.addEventListener("click",()=>{
+        const tab=item.dataset.tab;
+        setActiveTab(tab);
+        if(tab==="orders") window.location.href="orders.html";
+        if(tab==="home") window.location.href="index.html";
+        if(tab==="account") window.location.href="account.html";
+        if(tab==="cart") window.location.href="cart.html";
       });
     });
   </script>
