@@ -1,42 +1,61 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Food Express</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Food Express - Account</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-firestore.js"></script>
+  <style>
+    .active-tab { color: #f97316; }
+    .cart-badge {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      background: #f97316;
+      color: white;
+      border-radius: 9999px;
+      padding: 2px 6px;
+      font-size: 12px;
+      display: none;
+    }
+    .cart-badge.show { display: inline-block; }
+  </style>
 </head>
-<body class="bg-gray-50 flex flex-col h-screen">
+<body class="bg-gray-100 min-h-screen flex flex-col">
 
-  <!-- Header (Top Bar + Search) -->
-  <div class="bg-white shadow-sm px-4 pt-4 pb-3">
-    <!-- Top Bar -->
-    <div class="flex justify-between items-center mb-3">
-      <div class="flex items-center space-x-2">
-        <span class="text-xl">📍</span>
-        <span class="text-base font-medium text-gray-700">Welcome to Food Express</span>
-      </div>
-      <button class="text-2xl hover:scale-110 transition-transform">🔔</button>
+  <!-- Header -->
+  <header class="bg-white p-4 shadow-md">
+    <h1 class="text-xl font-bold">My Account</h1>
+  </header>
+
+  <!-- Profile Section -->
+  <section class="bg-white p-6 mt-4 flex items-center space-x-4 shadow-md">
+    <img src="https://i.pravatar.cc/100" alt="User" class="w-16 h-16 rounded-full border">
+    <div>
+      <h2 id="userName" class="text-lg font-semibold">Loading...</h2>
+      <p id="userPhone" class="text-gray-600">Fetching...</p>
+      <p id="userEmail" class="text-gray-600">Fetching...</p>
     </div>
+  </section>
 
-    <!-- Search Bar -->
-    <div class="relative w-full">
-      <span class="absolute inset-y-0 left-3 flex items-center text-gray-400 text-lg">🔍</span>
-      <input 
-        type="text" 
-        placeholder="Search Food Express" 
-        class="w-full pl-10 pr-4 py-2 rounded-full bg-gray-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
-      />
+  <!-- Quick Links -->
+  <section class="mt-6 flex-1">
+    <div class="bg-white shadow-md rounded-lg mx-4">
+      <ul class="divide-y divide-gray-200">
+        <li class="p-4 hover:bg-gray-50 cursor-pointer">📦 My Orders</li>
+        <li class="p-4 hover:bg-gray-50 cursor-pointer">💳 Payments</li>
+        <li class="p-4 hover:bg-gray-50 cursor-pointer">🏠 Addresses</li>
+        <li class="p-4 hover:bg-gray-50 cursor-pointer">❓ Help & Support</li>
+        <li id="logoutBtn" class="p-4 hover:bg-gray-50 cursor-pointer text-red-500">🚪 Logout</li>
+      </ul>
     </div>
-  </div>
+  </section>
 
-  <!-- Main Content -->
-  <div class="flex-1 overflow-y-auto p-4" id="mainContent">
-    <h2 class="text-xl font-semibold mb-4">Home</h2>
-    <p class="text-gray-600">Your content goes here...</p>
-  </div>
-
-<!-- Bottom Navigation -->
+  <!-- Bottom Navigation -->
 <div class="fixed bottom-0 left-0 right-0 bg-white shadow-lg border-t rounded-t-2xl">
   <div id="bottomNav" class="flex justify-around items-center py-2">
     
@@ -53,14 +72,14 @@
     </div>
     
     <!-- Cart -->
-    <div class="nav-item flex flex-col items-center relative cursor-pointer text-gray-500 transition-all duration-300 transform" data-tab="cart" onclick="goToCart()">
+    <div class="nav-item flex flex-col items-center relative cursor-pointer text-gray-500 transition-all duration-300 transform" data-tab="cart">
       <span class="text-2xl">🛒</span>
       <span class="absolute -top-1 -right-2 bg-red-500 text-white rounded-full text-[10px] px-1" id="cartCount">0</span>
       <span class="text-xs font-medium">Cart</span>
     </div>
     
     <!-- Account -->
-    <div class="nav-item flex flex-col items-center cursor-pointer text-gray-500 transition-all duration-300 transform" data-tab="account" onclick="openLoginPopup()">
+    <div class="nav-item flex flex-col items-center cursor-pointer text-gray-500 transition-all duration-300 transform" data-tab="account">
       <span class="text-2xl">👤</span>
       <span class="text-xs font-medium" id="accountLabel">Account</span>
     </div>
@@ -68,53 +87,82 @@
   </div>
 </div>
 
-<script>
+<script type="module">
+  // Firebase config
+  const firebaseConfig = {
+   apiKey: "AIzaSyCAGirQsFfQNInhUc9yuMD-QElaDnmRbKE",
+   authDomain: "foodexpress-9b0ff.firebaseapp.com",
+   projectId: "foodexpress-9b0ff",
+   storageBucket: "foodexpress-9b0ff.firebasestorage.app",
+   messagingSenderId: "818281594225",
+   appId: "1:818281594225:web:205774c2914ae2b9b08ad0"
+  };
+
+  // Init Firebase
+  const app = firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  // Load user info
+  auth.onAuthStateChanged(async (user) => {
+    if (user) {
+      document.getElementById("userName").innerText = user.displayName || "User";
+      document.getElementById("userEmail").innerText = user.email || "No Email";
+      document.getElementById("userPhone").innerText = user.phoneNumber || "No Phone";
+
+      // If you stored signup details in Firestore (users collection)
+      const userDoc = await db.collection("users").doc(user.uid).get();
+      if (userDoc.exists) {
+        const data = userDoc.data();
+        if (data.name) document.getElementById("userName").innerText = data.name;
+        if (data.email) document.getElementById("userEmail").innerText = data.email;
+        if (data.phone) document.getElementById("userPhone").innerText = data.phone;
+      }
+    } else {
+      window.location.href = "login.html"; // Redirect if not logged in
+    }
+  });
+
+  // Logout
+  document.getElementById("logoutBtn").addEventListener("click", () => {
+    auth.signOut().then(() => {
+      window.location.href = "login.html";
+    });
+  });
+
+  // Bottom Nav
   function setActiveTab(tabName) {
     document.querySelectorAll("#bottomNav .nav-item").forEach(item => {
       if (item.dataset.tab === tabName) {
         item.classList.remove("text-gray-500", "scale-100");
-        item.classList.add("text-orange-500", "scale-110"); // active = orange + slightly bigger
+        item.classList.add("text-orange-500", "scale-110");
       } else {
         item.classList.remove("text-orange-500", "scale-110");
-        item.classList.add("text-gray-500", "scale-100"); // inactive = gray + normal size
+        item.classList.add("text-gray-500", "scale-100");
       }
     });
   }
+  setActiveTab("account");
 
-  // default active = home
-  setActiveTab("home");
-
-  // handle clicks
   document.querySelectorAll("#bottomNav .nav-item").forEach(item => {
     item.addEventListener("click", () => {
       const tab = item.dataset.tab;
       setActiveTab(tab);
-      // Optional navigation
       if (tab === "orders") window.location.href = "orders.html";
       if (tab === "home") window.location.href = "index.html";
+      if (tab === "cart") window.location.href = "cart.html";
+      if (tab === "account") window.location.href = "account.html";
     });
   });
+
+  // Cart badge update
+  const cart = JSON.parse(localStorage.getItem("cart")) || [];
+  const cartCount = document.getElementById("cartCount");
+  if (cart.length > 0) {
+    cartCount.innerText = cart.length;
+    cartCount.classList.remove("hidden");
+  }
 </script>
-  <script>
-    const navBtns = document.querySelectorAll(".nav-btn");
-    const mainContent = document.getElementById("mainContent");
-
-    navBtns.forEach(btn => {
-      btn.addEventListener("click", () => {
-        navBtns.forEach(b => b.classList.remove("text-orange-500"));
-        navBtns.forEach(b => b.classList.add("text-gray-500"));
-        btn.classList.add("text-orange-500");
-        btn.classList.remove("text-gray-500");
-
-        // Change main content title
-        const tab = btn.getAttribute("data-tab");
-        mainContent.innerHTML = `
-          <h2 class="text-xl font-semibold mb-4">${tab.charAt(0).toUpperCase() + tab.slice(1)}</h2>
-          <p class="text-gray-600">This is the ${tab} page content.</p>
-        `;
-      });
-    });
-  </script>
 
 </body>
 </html>
