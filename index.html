@@ -110,7 +110,7 @@
 
 <!-- Bottom Navigation -->
 <div class="fixed bottom-0 left-0 right-0 bg-white shadow-lg border-t rounded-t-2xl">
-  <div id="bottomNav" class="relative flex justify-around items-center py-2">
+  <div id="bottomNav" class="flex justify-around items-center py-2">
     
     <!-- Home -->
     <div class="nav-item flex flex-col items-center cursor-pointer text-orange-500 transition-all duration-300 transform" data-tab="home">
@@ -136,42 +136,32 @@
       <span class="text-2xl">👤</span>
       <span class="text-xs font-medium" id="accountLabel">Account</span>
     </div>
-
-    <!-- Sliding Underline -->
-    <div id="navUnderline" class="absolute bottom-0 h-[3px] bg-orange-500 rounded-full transition-all duration-300"></div>
+    
   </div>
 </div>
 
 <script>
   function setActiveTab(tabName) {
-    const navItems = document.querySelectorAll("#bottomNav .nav-item");
-    navItems.forEach(item => {
+    document.querySelectorAll("#bottomNav .nav-item").forEach(item => {
       if (item.dataset.tab === tabName) {
         item.classList.remove("text-gray-500", "scale-100");
-        item.classList.add("text-orange-500", "scale-110");
+        item.classList.add("text-orange-500", "scale-110"); // active = orange + slightly bigger
       } else {
         item.classList.remove("text-orange-500", "scale-110");
-        item.classList.add("text-gray-500", "scale-100");
+        item.classList.add("text-gray-500", "scale-100"); // inactive = gray + normal size
       }
     });
-
-    // Move underline
-    const activeItem = document.querySelector(`#bottomNav .nav-item[data-tab="${tabName}"]`);
-    const underline = document.getElementById("navUnderline");
-    underline.style.width = activeItem.offsetWidth + "px";
-    underline.style.left = activeItem.offsetLeft + "px";
   }
 
   // default active = home
-  window.onload = () => {
-    setActiveTab("home");
-  };
+  setActiveTab("home");
 
   // handle clicks
   document.querySelectorAll("#bottomNav .nav-item").forEach(item => {
     item.addEventListener("click", () => {
       const tab = item.dataset.tab;
       setActiveTab(tab);
+      // Optional navigation
       if (tab === "orders") window.location.href = "orders.html";
       if (tab === "home") window.location.href = "index.html";
     });
@@ -214,6 +204,33 @@
       <p class="text-center text-sm mt-3 cursor-pointer text-gray-500" onclick="closeLoginPopup()">Cancel</p>
     </div>
   </div>
+  <!-- 🌍 Location Detection Script -->
+<script>
+  async function detectLocation() {
+    if (!navigator.geolocation) {
+      document.getElementById("locationText").innerText = "Welcome to Food Express";
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+      const { latitude, longitude } = pos.coords;
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
+        );
+        const data = await res.json();
+        let city = data.address.city || data.address.town || data.address.village || data.address.state;
+        document.getElementById("locationText").innerText = `Welcome to Food Express in ${city}`;
+      } catch (e) {
+        document.getElementById("locationText").innerText = "Welcome to Food Express";
+      }
+    }, () => {
+      document.getElementById("locationText").innerText = "Welcome to Food Express";
+    });
+  }
+
+  window.addEventListener("load", detectLocation);
+</script>
 
   <script>
     // UI state
