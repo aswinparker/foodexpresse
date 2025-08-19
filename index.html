@@ -220,7 +220,7 @@
         );
         const data = await res.json();
         let city = data.address.city || data.address.town || data.address.village || data.address.state;
-        document.getElementById("locationText").innerText = `Welcome to Food Express in ${city}`;
+        document.getElementById("locationText").innerText = ` ${city}`;
       } catch (e) {
         document.getElementById("locationText").innerText = "Welcome to Food Express";
       }
