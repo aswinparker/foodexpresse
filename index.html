@@ -1,361 +1,588 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Food Express</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     .snap-x::-webkit-scrollbar { display: none; }
     .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: none; align-items: center; justify-content: center; z-index: 50; }
+    .animate-bump { transform: scale(1.08); transition: transform 0.18s; }
+    .fly-img { position: fixed; width: 64px; height: 64px; object-fit: cover; border-radius: 8px; pointer-events: none; z-index: 9999; will-change: transform, opacity; }
+    .toast-hidden { opacity: 0; transform: translateY(24px); }
+    .toast-show { opacity: 1; transform: translateY(0); transition: all 400ms ease; }
+    /* hero gradient */
+    .hero-gradient { background: linear-gradient(90deg,#FFEDD5 0%, #FFEDD5 40%, #FFF7ED 100%); }
+    /* small card hover */
+    .ad-card:hover { transform: translateY(-6px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
   </style>
-
-  <!-- Firebase SDKs (v11) -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-    import { 
-      getAuth, onAuthStateChanged, createUserWithEmailAndPassword, 
-      signInWithEmailAndPassword, signOut 
-    } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
-    import { 
-      getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot 
-    } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
-
-    // TODO: paste your config here
-    const firebaseConfig = {
-   apiKey: "AIzaSyCAGirQsFfQNInhUc9yuMD-QElaDnmRbKE",
-   authDomain: "foodexpress-9b0ff.firebaseapp.com",
-   projectId: "foodexpress-9b0ff",
-   storageBucket: "foodexpress-9b0ff.firebasestorage.app",
-   messagingSenderId: "818281594225",
-   appId: "1:818281594225:web:205774c2914ae2b9b08ad0"
-    };
-
-    // init
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-
-    // expose for inline handlers
-    window.__fe = { auth, db, 
-      onAuthStateChanged, createUserWithEmailAndPassword, 
-      signInWithEmailAndPassword, signOut, doc, getDoc, setDoc, updateDoc, onSnapshot };
-  </script>
 </head>
-<body class="bg-white font-sans">
+<body class="bg-gray-50 font-sans text-gray-800"> 
 
-<!-- Header (Top Bar + Search) -->
-<div class="bg-white shadow-sm px-4 pt-4 pb-3">
-  <!-- Top Bar -->
-  <div class="flex justify-between items-center mb-3">
-    <div class="flex items-center space-x-2">
-      <span class="text-xl">📍</span>
-      <span id="locationText" class="text-base font-medium text-gray-700">Welcome to Food Express</span>
+<!-- Firebase SDKs (v11) kept as before -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+  import { 
+    getAuth, onAuthStateChanged, createUserWithEmailAndPassword, 
+    signInWithEmailAndPassword, signOut 
+  } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+  import { 
+    getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, collection, addDoc, serverTimestamp 
+  } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCAGirQsFfQNInhUc9yuMD-QElaDnmRbKE",
+    authDomain: "foodexpress-9b0ff.firebaseapp.com",
+    projectId: "foodexpress-9b0ff",
+    storageBucket: "foodexpress-9b0ff.firebasestorage.app",
+    messagingSenderId: "818281594225",
+    appId: "1:818281594225:web:205774c2914ae2b9b08ad0"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  window.__fe = { auth, db, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, doc, getDoc, setDoc, updateDoc, onSnapshot, collection, addDoc, serverTimestamp };
+</script>
+
+<!-- Top bar -->
+<header class="bg-white shadow-sm sticky top-0 z-40">
+  <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <!-- logo -->
+      <div class="flex items-center gap-2">
+        <div class="bg-orange-500 rounded-full w-10 h-10 flex items-center justify-center text-white font-bold shadow">FE</div>
+        <div>
+          <div class="text-sm font-semibold">Food Express</div>
+          <div id="locationText" class="text-[12px] text-gray-500">Loading location...</div>
+        </div>
+      </div>
     </div>
-    <button class="text-2xl hover:scale-110 transition-transform">🔔</button>
-  </div>
 
-  <!-- Search Bar -->
-  <div class="relative w-full">
-    <span class="absolute inset-y-0 left-3 flex items-center text-gray-400 text-lg">🔍</span>
-    <input 
-      type="text" 
-      placeholder="Search Food Express" 
-      class="w-full pl-10 pr-4 py-2 rounded-full bg-gray-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
-    />
-  </div>
-</div>
+    <div class="flex items-center gap-3">
+      <div class="relative hidden sm:block">
+        <input id="searchInput" class="w-72 pl-10 pr-4 py-2 rounded-full bg-gray-100 shadow-sm focus:outline-none" placeholder="Search food, restaurants or dishes" />
+        <svg class="w-5 h-5 absolute left-3 top-2.5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 21l-4.35-4.35" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="11" cy="11" r="6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
 
+      <button class="p-2 rounded-full hover:bg-gray-100" title="Notifications">
+        <!-- bell icon -->
+        <svg class="w-6 h-6 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0 1 18 14.158V11c0-3.07-1.64-5.64-4.5-6.32V4a1.5 1.5 0 0 0-3 0v.68C7.64 5.36 6 7.92 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
 
+      <div id="cartIcon" class="relative cursor-pointer" onclick="goToCart()">
+        <svg class="w-7 h-7 text-gray-700" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 6h15l-1.5 9h-12z" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9" cy="20" r="1"/><circle cx="19" cy="20" r="1"/></svg>
+        <span id="cartCount" class="absolute -top-1 -right-2 bg-red-500 text-white rounded-full text-[10px] px-1">0</span>
+      </div>
 
-  <!-- Promo Banners -->
-  <div class="overflow-x-auto px-4 snap-x snap-mandatory scroll-smooth">
-    <div class="flex space-x-3 mt-2 w-max">
-      <img src="https://i.postimg.cc/1tyQKPD9/promo.jpg" class="h-[180px] w-[320px] rounded-lg" />
-      <img src="https://i.imgur.com/MH2a8rD.jpg" class="h-[180px] w-[320px] rounded-lg" />
-      <img src="https://i.imgur.com/q8Aaw0m.jpg" class="h-[180px] w-[320px] rounded-lg" />
+      <div class="ml-2 cursor-pointer" onclick="openLoginPopup()" id="accountLabel">Account</div>
     </div>
   </div>
+</header>
+
+<!-- Hero + Main promos -->
+<main class="max-w-5xl mx-auto px-4 py-6">
+  <section class="hero-gradient rounded-xl p-5 flex flex-col md:flex-row gap-4 items-center">
+    <div class="flex-1">
+      <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Hot Deals Today — Up to <span class="text-orange-600">50% OFF</span></h1>
+      <p class="text-sm text-gray-600 mt-2">Free delivery on orders above ₹199. Exclusive combos & limited-time coupons. Use code <span class="font-semibold">FE50</span></p>
+
+      <div class="mt-4 flex gap-3">
+        <button onclick="scrollToSection('top-picks')" class="bg-orange-500 text-white px-4 py-2 rounded-full shadow">Order Now</button>
+        <button onclick="scrollToSection('offers')" class="bg-white border border-gray-200 px-4 py-2 rounded-full">View Offers</button>
+      </div>
+
+      <div class="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="bg-white p-3 rounded-lg flex items-center gap-3 shadow-sm ad-card">
+          <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 3h18v4H3zM5 7v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div>
+            <div class="text-sm font-semibold">Free Delivery</div>
+            <div class="text-xs text-gray-500">On orders ₹199+</div>
+          </div>
+        </div>
+
+        <div class="bg-white p-3 rounded-lg flex items-center gap-3 shadow-sm ad-card">
+          <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2v6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 11h14" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 22v-6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div>
+            <div class="text-sm font-semibold">Combo Offers</div>
+            <div class="text-xs text-gray-500">Save up to 30%</div>
+          </div>
+        </div>
+
+        <div class="bg-white p-3 rounded-lg flex items-center gap-3 shadow-sm ad-card">
+          <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2a10 10 0 1 0 0 20" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 6v6l4 2" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div>
+            <div class="text-sm font-semibold">Quick Delivery</div>
+            <div class="text-xs text-gray-500">Average 30–40 min</div>
+          </div>
+        </div>
+
+        <div class="bg-white p-3 rounded-lg flex items-center gap-3 shadow-sm ad-card">
+          <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2l2 6h6l-5 4 2 6-5-4-5 4 2-6L4 8h6z" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div>
+            <div class="text-sm font-semibold">Earn Points</div>
+            <div class="text-xs text-gray-500">Rewards & cashback</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="w-full md:w-80">
+      <img src="https://i.postimg.cc/1tyQKPD9/promo.jpg" alt="promo" class="rounded-xl shadow-lg w-full object-cover h-48" />
+    </div>
+  </section>
+
+  <!-- Promo strip carousel -->
+  <section class="mt-6">
+    <div class="overflow-x-auto snap-x snap-mandatory scroll-smooth px-1 py-2">
+      <div class="flex gap-3 w-max" id="promoInner">
+        <img src="https://i.imgur.com/MH2a8rD.jpg" class="h-[140px] w-[420px] rounded-lg flex-shrink-0 object-cover" />
+        <img src="https://i.imgur.com/q8Aaw0m.jpg" class="h-[140px] w-[420px] rounded-lg flex-shrink-0 object-cover" />
+        <img src="https://i.postimg.cc/1tyQKPD9/promo.jpg" class="h-[140px] w-[420px] rounded-lg flex-shrink-0 object-cover" />
+        <img src="https://i.imgur.com/0y8Ftya.jpg" class="h-[140px] w-[420px] rounded-lg flex-shrink-0 object-cover" />
+      </div>
+    </div>
+  </section>
 
   <!-- Categories -->
-  <div class="flex overflow-x-auto space-x-3 p-4">
-    <div class="bg-orange-200 rounded-full px-4 py-2">🍔 Burger</div>
-    <div class="bg-orange-200 rounded-full px-4 py-2">🍕 Pizza</div>
-    <div class="bg-orange-200 rounded-full px-4 py-2">🥗 Salad</div>
-    <div class="bg-orange-200 rounded-full px-4 py-2">🍣 Sushi</div>
-    <div class="bg-orange-200 rounded-full px-4 py-2">🌮 Tacos</div>
-  </div>
+  <section class="mt-6">
+    <h2 class="text-lg font-bold mb-3">Categories</h2>
+    <div class="flex overflow-x-auto space-x-3 p-1">
+      <!-- icon + label cards -->
+      <div class="bg-white rounded-xl px-4 py-3 shadow-sm flex items-center gap-3 min-w-[120px]">
+        <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">🍔</div>
+        <div>
+          <div class="text-sm font-semibold">Burger</div>
+          <div class="text-xs text-gray-500">120 places</div>
+        </div>
+      </div>
 
-  <!-- Top Picks -->
-  <div class="px-4">
-    <h2 class="text-lg font-bold mb-2">Top picks</h2>
-    <div class="flex overflow-x-auto space-x-4 pb-24">
-      <div class="w-64 bg-white shadow rounded-xl p-3 flex-shrink-0">
-        <img src="https://i.imgur.com/0y8Ftya.jpg" class="w-full h-32 object-cover rounded-lg" />
+      <div class="bg-white rounded-xl px-4 py-3 shadow-sm flex items-center gap-3 min-w-[120px]">
+        <div class="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center">🍕</div>
+        <div>
+          <div class="text-sm font-semibold">Pizza</div>
+          <div class="text-xs text-gray-500">95 places</div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl px-4 py-3 shadow-sm flex items-center gap-3 min-w-[120px]">
+        <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">🥗</div>
+        <div>
+          <div class="text-sm font-semibold">Salads</div>
+          <div class="text-xs text-gray-500">60 places</div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl px-4 py-3 shadow-sm flex items-center gap-3 min-w-[120px]">
+        <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">🍣</div>
+        <div>
+          <div class="text-sm font-semibold">Sushi</div>
+          <div class="text-xs text-gray-500">22 places</div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl px-4 py-3 shadow-sm flex items-center gap-3 min-w-[120px]">
+        <div class="w-10 h-10 rounded-full bg-pink-100 flex items-center justify-center">🌮</div>
+        <div>
+          <div class="text-sm font-semibold">Tacos</div>
+          <div class="text-xs text-gray-500">34 places</div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl px-4 py-3 shadow-sm flex items-center gap-3 min-w-[120px]">
+        <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center">🍛</div>
+        <div>
+          <div class="text-sm font-semibold">Biryani</div>
+          <div class="text-xs text-gray-500">48 places</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Top picks -->
+  <section id="top-picks" class="mt-6">
+    <h2 class="text-lg font-bold mb-3">Top picks</h2>
+    <div class="flex overflow-x-auto space-x-4 pb-6">
+      <!-- repeat several cards (static sample data) -->
+      <div class="w-64 bg-white shadow rounded-xl p-3 flex-shrink-0 card">
+        <img src="https://i.imgur.com/0y8Ftya.jpg" class="w-full h-36 object-cover rounded-lg product-image" />
         <h3 class="mt-2 font-bold">Cheese Burger</h3>
         <p class="text-gray-500 text-sm">Burger Haven • 31 min • 4.8★</p>
-        <p class="text-orange-600 font-bold mt-1">$8.99</p>
-        <button onclick="addToCart('Cheese Burger', 8.99)" class="bg-orange-500 text-white rounded-full w-full py-1 mt-2">Add to Cart</button>
+        <p class="text-orange-600 font-bold mt-1">₹89</p>
+        <div class="mt-2 flex gap-2">
+          <button onclick="handleAddToCart(this, 'Cheese Burger', 89, 'https://i.imgur.com/0y8Ftya.jpg')" class="bg-orange-500 text-white rounded-full w-full py-1">Add</button>
+          <button class="bg-gray-100 rounded-full px-3">+Fav</button>
+        </div>
       </div>
 
-      <div class="w-64 bg-white shadow rounded-xl p-3 flex-shrink-0">
-        <img src="https://i.imgur.com/nQF2zWb.jpg" class="w-full h-32 object-cover rounded-lg" />
+      <div class="w-64 bg-white shadow rounded-xl p-3 flex-shrink-0 card">
+        <img src="https://i.imgur.com/nQF2zWb.jpg" class="w-full h-36 object-cover rounded-lg product-image" />
         <h3 class="mt-2 font-bold">BBQ Bacon Burger</h3>
         <p class="text-gray-500 text-sm">Burger Haven • 27 min • 4.6★</p>
-        <p class="text-orange-600 font-bold mt-1">$9.49</p>
-        <button onclick="addToCart('BBQ Bacon Burger', 9.49)" class="bg-orange-500 text-white rounded-full w-full py-1 mt-2">Add to Cart</button>
+        <p class="text-orange-600 font-bold mt-1">₹99</p>
+        <div class="mt-2 flex gap-2">
+          <button onclick="handleAddToCart(this, 'BBQ Bacon Burger', 99, 'https://i.imgur.com/nQF2zWb.jpg')" class="bg-orange-500 text-white rounded-full w-full py-1">Add</button>
+          <button class="bg-gray-100 rounded-full px-3">+Fav</button>
+        </div>
+      </div>
+
+      <div class="w-64 bg-white shadow rounded-xl p-3 flex-shrink-0 card">
+        <img src="https://i.imgur.com/0aKQ3kD.jpg" class="w-full h-36 object-cover rounded-lg product-image" />
+        <h3 class="mt-2 font-bold">Margherita Pizza</h3>
+        <p class="text-gray-500 text-sm">Pizza Palace • 25 min • 4.7★</p>
+        <p class="text-orange-600 font-bold mt-1">₹249</p>
+        <div class="mt-2 flex gap-2">
+          <button onclick="handleAddToCart(this, 'Margherita Pizza', 249, 'https://i.imgur.com/0aKQ3kD.jpg')" class="bg-orange-500 text-white rounded-full w-full py-1">Add</button>
+          <button class="bg-gray-100 rounded-full px-3">+Fav</button>
+        </div>
+      </div>
+
+      <div class="w-64 bg-white shadow rounded-xl p-3 flex-shrink-0 card">
+        <img src="https://i.imgur.com/1fYx9Kj.jpg" class="w-full h-36 object-cover rounded-lg product-image" />
+        <h3 class="mt-2 font-bold">Veg Biryani</h3>
+        <p class="text-gray-500 text-sm">Biryani House • 35 min • 4.5★</p>
+        <p class="text-orange-600 font-bold mt-1">₹129</p>
+        <div class="mt-2 flex gap-2">
+          <button onclick="handleAddToCart(this, 'Veg Biryani', 129, 'https://i.imgur.com/1fYx9Kj.jpg')" class="bg-orange-500 text-white rounded-full w-full py-1">Add</button>
+          <button class="bg-gray-100 rounded-full px-3">+Fav</button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Offers grid (ads) -->
+  <section id="offers" class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="col-span-2 bg-white rounded-xl p-4 shadow">
+      <h3 class="font-bold mb-2">Limited Time Offers</h3>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div class="p-3 rounded-lg bg-gradient-to-r from-orange-50 to-white flex items-center gap-3">
+          <img src="https://i.imgur.com/0y8Ftya.jpg" class="w-20 h-16 object-cover rounded" />
+          <div>
+            <div class="font-semibold">Buy 1 Get 1 Free</div>
+            <div class="text-sm text-gray-600">Only at Burger Haven</div>
+          </div>
+        </div>
+
+        <div class="p-3 rounded-lg bg-gradient-to-r from-yellow-50 to-white flex items-center gap-3">
+          <img src="https://i.imgur.com/0aKQ3kD.jpg" class="w-20 h-16 object-cover rounded" />
+          <div>
+            <div class="font-semibold">Pizza Combo — Save ₹99</div>
+            <div class="text-sm text-gray-600">Use code PIZZA99</div>
+          </div>
+        </div>
+
+        <div class="p-3 rounded-lg bg-gradient-to-r from-green-50 to-white flex items-center gap-3">
+          <img src="https://i.imgur.com/1fYx9Kj.jpg" class="w-20 h-16 object-cover rounded" />
+          <div>
+            <div class="font-semibold">Family Biryani Pack</div>
+            <div class="text-sm text-gray-600">Feeds 4+ — Free raita</div>
+          </div>
+        </div>
+
+        <div class="p-3 rounded-lg bg-gradient-to-r from-blue-50 to-white flex items-center gap-3">
+          <img src="https://i.imgur.com/nQF2zWb.jpg" class="w-20 h-16 object-cover rounded" />
+          <div>
+            <div class="font-semibold">BBQ Feast</div>
+            <div class="text-sm text-gray-600">Up to 25% off</div>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
 
-<!-- Bottom Navigation -->
-<div class="fixed bottom-0 left-0 right-0 bg-white shadow-lg border-t rounded-t-2xl">
-  <div id="bottomNav" class="flex justify-around items-center py-2">
-    
-    <!-- Home -->
-    <div class="nav-item flex flex-col items-center cursor-pointer text-orange-500 transition-all duration-300 transform" data-tab="home">
-      <span class="text-2xl">🏠</span>
-      <span class="text-xs font-medium">Home</span>
+    <div class="bg-white rounded-xl p-4 shadow">
+      <h3 class="font-bold mb-2">Sponsored</h3>
+      <img src="https://i.imgur.com/3yKq9vG.jpg" class="w-full rounded-lg object-cover h-40" />
     </div>
-    
-    <!-- Orders -->
-    <div class="nav-item flex flex-col items-center cursor-pointer text-gray-500 transition-all duration-300 transform" data-tab="orders">
-      <span class="text-2xl">📦</span>
-      <span class="text-xs font-medium">Orders</span>
+  </section>
+
+  <!-- Recommended for you -->
+  <section class="mt-6">
+    <h2 class="text-lg font-bold mb-3">Recommended for you</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+      <!-- static grid cards -->
+      <div class="bg-white rounded-xl p-3 shadow">
+        <img src="https://i.imgur.com/0y8Ftya.jpg" class="w-full h-36 object-cover rounded-lg" />
+        <div class="mt-2 flex justify-between items-start">
+          <div>
+            <div class="font-semibold">Cheese Burger</div>
+            <div class="text-xs text-gray-500">Burger Haven • 4.8★</div>
+          </div>
+          <div class="text-orange-600 font-bold">₹89</div>
+        </div>
+        <div class="mt-3 flex gap-2">
+          <button onclick="handleAddToCart(this, 'Cheese Burger', 89, 'https://i.imgur.com/0y8Ftya.jpg')" class="bg-orange-500 text-white rounded-full w-full py-1">Add</button>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl p-3 shadow">
+        <img src="https://i.imgur.com/0aKQ3kD.jpg" class="w-full h-36 object-cover rounded-lg" />
+        <div class="mt-2 flex justify-between items-start">
+          <div>
+            <div class="font-semibold">Margherita Pizza</div>
+            <div class="text-xs text-gray-500">Pizza Palace • 4.7★</div>
+          </div>
+          <div class="text-orange-600 font-bold">₹249</div>
+        </div>
+        <div class="mt-3 flex gap-2">
+          <button onclick="handleAddToCart(this, 'Margherita Pizza', 249, 'https://i.imgur.com/0aKQ3kD.jpg')" class="bg-orange-500 text-white rounded-full w-full py-1">Add</button>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl p-3 shadow">
+        <img src="https://i.imgur.com/1fYx9Kj.jpg" class="w-full h-36 object-cover rounded-lg" />
+        <div class="mt-2 flex justify-between items-start">
+          <div>
+            <div class="font-semibold">Veg Biryani</div>
+            <div class="text-xs text-gray-500">Biryani House • 4.5★</div>
+          </div>
+          <div class="text-orange-600 font-bold">₹129</div>
+        </div>
+        <div class="mt-3 flex gap-2">
+          <button onclick="handleAddToCart(this, 'Veg Biryani', 129, 'https://i.imgur.com/1fYx9Kj.jpg')" class="bg-orange-500 text-white rounded-full w-full py-1">Add</button>
+        </div>
+      </div>
+
     </div>
-    
-    <!-- Cart -->
-    <div class="nav-item flex flex-col items-center relative cursor-pointer text-gray-500 transition-all duration-300 transform" data-tab="cart" onclick="goToCart()">
-      <span class="text-2xl">🛒</span>
-      <span class="absolute -top-1 -right-2 bg-red-500 text-white rounded-full text-[10px] px-1" id="cartCount">0</span>
-      <span class="text-xs font-medium">Cart</span>
+  </section>
+
+</main>
+
+<!-- Bottom Navigation (mobile) -->
+<nav class="fixed bottom-4 left-0 right-0 flex justify-center z-50">
+  <div class="w-11/12 bg-white rounded-2xl shadow-lg p-2 flex justify-around items-center">
+    <div class="flex flex-col items-center text-orange-500">
+      <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-6 9 6v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div class="text-xs">Home</div>
     </div>
-    
-    <!-- Account -->
-    <div class="nav-item flex flex-col items-center cursor-pointer text-gray-500 transition-all duration-300 transform" data-tab="account" onclick="openLoginPopup()">
-      <span class="text-2xl">👤</span>
-      <span class="text-xs font-medium" id="accountLabel">Account</span>
+    <div class="flex flex-col items-center text-gray-500" onclick="goToOrders()">
+      <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 3h18v4H3zM5 7v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div class="text-xs">Orders</div>
     </div>
-    
+    <div class="flex flex-col items-center text-gray-700 cursor-pointer" onclick="goToCart()">
+      <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 6h15l-1.5 9h-12z" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9" cy="20" r="1"/><circle cx="19" cy="20" r="1"/></svg>
+      <div class="text-xs">Cart</div>
+    </div>
+    <div class="flex flex-col items-center text-gray-500" onclick="openLoginPopup()">
+      <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10z" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 20a8 8 0 0 1 16 0" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div class="text-xs">Account</div>
+    </div>
+  </div>
+</nav>
+
+<!-- Login/Signup Popup (kept) -->
+<div id="loginPopup" class="overlay">
+  <div class="bg-white p-6 rounded-lg w-80">
+    <h2 class="text-lg font-bold mb-4" id="popupTitle">Login</h2>
+    <input type="text" id="nameField" placeholder="Name" class="border p-2 w-full mb-2 hidden" />
+    <input type="email" id="emailField" placeholder="Email" class="border p-2 w-full mb-2" />
+    <div class="relative mb-2">
+      <input type="password" id="passwordField" placeholder="Password" class="border p-2 w-full" />
+      <button type="button" onclick="togglePassword('passwordField', this)" class="absolute right-2 top-2 text-gray-500">Show</button>
+    </div>
+    <div class="relative mb-4 hidden" id="confirmPasswordContainer">
+      <input type="password" id="confirmPasswordField" placeholder="Confirm Password" class="border p-2 w-full" />
+    </div>
+
+    <p id="errorText" class="text-red-500 text-sm mb-2 hidden"></p>
+
+    <button onclick="submitAuth()" class="bg-orange-500 text-white py-2 px-4 w-full rounded">Submit</button>
+    <p class="text-center text-sm mt-3 cursor-pointer text-blue-500" onclick="toggleAuthMode()" id="toggleText">Create account</p>
+    <p class="text-center text-sm mt-3 cursor-pointer text-gray-500" onclick="closeLoginPopup()">Cancel</p>
   </div>
 </div>
 
+<!-- Toast -->
+<div id="toast" class="fixed bottom-20 left-1/2 transform -translate-x-1/2 bg-orange-500 text-white px-5 py-3 rounded-full shadow-lg toast-hidden z-50">Added to Cart ✅</div>
+
+<!-- fly target -->
+<div id="flyContainer"></div>
+
 <script>
-  function setActiveTab(tabName) {
-    document.querySelectorAll("#bottomNav .nav-item").forEach(item => {
-      if (item.dataset.tab === tabName) {
-        item.classList.remove("text-gray-500", "scale-100");
-        item.classList.add("text-orange-500", "scale-110"); // active = orange + slightly bigger
-      } else {
-        item.classList.remove("text-orange-500", "scale-110");
-        item.classList.add("text-gray-500", "scale-100"); // inactive = gray + normal size
-      }
-    });
+/* -----------------------
+  Cart helpers (kept, same behavior)
+------------------------*/
+const LOCAL_CART_KEY = "fe_cart_v1";
+let cart = JSON.parse(localStorage.getItem(LOCAL_CART_KEY) || "[]");
+function persistLocalCart(){ localStorage.setItem(LOCAL_CART_KEY, JSON.stringify(cart)); }
+function cartTotalQuantity(){ return cart.reduce((s,i) => s + (Number(i.quantity)||0), 0); }
+function cartTotalAmount(){ return cart.reduce((s,i) => s + (Number(i.price)||0) * (Number(i.quantity)||0), 0); }
+function updateCartBadge(){ document.getElementById("cartCount").innerText = cartTotalQuantity(); persistLocalCart(); }
+updateCartBadge();
+
+/* -----------------------
+  Toast
+------------------------*/
+let toastQueue = [], toastShowing = false;
+function showToast(msg){
+  const toast = document.getElementById("toast");
+  toastQueue.push(msg);
+  if(toastShowing) return;
+  toastShowing = true;
+  const next = () => {
+    if(!toastQueue.length){ toastShowing=false; return; }
+    const m = toastQueue.shift();
+    toast.innerText = m;
+    toast.classList.remove("toast-hidden");
+    toast.classList.add("toast-show");
+    setTimeout(()=>{ toast.classList.remove("toast-show"); toast.classList.add("toast-hidden"); setTimeout(next, 450); },1500);
+  };
+  next();
+}
+
+/* -----------------------
+  Fly-to-cart animation (curved motion)
+------------------------*/
+function flyToCart(imageEl){
+  if(!imageEl) return;
+  const imgRect = imageEl.getBoundingClientRect();
+  const cartIcon = document.getElementById("cartIcon");
+
+  const clone = imageEl.cloneNode(true);
+  clone.classList.add("fly-img");
+  clone.style.left = imgRect.left + "px";
+  clone.style.top = imgRect.top + "px";
+  clone.style.width = imgRect.width + "px";
+  clone.style.height = imgRect.height + "px";
+  clone.style.opacity = "1";
+  document.body.appendChild(clone);
+
+  const startX = imgRect.left;
+  const startY = imgRect.top;
+  const endX = cartIcon.getBoundingClientRect().left;
+  const endY = cartIcon.getBoundingClientRect().top;
+  const dx = endX - startX;
+  const dy = endY - startY;
+  const peak = -Math.min(150, dy - 50);
+
+  let progress = 0, duration = 800, fps = 60, interval = 1000/fps;
+
+  function animate(){
+    progress += interval;
+    const t = Math.min(progress/duration,1);
+    const x = (1-t)*(1-t)*startX + 2*(1-t)*t*(startX+dx/2) + t*t*endX;
+    const y = (1-t)*(1-t)*startY + 2*(1-t)*t*(startY+peak) + t*t*endY;
+    clone.style.transform = `translate(${x-startX}px, ${y-startY}px) scale(${1-0.7*t})`;
+    clone.style.opacity = 1 - 0.5*t;
+    if(t<1) requestAnimationFrame(animate);
+    else {
+      const cartEl = cartIcon.querySelector("span:first-child") || cartIcon;
+      cartEl.animate([{transform:"scale(1)"},{transform:"scale(1.15)"},{transform:"scale(1)"}],{duration:260,easing:"ease-out"});
+      clone.remove();
+    }
   }
+  animate();
+}
 
-  // default active = home
-  setActiveTab("home");
+/* -----------------------
+  Add to cart
+------------------------*/
+function handleAddToCart(button,name,price,imageUrl){
+  const card = button.closest(".card") || button.closest(".bg-white");
+  const imageEl = card ? card.querySelector(".product-image, img") : null;
+  if(imageEl) flyToCart(imageEl);
+  if(button) { button.classList.add("animate-bump"); setTimeout(()=>button.classList.remove("animate-bump"),260); }
 
-  // handle clicks
-  document.querySelectorAll("#bottomNav .nav-item").forEach(item => {
-    item.addEventListener("click", () => {
-      const tab = item.dataset.tab;
-      setActiveTab(tab);
-      // Optional navigation
-      if (tab === "orders") window.location.href = "orders.html";
-      if (tab === "home") window.location.href = "index.html";
-    });
-  });
-</script>
+  const existingIndex = cart.findIndex(i => i.name===name && String(i.price)===String(price));
+  if(existingIndex>=0) cart[existingIndex].quantity=(Number(cart[existingIndex].quantity)||0)+1;
+  else cart.push({name,price:Number(price),quantity:1,image:imageUrl||""});
+  updateCartBadge();
+  showToast(`${name} added ✅`);
+  saveUserCart();
+}
 
+/* -----------------------
+  Save cart to Firestore if logged in
+------------------------*/
+async function saveUserCart(){
+  try{
+    const { auth, db, doc, setDoc } = window.__fe;
+    const user = auth.currentUser;
+    if(!user){ persistLocalCart(); return; }
+    const userRef = doc(db,"users",user.uid);
+    await setDoc(userRef,{cart},{merge:true});
+  }catch(err){ console.error("saveUserCart error:",err); }
+}
 
+/* -----------------------
+  Auth helpers
+------------------------*/
+let authMode="login";
+function openLoginPopup(){ const { auth } = window.__fe; if(auth.currentUser){ window.location.href="account.html"; return; } document.getElementById("loginPopup").style.display="flex"; }
+function closeLoginPopup(){ document.getElementById("loginPopup").style.display="none"; }
+function toggleAuthMode(){ authMode = authMode==="login"?"signup":"login"; document.getElementById("popupTitle").innerText = authMode==="login"?"Login":"Sign Up"; document.getElementById("toggleText").innerText = authMode==="login"?"Create account":"Already have account?"; document.getElementById("nameField").classList.toggle("hidden"); document.getElementById("confirmPasswordContainer").classList.toggle("hidden"); }
+function togglePassword(id,btn){ const f = document.getElementById(id); f.type = f.type==="password"?"text":"password"; }
 
-  <!-- Login/Signup Popup -->
-  <div id="loginPopup" class="overlay">
-    <div class="bg-white p-6 rounded-lg w-80">
-      <h2 class="text-lg font-bold mb-4" id="popupTitle">Login</h2>
-      <input type="text" id="nameField" placeholder="Name" class="border p-2 w-full mb-2 hidden" />
-      <input type="email" id="emailField" placeholder="Email" class="border p-2 w-full mb-2" />
-      
-      <div class="relative mb-2">
-        <input type="password" id="passwordField" placeholder="Password" class="border p-2 w-full" />
-        <button type="button" onclick="togglePassword('passwordField', this)" class="absolute right-2 top-2 text-gray-500">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-          </svg>
-        </button>
-      </div>
+/* -----------------------
+  Submit auth
+------------------------*/
+async function submitAuth(){
+  const { auth, createUserWithEmailAndPassword, signInWithEmailAndPassword } = window.__fe;
+  const email = document.getElementById("emailField").value;
+  const password = document.getElementById("passwordField").value;
+  const name = document.getElementById("nameField").value;
+  const errorEl = document.getElementById("errorText");
+  errorEl.classList.add("hidden");
 
-      <div class="relative mb-4 hidden" id="confirmPasswordContainer">
-        <input type="password" id="confirmPasswordField" placeholder="Confirm Password" class="border p-2 w-full" />
-        <button type="button" onclick="togglePassword('confirmPasswordField', this)" class="absolute right-2 top-2 text-gray-500">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-          </svg>
-        </button>
-      </div>
-
-      <p id="errorText" class="text-red-500 text-sm mb-2 hidden"></p>
-
-      <button onclick="submitAuth()" class="bg-orange-500 text-white py-2 px-4 w-full rounded">Submit</button>
-      <p class="text-center text-sm mt-3 cursor-pointer text-blue-500" onclick="toggleAuthMode()" id="toggleText">Create account</p>
-      <p class="text-center text-sm mt-3 cursor-pointer text-gray-500" onclick="closeLoginPopup()">Cancel</p>
-    </div>
-  </div>
-  <!-- 🌍 Location Detection Script -->
-<script>
-  async function detectLocation() {
-    if (!navigator.geolocation) {
-      document.getElementById("locationText").innerText = "Welcome to Food Express";
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(async (pos) => {
-      const { latitude, longitude } = pos.coords;
-      try {
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
-        );
-        const data = await res.json();
-        let city = data.address.city || data.address.town || data.address.village || data.address.state;
-        document.getElementById("locationText").innerText = ` ${city}`;
-      } catch (e) {
-        document.getElementById("locationText").innerText = "Welcome to Food Express";
-      }
-    }, () => {
-      document.getElementById("locationText").innerText = "Welcome to Food Express";
-    });
+  if(authMode==="signup"){
+    try{
+      await createUserWithEmailAndPassword(auth,email,password);
+      closeLoginPopup();
+      showToast("Account created 🎉");
+    }catch(err){ errorEl.innerText=err.message; errorEl.classList.remove("hidden"); }
+  }else{
+    try{
+      await signInWithEmailAndPassword(auth,email,password);
+      closeLoginPopup();
+      showToast("Logged in ✅");
+    }catch(err){ errorEl.innerText=err.message; errorEl.classList.remove("hidden"); }
   }
+}
 
-  window.addEventListener("load", detectLocation);
+/* -----------------------
+  On auth change
+------------------------*/
+window.__fe.onAuthStateChanged(window.__fe.auth,(user)=>{
+  if(user) document.getElementById("accountLabel").innerText = user.email || "Account";
+  else document.getElementById("accountLabel").innerText = "Account";
+});
+
+/* -----------------------
+  Navigation helpers
+------------------------*/
+function goToCart(){ window.location.href = "cart.html"; }
+function goToOrders(){ window.location.href = "orders.html"; }
+function scrollToSection(id){ const el = document.getElementById(id); if(el) el.scrollIntoView({behavior:'smooth', block:'start'}); }
+
+/* -----------------------
+  Promo auto-scroll
+------------------------*/
+setInterval(()=>{
+  const container = document.getElementById("promoInner");
+  if(container) container.scrollBy({left:420,behavior:"smooth"});
+},3500);
+
+/* -----------------------
+  Update location dynamically
+------------------------*/
+async function updateLocation(){
+  const locationText = document.getElementById("locationText");
+  if (!navigator.geolocation){ locationText.innerText = "Location unavailable"; return; }
+
+  navigator.geolocation.getCurrentPosition(async (position) => {
+    const { latitude, longitude } = position.coords;
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`);
+      const data = await res.json();
+      const city = data.address.city || data.address.town || data.address.village || data.address.county || "";
+      const state = data.address.state || "";
+      locationText.innerHTML = `📍 ${city}, ${state}`;
+    } catch(err){ locationText.innerText = `📍 ${latitude.toFixed(2)}, ${longitude.toFixed(2)}`; }
+  }, (err)=>{ console.error(err); locationText.innerText = "📍 Location blocked"; });
+}
+updateLocation();
 </script>
-
-  <script>
-    // UI state
-    let authMode = "login";
-    let cart = [];
-
-    function openLoginPopup() {
-      const { auth } = window.__fe;
-      if (auth.currentUser) {
-        // go to account page if you have one
-        window.location.href = "account.html";
-      } else {
-        document.getElementById("loginPopup").style.display = "flex";
-      }
-    }
-    function closeLoginPopup(){ document.getElementById("loginPopup").style.display = "none"; }
-    function toggleAuthMode() {
-      authMode = authMode === "login" ? "signup" : "login";
-      document.getElementById("popupTitle").innerText = authMode === "login" ? "Login" : "Signup";
-      document.getElementById("toggleText").innerText = authMode === "login" ? "Create account" : "Already have an account?";
-      document.getElementById("nameField").classList.toggle("hidden", authMode === "login");
-      document.getElementById("confirmPasswordContainer").classList.toggle("hidden", authMode === "login");
-      document.getElementById("errorText").classList.add("hidden");
-    }
-    function togglePassword(id, btn) {
-      const field = document.getElementById(id);
-      const eye = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>`;
-      const eyeOff = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a10.05 10.05 0 011.663-3.043m3.238-2.724A9.978 9.978 0 0112 5c4.477 0 8.268 2.943 9.542 7a9.978 9.978 0 01-4.252 5.053M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3l18 18"/></svg>`;
-      field.type = "text"; btn.innerHTML = eyeOff;
-      setTimeout(()=>{ field.type="password"; btn.innerHTML=eye; }, 2000);
-    }
-
-    async function submitAuth() {
-      const { auth, db, createUserWithEmailAndPassword, signInWithEmailAndPassword, doc, setDoc, getDoc } = window.__fe;
-      const email = document.getElementById("emailField").value.trim();
-      const password = document.getElementById("passwordField").value;
-      const errorText = document.getElementById("errorText");
-
-      errorText.classList.add("hidden"); errorText.innerText = "";
-
-      if (authMode === "signup") {
-        const name = document.getElementById("nameField").value.trim();
-        const confirmPassword = document.getElementById("confirmPasswordField").value;
-
-        if (!name || !email || !password || !confirmPassword) return showErr("All fields are required");
-        if (password.length < 6) return showErr("Password must be at least 6 characters");
-        if (password !== confirmPassword) return showErr("Passwords do not match");
-
-        try {
-          const cred = await createUserWithEmailAndPassword(auth, email, password);
-          await setDoc(doc(db, "users", cred.user.uid), { name, email, cart: [] });
-          alert("Account created, please login");
-          toggleAuthMode();
-        } catch (e) { showErr(cleanFirebaseMsg(e.message)); }
-
-      } else {
-        try {
-          const cred = await signInWithEmailAndPassword(auth, email, password);
-          const uid = cred.user.uid;
-          const snap = await getDoc(doc(db, "users", uid));
-          const profile = snap.exists() ? snap.data() : { name: "User", cart: [] };
-          document.getElementById("accountLabel").innerText = profile.name || "Account";
-          cart = profile.cart || [];
-          updateCartCount();
-          closeLoginPopup();
-          window.location.href = "cart.html";
-        } catch (e) { showErr("Invalid email or password"); }
-      }
-
-      function showErr(msg){ errorText.innerText = msg; errorText.classList.remove("hidden"); }
-      function cleanFirebaseMsg(m){ return m.replace("Firebase:", "").trim(); }
-    }
-
-    async function saveUserCart() {
-      const { auth, db, doc, updateDoc, setDoc, getDoc } = window.__fe;
-      const user = auth.currentUser;
-      if (!user) return;
-      const ref = doc(db, "users", user.uid);
-      const snap = await getDoc(ref);
-      if (snap.exists()) {
-        await updateDoc(ref, { cart });
-      } else {
-        await setDoc(ref, { cart });
-      }
-    }
-
-    function addToCart(name, price) {
-      cart.push({ name, price });
-      updateCartCount();
-      saveUserCart();
-    }
-    function updateCartCount(){ document.getElementById("cartCount").innerText = cart.length; }
-    function goToCart(){
-      const { auth } = window.__fe;
-      if (!auth.currentUser) openLoginPopup(); else window.location.href = "cart.html";
-    }
-
-    // auth state → keep UI in sync + live cart
-    window.addEventListener("load", () => {
-      const { auth, onAuthStateChanged, db, doc, onSnapshot } = window.__fe;
-      onAuthStateChanged(auth, (user) => {
-        if (!user) {
-          document.getElementById("accountLabel").innerText = "Account";
-          cart = []; updateCartCount();
-          return;
-        }
-        // live subscribe to profile to reflect cart changes across tabs/devices
-        const ref = doc(db, "users", user.uid);
-        onSnapshot(ref, (snap) => {
-          const data = snap.data() || {};
-          document.getElementById("accountLabel").innerText = data.name || "Account";
-          cart = data.cart || [];
-          updateCartCount();
-        });
-      });
-    });
-
-    // expose handlers for inline HTML
-    window.submitAuth = submitAuth;
-    window.addToCart = addToCart;
-    window.goToCart = goToCart;
-    window.openLoginPopup = openLoginPopup;
-    window.closeLoginPopup = closeLoginPopup;
-    window.toggleAuthMode = toggleAuthMode;
-    window.togglePassword = togglePassword;
-  </script>
 </body>
 </html>
