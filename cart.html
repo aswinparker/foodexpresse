@@ -1,280 +1,174 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Cart</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Food Express - Cart</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .toast-hidden { opacity: 0; transform: translateY(24px); }
+    .toast-show { opacity: 1; transform: translateY(0); transition: all 400ms ease; }
+    .animate-bump { transform: scale(1.08); transition: transform 0.18s; }
+    .quantity-box { min-width: 30px; text-align: center; font-weight: bold; }
+  </style>
 </head>
-<body class="bg-gray-100 pb-20">
-  <div class="max-w-xl mx-auto p-4">
-    <h1 class="text-2xl font-bold mb-4">🛒 Your Cart</h1>
+<body class="bg-gray-50 font-sans text-gray-800">
 
-    <!-- auth notice -->
-    <div id="authNotice" class="hidden bg-yellow-50 border border-yellow-200 text-yellow-800 p-3 rounded mb-4">
-      Please <a href="index.html" class="underline font-medium">log in</a> to view your cart.
-    </div>
+<header class="bg-white shadow-sm sticky top-0 z-40">
+  <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+    <div class="text-xl font-bold text-orange-500">Food Express</div>
+    <div class="cursor-pointer" id="homeBtn">Home</div>
+  </div>
+</header>
 
-    <ul id="cartList" class="space-y-4"></ul>
-    <p class="text-right mt-4 font-semibold text-lg">Total: ₹<span id="cartTotal">0.00</span></p>
+<main class="max-w-5xl mx-auto px-4 py-6">
+  <h1 class="text-2xl font-bold mb-4">Your Cart</h1>
 
-    <button id="checkoutBtn" class="block w-full mt-6 bg-orange-500 hover:bg-orange-600 text-white font-semibold text-center py-2 rounded">
-      Proceed to Checkout →
-    </button>
+  <div id="cartContainer" class="space-y-4">
+    <!-- Cart items injected here -->
   </div>
 
-<!-- Bottom Navigation -->
-<div class="fixed bottom-0 left-0 right-0 bg-white shadow-lg border-t rounded-t-2xl">
-  <div id="bottomNav" class="relative flex justify-around items-center py-2">
-    
-    <!-- Home -->
-    <div class="nav-item flex flex-col items-center cursor-pointer text-orange-500 transition-all duration-300 transform" data-tab="home">
-      <span class="text-2xl">🏠</span>
-      <span class="text-xs font-medium">Home</span>
-    </div>
-    
-    <!-- Orders -->
-    <div class="nav-item flex flex-col items-center cursor-pointer text-gray-500 transition-all duration-300 transform" data-tab="orders">
-      <span class="text-2xl">📦</span>
-      <span class="text-xs font-medium">Orders</span>
-    </div>
-    
-    <!-- Cart -->
-    <div class="nav-item flex flex-col items-center relative cursor-pointer text-gray-500 transition-all duration-300 transform" data-tab="cart" onclick="goToCart()">
-      <span class="text-2xl">🛒</span>
-      <span class="absolute -top-1 -right-2 bg-red-500 text-white rounded-full text-[10px] px-1" id="cartCount">0</span>
-      <span class="text-xs font-medium">Cart</span>
-    </div>
-    
-    <!-- Account -->
-    <div class="nav-item flex flex-col items-center cursor-pointer text-gray-500 transition-all duration-300 transform" data-tab="account" onclick="openLoginPopup()">
-      <span class="text-2xl">👤</span>
-      <span class="text-xs font-medium" id="accountLabel">Account</span>
-    </div>
-
-    <!-- Sliding Underline -->
-    <div id="navUnderline" class="absolute bottom-0 h-[3px] bg-orange-500 rounded-full transition-all duration-300"></div>
+  <div class="mt-6 bg-white p-4 rounded-xl shadow flex justify-between items-center">
+    <div class="text-lg font-semibold">Total:</div>
+    <div class="text-xl font-bold text-orange-600" id="cartTotal">₹0</div>
   </div>
-</div>
 
-<script>
-  function setActiveTab(tabName) {
-    const navItems = document.querySelectorAll("#bottomNav .nav-item");
-    navItems.forEach(item => {
-      if (item.dataset.tab === tabName) {
-        item.classList.remove("text-gray-500", "scale-100");
-        item.classList.add("text-orange-500", "scale-110");
-      } else {
-        item.classList.remove("text-orange-500", "scale-110");
-        item.classList.add("text-gray-500", "scale-100");
-      }
-    });
+  <button id="checkoutBtn" class="mt-4 w-full bg-orange-500 text-white py-3 rounded-full font-bold shadow">Proceed to Checkout</button>
+</main>
 
-    // Move underline
-    const activeItem = document.querySelector(`#bottomNav .nav-item[data-tab="${tabName}"]`);
-    const underline = document.getElementById("navUnderline");
-    underline.style.width = activeItem.offsetWidth + "px";
-    underline.style.left = activeItem.offsetLeft + "px";
+<!-- Toast -->
+<div id="toast" class="fixed bottom-20 left-1/2 transform -translate-x-1/2 bg-orange-500 text-white px-5 py-3 rounded-full shadow-lg toast-hidden z-50">Updated ✅</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCAGirQsFfQNInhUc9yuMD-QElaDnmRbKE",
+  authDomain: "foodexpress-9b0ff.firebaseapp.com",
+  projectId: "foodexpress-9b0ff",
+  storageBucket: "foodexpress-9b0ff.firebasestorage.app",
+  messagingSenderId: "818281594225",
+  appId: "1:818281594225:web:205774c2914ae2b9b08ad0"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+window.__fe = { auth, db, doc, setDoc };
+
+const LOCAL_CART_KEY = "fe_cart_v1";
+let cart = JSON.parse(localStorage.getItem(LOCAL_CART_KEY) || "[]");
+
+const toast = document.getElementById("toast");
+function showToast(msg){
+  toast.innerText = msg;
+  toast.classList.remove("toast-hidden");
+  toast.classList.add("toast-show");
+  setTimeout(()=>{ toast.classList.remove("toast-show"); toast.classList.add("toast-hidden"); },1500);
+}
+
+function persistCart(){ 
+  localStorage.setItem(LOCAL_CART_KEY, JSON.stringify(cart)); 
+  updateCartUI(); 
+  saveUserCart();
+}
+
+async function saveUserCart(){
+  try{
+    const user = auth.currentUser;
+    if(!user) return;
+    const userRef = doc(db,"users",user.uid);
+    await setDoc(userRef,{cart},{merge:true});
+  }catch(err){ console.error(err); }
+}
+
+function updateCartUI(){
+  const container = document.getElementById("cartContainer");
+  container.innerHTML = "";
+  let total = 0;
+
+  if(cart.length===0){
+    container.innerHTML = '<p class="text-gray-500">Your cart is empty.</p>';
+    document.getElementById("cartTotal").innerText = "₹0";
+    return;
   }
 
-  // default active = home
-  window.onload = () => {
-    setActiveTab("home");
-  };
+  cart.forEach((item,index)=>{
+    const itemTotal = item.price * (item.quantity||1);
+    total += itemTotal;
 
-  // handle clicks
-  document.querySelectorAll("#bottomNav .nav-item").forEach(item => {
-    item.addEventListener("click", () => {
-      const tab = item.dataset.tab;
-      setActiveTab(tab);
-      if (tab === "orders") window.location.href = "orders.html";
-      if (tab === "home") window.location.href = "index.html";
-    });
+    const div = document.createElement("div");
+    div.className = "bg-white rounded-xl p-3 flex items-center gap-4 shadow";
+    div.innerHTML = `
+      <img src="${item.image}" class="w-20 h-20 object-cover rounded-lg"/>
+      <div class="flex-1">
+        <div class="font-semibold">${item.name}</div>
+        <div class="text-gray-500">₹${item.price} × <span class="quantity-box" id="qty-${index}">${item.quantity}</span> = ₹<span id="item-total-${index}">${itemTotal}</span></div>
+        <div class="mt-2 flex gap-2">
+          <button class="decrease bg-gray-100 px-3 rounded-full">-</button>
+          <button class="increase bg-gray-100 px-3 rounded-full">+</button>
+          <button class="remove bg-red-500 text-white px-3 rounded-full">Remove</button>
+        </div>
+      </div>
+    `;
+    container.appendChild(div);
+
+    // Add event listeners dynamically
+    div.querySelector(".decrease").addEventListener("click",()=>changeQuantity(index,-1));
+    div.querySelector(".increase").addEventListener("click",()=>changeQuantity(index,1));
+    div.querySelector(".remove").addEventListener("click",()=>removeItem(index));
   });
+
+  const cartTotalEl = document.getElementById("cartTotal");
+  cartTotalEl.innerText = "₹" + total;
+  cartTotalEl.classList.remove("animate-bump");
+  void cartTotalEl.offsetWidth;
+  cartTotalEl.classList.add("animate-bump");
+}
+
+function changeQuantity(index, delta){
+  cart[index].quantity = (cart[index].quantity || 1) + delta;
+  if(cart[index].quantity <= 0) cart.splice(index,1);
+  persistCart();
+  showToast("Cart updated ✅");
+  animateItem(index);
+}
+
+function animateItem(index){
+  const itemTotalEl = document.getElementById(`item-total-${index}`);
+  const qtyEl = document.getElementById(`qty-${index}`);
+  if(itemTotalEl && qtyEl){
+    itemTotalEl.classList.remove("animate-bump");
+    qtyEl.classList.remove("animate-bump");
+    void itemTotalEl.offsetWidth;
+    itemTotalEl.classList.add("animate-bump");
+    qtyEl.classList.add("animate-bump");
+  }
+}
+
+function removeItem(index){
+  cart.splice(index,1);
+  persistCart();
+  showToast("Item removed ❌");
+}
+
+document.getElementById("checkoutBtn").addEventListener("click",()=>{
+  if(cart.length===0){ showToast("Cart is empty"); return; }
+  const total = cart.reduce((sum,item)=>sum + item.price*item.quantity,0);
+  localStorage.setItem("fe_cart_total", total);
+  window.location.href = "checkout.html";
+});
+
+document.getElementById("homeBtn").addEventListener("click",()=>window.location.href="index.html");
+
+// Initialize UI
+updateCartUI();
+
+// Sync with Firestore if user logged in
+onAuthStateChanged(auth, user => { if(user) saveUserCart(); });
 </script>
 
-
-  <!-- Firebase SDK + app logic -->
-  <script type="module">
-    // --- Firebase SDKs (v11) ---
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-    import { 
-      getAuth, onAuthStateChanged 
-    } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
-    import { 
-      getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, serverTimestamp, collection, addDoc 
-    } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
-
-    // TODO: paste your config here
-    const firebaseConfig = {
-   apiKey: "AIzaSyCAGirQsFfQNInhUc9yuMD-QElaDnmRbKE",
-   authDomain: "foodexpress-9b0ff.firebaseapp.com",
-   projectId: "foodexpress-9b0ff",
-   storageBucket: "foodexpress-9b0ff.firebasestorage.app",
-   messagingSenderId: "818281594225",
-   appId: "1:818281594225:web:205774c2914ae2b9b08ad0"
-    };
-
-    // init
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-
-    // DOM
-    const cartList = document.getElementById("cartList");
-    const totalSpan = document.getElementById("cartTotal");
-    const checkoutBtn = document.getElementById("checkoutBtn");
-    const authNotice = document.getElementById("authNotice");
-
-    // state
-    let uid = null;
-    let cart = []; // [{name, price, quantity, image?}]
-
-    // helpers
-    function renderCart() {
-      cartList.innerHTML = "";
-      if (!cart.length) {
-        cartList.innerHTML = '<p class="text-gray-500 text-center">Your cart is empty 🛍️</p>';
-        totalSpan.textContent = "0.00";
-        return;
-      }
-      cart.forEach((item, index) => {
-        const li = document.createElement("li");
-        li.className = "flex items-center bg-white rounded-lg shadow p-3";
-        li.innerHTML = `
-          <img src="${item.image || 'https://via.placeholder.com/60'}" alt="${item.name}" class="w-16 h-16 rounded object-cover mr-4">
-          <div class="flex-1">
-            <h3 class="font-semibold">${item.name}</h3>
-            <p class="text-sm text-gray-500">₹${Number(item.price).toFixed(2)} each</p>
-            <div class="flex items-center mt-2 space-x-2">
-              <button data-action="dec" data-index="${index}" class="bg-gray-200 px-2 rounded text-lg">−</button>
-              <span>${item.quantity}</span>
-              <button data-action="inc" data-index="${index}" class="bg-gray-200 px-2 rounded text-lg">+</button>
-            </div>
-          </div>
-          <div class="flex flex-col items-end justify-between h-full ml-4">
-            <div class="text-right font-bold">₹${(Number(item.price) * Number(item.quantity)).toFixed(2)}</div>
-            <button data-action="remove" data-index="${index}" class="text-red-500 text-sm mt-4 hover:underline">🗑 Remove</button>
-          </div>
-        `;
-        cartList.appendChild(li);
-      });
-      updateTotals();
-    }
-
-    function updateTotals() {
-      const total = cart.reduce((sum, it) => sum + Number(it.price) * Number(it.quantity || 1), 0);
-      totalSpan.textContent = total.toFixed(2);
-    }
-
-    async function saveCart() {
-      if (!uid) return;
-      const ref = doc(db, "users", uid);
-      await setDoc(ref, { cart }, { merge: true });
-    }
-
-    function ensureQuantities() {
-      cart = cart.map(i => ({ ...i, quantity: i.quantity ? Number(i.quantity) : 1 }));
-    }
-
-    // list click handlers (event delegation)
-    cartList.addEventListener("click", async (e) => {
-      const btn = e.target.closest("button");
-      if (!btn) return;
-      const idx = Number(btn.dataset.index);
-      const action = btn.dataset.action;
-      if (Number.isNaN(idx)) return;
-
-      if (action === "inc") cart[idx].quantity += 1;
-      if (action === "dec") {
-        cart[idx].quantity = Math.max(0, cart[idx].quantity - 1);
-        if (cart[idx].quantity === 0) cart.splice(idx, 1);
-      }
-      if (action === "remove") cart.splice(idx, 1);
-
-      renderCart();
-      await saveCart();
-    });
-
-    // checkout → create order, clear cart
-    checkoutBtn.addEventListener("click", async () => {
-      if (!uid) { alert("Please log in first."); return; }
-      if (!cart.length) { alert("🛍️ Your cart is empty!"); return; }
-
-      const total = cart.reduce((sum, it) => sum + Number(it.price) * Number(it.quantity || 1), 0);
-
-      try {
-        await addDoc(collection(db, "orders"), {
-          userId: uid,
-          items: cart,
-          total,
-          status: "pending",
-          createdAt: serverTimestamp()
-        });
-
-        // clear cart in Firestore and UI
-        cart = [];
-        await saveCart();
-        renderCart();
-
-        // go to confirmation page
-        window.location.href = "order-confirmation.html";
-      } catch (err) {
-        alert("❌ Failed to place order: " + err.message);
-      }
-    });
-
-    // auth + live cart sync
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        uid = null;
-        cart = [];
-        renderCart();
-        authNotice.classList.remove("hidden");
-
-        // (optional) show local cart to encourage login
-        return;
-      }
-
-      authNotice.classList.add("hidden");
-      uid = user.uid;
-
-      const ref = doc(db, "users", uid);
-
-      // optional first-time merge: if local cart exists, merge once
-      const local = JSON.parse(localStorage.getItem("cart") || "[]");
-      if (local.length) {
-        ensureQuantities();
-        const snap = await getDoc(ref);
-        const remote = snap.exists() && Array.isArray(snap.data().cart) ? snap.data().cart : [];
-        const merged = [...remote];
-
-        // merge by name+price (simple heuristic)
-        local.forEach(li => {
-          const key = (it) => `${it.name}|${it.price}|${it.image||""}`;
-          const i = merged.findIndex(it => key(it) === key(li));
-          if (i >= 0) merged[i].quantity = Number(merged[i].quantity || 1) + Number(li.quantity || 1);
-          else merged.push({ ...li, quantity: Number(li.quantity || 1) });
-        });
-
-        cart = merged;
-        await setDoc(ref, { cart }, { merge: true });
-        localStorage.removeItem("cart");
-      }
-
-      // live subscribe to Firestore cart
-      onSnapshot(ref, (snap) => {
-        const data = snap.data() || {};
-        cart = Array.isArray(data.cart) ? data.cart : [];
-        ensureQuantities();
-        renderCart();
-      }, (err) => {
-        console.error("Cart subscribe error:", err);
-      });
-    });
-
-    // initial render (empty)
-    renderCart();
-  </script>
 </body>
 </html>
