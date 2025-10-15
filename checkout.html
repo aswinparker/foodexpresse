@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Food Express - Checkout</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background: #fafafa; font-family: 'Inter', sans-serif; }
+    .toast-hidden { opacity: 0; transform: translateY(24px); }
+    .toast-show { opacity: 1; transform: translateY(0); transition: all 400ms ease; }
+    .payment-btn {
+      flex: 1; text-align: center; border: 2px solid #e5e7eb; border-radius: 14px;
+      padding: 12px; cursor: pointer; background: #fff; transition: all 0.25s;
+    }
+    .payment-btn:hover { background-color: #fff7ed; transform: scale(1.03); }
+    .payment-btn.selected {
+      border-color: #ff6b00; background-color: #fff1e6;
+      box-shadow: 0 0 0 2px rgba(255,107,0,0.3);
+    }
+    .payment-logo { width: 36px; height: 36px; display: inline-block; margin-right: 8px; border-radius: 50%; }
+  </style>
+</head>
+<body class="text-gray-800">
+
+<header class="bg-white shadow-md sticky top-0 z-40">
+  <div class="max-w-5xl mx-auto px-5 py-4 flex items-center justify-between">
+    <div class="text-2xl font-extrabold text-orange-500">🍽️ Food Express</div>
+    <button id="backBtn" class="text-orange-500 font-semibold">← Back</button>
+  </div>
+</header>
+
+<main class="max-w-5xl mx-auto px-4 py-6 space-y-5">
+  <h1 class="text-3xl font-bold mb-3">Checkout</h1>
+
+  <div id="checkoutContainer" class="space-y-4"></div>
+
+  <div class="bg-white p-5 rounded-2xl shadow-md flex justify-between items-center">
+    <span class="text-lg font-semibold">Total</span>
+    <span id="checkoutTotal" class="text-2xl font-bold text-orange-600">₹0</span>
+  </div>
+
+  <div class="bg-white p-5 rounded-2xl shadow-md">
+    <h2 class="text-xl font-semibold mb-3">Select Payment Method</h2>
+    <div class="flex gap-4 flex-col sm:flex-row">
+      <div id="gpayBtn" class="payment-btn">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/5/5b/Google_Pay_Logo.svg" class="payment-logo" alt="GPay" />
+        <span class="font-medium">GPay</span>
+      </div>
+      <div id="phonepeBtn" class="payment-btn">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/3/39/PhonePe_Logo.svg" class="payment-logo" alt="PhonePe" />
+        <span class="font-medium">PhonePe</span>
+      </div>
+      <div id="codBtn" class="payment-btn">
+        <img src="https://cdn-icons-png.flaticon.com/512/2311/2311524.png" class="payment-logo" alt="COD" />
+        <span class="font-medium">Cash on Delivery</span>
+      </div>
+    </div>
+  </div>
+
+  <button id="payBtn" class="mt-4 w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white py-3 rounded-full font-bold shadow-lg hover:from-orange-600 hover:to-orange-700 transition-all duration-200">
+    Pay & Place Order
+  </button>
+</main>
+
+<div id="toast" class="fixed bottom-20 left-1/2 transform -translate-x-1/2 bg-orange-500 text-white px-6 py-3 rounded-full shadow-lg toast-hidden z-50">
+  Order Placed ✅
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+// Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyCAGirQsFfQNInhUc9yuMD-QElaDnmRbKE",
+  authDomain: "foodexpress-9b0ff.firebaseapp.com",
+  projectId: "foodexpress-9b0ff",
+  storageBucket: "foodexpress-9b0ff.firebasestorage.app",
+  messagingSenderId: "818281594225",
+  appId: "1:818281594225:web:205774c2914ae2b9b08ad0"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const toast = document.getElementById("toast");
+function showToast(msg){
+  toast.innerText = msg;
+  toast.classList.remove("toast-hidden");
+  toast.classList.add("toast-show");
+  setTimeout(()=>{ toast.classList.remove("toast-show"); toast.classList.add("toast-hidden"); },1800);
+}
+
+const container = document.getElementById("checkoutContainer");
+const totalEl = document.getElementById("checkoutTotal");
+const cart = JSON.parse(localStorage.getItem("fe_cart_v1") || "[]");
+const total = parseFloat(localStorage.getItem("fe_cart_total") || 0);
+let selectedPayment = null;
+let currentUser = null;
+
+// Render Cart
+if(cart.length === 0){
+  container.innerHTML = '<p class="text-gray-500">Your cart is empty.</p>';
+  totalEl.innerText = "₹0";
+}else{
+  cart.forEach(item=>{
+    const itemTotal = item.price * item.quantity;
+    const div = document.createElement("div");
+    div.className = "bg-white rounded-2xl p-4 flex items-center gap-4 shadow-sm";
+    div.innerHTML = `
+      <img src="${item.image}" class="w-20 h-20 object-cover rounded-xl border" />
+      <div class="flex-1">
+        <div class="font-semibold text-lg">${item.name}</div>
+        <div class="text-gray-500">₹${item.price} × ${item.quantity} = ₹${itemTotal}</div>
+      </div>
+    `;
+    container.appendChild(div);
+  });
+  totalEl.innerText = "₹" + total;
+}
+
+// Payment Selection
+document.querySelectorAll(".payment-btn").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    document.querySelectorAll(".payment-btn").forEach(b=>b.classList.remove("selected"));
+    btn.classList.add("selected");
+    selectedPayment = btn.id;
+  });
+});
+
+// Back Button
+document.getElementById("backBtn").addEventListener("click",()=>window.location.href="cart.html");
+
+// Firebase Save Function
+async function placeOrder(method, status){
+  if(!currentUser){ showToast("Please login first"); return; }
+  try{
+    await addDoc(collection(db,"users",currentUser.uid,"orders"),{
+      cart,
+      total,
+      paymentMethod: method,
+      status,
+      timestamp: serverTimestamp()
+    });
+    showToast(`Order placed via ${method} ✅`);
+    localStorage.removeItem("fe_cart_v1");
+    localStorage.removeItem("fe_cart_total");
+    setTimeout(()=>window.location.href="index.html",2000);
+  }catch(err){
+    console.error(err);
+    showToast("Error placing order ❌");
+  }
+}
+
+// UPI Payment Function
+function openUPIPayment(app, amount){
+  const upiId = "merchantupiid@oksbi"; // 🔹 Replace with your UPI ID
+  const name = "Food Express";
+  const transactionNote = "Food Express Order";
+  const redirectUrl = "index.html"; // optional redirect after payment
+  const upiLink = `upi://pay?pa=${upiId}&pn=${name}&am=${amount}&cu=INR&tn=${transactionNote}`;
+
+  window.location.href = upiLink;
+  // After manual payment, user can come back — we can show success message then
+  showToast(`${app} payment initiated ✅`);
+  placeOrder(app, "Pending Verification");
+}
+
+// Pay Button
+document.getElementById("payBtn").addEventListener("click",()=>{
+  if(cart.length===0){ showToast("Cart is empty"); return; }
+  if(!selectedPayment){ showToast("Please select a payment method"); return; }
+
+  if(selectedPayment === "codBtn"){
+    placeOrder("Cash on Delivery", "Pending COD");
+  } else if(selectedPayment === "gpayBtn"){
+    openUPIPayment("GPay", total);
+  } else if(selectedPayment === "phonepeBtn"){
+    openUPIPayment("PhonePe", total);
+  }
+});
+
+// Auth Check
+onAuthStateChanged(auth,user=>{
+  if(user) currentUser = user;
+});
+</script>
+
+</body>
+</html>
