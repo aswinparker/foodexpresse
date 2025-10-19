@@ -1,25 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Food Express - Checkout</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    body { background: #fafafa; font-family: 'Inter', sans-serif; }
-    .toast-hidden { opacity: 0; transform: translateY(24px); }
-    .toast-show { opacity: 1; transform: translateY(0); transition: all 400ms ease; }
-    .payment-btn {
-      flex: 1; text-align: center; border: 2px solid #e5e7eb; border-radius: 14px;
-      padding: 12px; cursor: pointer; background: #fff; transition: all 0.25s;
-    }
-    .payment-btn:hover { background-color: #fff7ed; transform: scale(1.03); }
-    .payment-btn.selected {
-      border-color: #ff6b00; background-color: #fff1e6;
-      box-shadow: 0 0 0 2px rgba(255,107,0,0.3);
-    }
-    .payment-logo { width: 36px; height: 36px; display: inline-block; margin-right: 8px; border-radius: 50%; }
-  </style>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Food Express - Cart & Checkout</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+body { font-family:'Inter',sans-serif; background:#f9f9f9; }
+.toast-hidden{opacity:0; transform:translateY(24px); pointer-events:none;}
+.toast-show{opacity:1; transform:translateY(0); transition: all 320ms cubic-bezier(.2,.9,.3,1); pointer-events:auto;}
+.animate-bump{transform:scale(1.08); transition:transform 0.18s;}
+.quantity-box{min-width:30px; text-align:center; font-weight:bold;}
+.popup-overlay{position:fixed; inset:0; background: rgba(0,0,0,0.32); backdrop-filter: blur(6px); display:flex; align-items:center; justify-content:center; z-index:60; opacity:0; pointer-events:none; transition: all .28s;}
+.popup-overlay.active{opacity:1; pointer-events:auto;}
+.popup{transform:translateY(36px); opacity:0; transition: all .28s ease; max-width:95vw; background:white; border-radius:1rem; padding:2rem;}
+.popup-overlay.active .popup{transform:translateY(0); opacity:1;}
+.checkmark{width:60px; height:60px; border-radius:50%; display:inline-block; stroke-width:2; stroke:#fff; stroke-miterlimit:10; box-shadow: inset 0px 0px 0px #fff; animation: fill .4s ease-in-out .4s forwards, scale .3s ease-in-out .9s both;}
+.checkmark__circle{stroke-dasharray:166; stroke-dashoffset:166; stroke-width:2; stroke-miterlimit:10; stroke:#FF6B00; fill:none; animation: stroke .6s cubic-bezier(.65,0,.45,1) forwards;}
+.checkmark__check{transform-origin:50% 50%; stroke-dasharray:48; stroke-dashoffset:48; animation: stroke .3s cubic-bezier(.65,0,.45,1) .8s forwards;}
+@keyframes stroke{100%{stroke-dashoffset:0;}}
+@keyframes scale{0%,100%{transform:none;}50%{transform:scale3d(1.1,1.1,1);}}
+@keyframes fill{100%{box-shadow:inset 0 0 0 30px #FF6B00;}}
+.payment-btn.selected{border-color:#FF6B00; background:#FFF4E6; box-shadow:0 4px 12px rgba(255,107,0,0.2);}
+@media (max-width:640px){ .cart-item { flex-direction: column; align-items: flex-start; } .cart-item img { width:100%; height:auto; margin-bottom:0.5rem; } #paymentGrid { flex-direction: column; } .flex-wrap { flex-wrap: wrap; } }
+</style>
 </head>
 <body class="text-gray-800">
 
@@ -30,49 +34,73 @@
   </div>
 </header>
 
-<main class="max-w-5xl mx-auto px-4 py-6 space-y-5">
-  <h1 class="text-3xl font-bold mb-3">Checkout</h1>
-
-  <div id="checkoutContainer" class="space-y-4"></div>
-
-  <div class="bg-white p-5 rounded-2xl shadow-md flex justify-between items-center">
-    <span class="text-lg font-semibold">Total</span>
-    <span id="checkoutTotal" class="text-2xl font-bold text-orange-600">₹0</span>
+<main class="max-w-5xl mx-auto px-4 py-6 space-y-6">
+<section id="cartSection">
+  <h1 class="text-3xl font-bold mb-3">Your Cart</h1>
+  <div id="cartContainer" class="space-y-4"></div>
+  <div class="mt-6 bg-white p-5 rounded-2xl shadow flex justify-between items-center">
+    <span class="text-lg font-semibold">Total:</span>
+    <span id="cartTotal" class="text-2xl font-bold text-orange-600">₹0</span>
   </div>
+  <button id="addAddressBtn" class="mt-4 w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white py-3 rounded-full font-bold shadow-lg hover:from-orange-600 hover:to-orange-700 transition-all duration-200">
+    Add Delivery Address
+  </button>
+</section>
 
-  <div class="bg-white p-5 rounded-2xl shadow-md">
-    <h2 class="text-xl font-semibold mb-3">Select Payment Method</h2>
-    <div class="flex gap-4 flex-col sm:flex-row">
-      <div id="gpayBtn" class="payment-btn">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/5/5b/Google_Pay_Logo.svg" class="payment-logo" alt="GPay" />
-        <span class="font-medium">GPay</span>
-      </div>
-      <div id="phonepeBtn" class="payment-btn">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/3/39/PhonePe_Logo.svg" class="payment-logo" alt="PhonePe" />
-        <span class="font-medium">PhonePe</span>
-      </div>
-      <div id="codBtn" class="payment-btn">
-        <img src="https://cdn-icons-png.flaticon.com/512/2311/2311524.png" class="payment-logo" alt="COD" />
-        <span class="font-medium">Cash on Delivery</span>
-      </div>
+<div id="addressPopup" class="popup-overlay">
+  <div class="popup">
+    <h3 class="text-xl font-semibold mb-3 text-orange-600">Add Delivery Address</h3>
+    <input id="addrName" type="text" placeholder="Full name" class="w-full px-3 py-2 border rounded-lg mb-2"/>
+    <input id="addrPhone" type="tel" placeholder="Phone number" class="w-full px-3 py-2 border rounded-lg mb-2"/>
+    <input id="addrStreet" type="text" placeholder="House / Street / Locality" class="w-full px-3 py-2 border rounded-lg mb-2"/>
+    <div class="grid grid-cols-2 gap-2 mb-2">
+      <input id="addrCity" type="text" placeholder="City" class="px-3 py-2 border rounded-lg"/>
+      <input id="addrPincode" type="text" placeholder="Pincode" class="px-3 py-2 border rounded-lg"/>
+    </div>
+    <div class="flex gap-2">
+      <button id="saveAddressBtn" class="flex-1 bg-orange-500 text-white py-2 rounded-lg font-semibold">Save</button>
+      <button id="cancelAddressBtn" class="flex-1 bg-gray-100 text-gray-700 py-2 rounded-lg">Cancel</button>
     </div>
   </div>
+</div>
 
+<section id="paymentSection" class="bg-white p-5 rounded-2xl shadow-md hidden">
+  <h2 class="text-xl font-semibold mb-3">Select Payment Method</h2>
+  <div id="paymentGrid" class="flex gap-4 flex-col sm:flex-row">
+    <button class="payment-btn flex items-center gap-3 p-3 border rounded-xl shadow-sm hover:shadow-md transition-all" id="gpayBtn">
+      <img src="https://i.postimg.cc/7Z8gybDt/google-pay-6124998.png" class="w-10 h-10 object-contain" alt="GPay"/>
+      <div><div class="font-medium">GPay (UPI)</div><div class="text-xs text-gray-500">Open app to pay</div></div>
+    </button>
+    <button class="payment-btn flex items-center gap-3 p-3 border rounded-xl shadow-sm hover:shadow-md transition-all" id="phonepeBtn">
+      <img src="https://img.icons8.com/color/48/phone-pe.png" class="w-10 h-10 object-contain" alt="PhonePe"/>
+      <div><div class="font-medium">PhonePe (UPI)</div><div class="text-xs text-gray-500">Open app to pay</div></div>
+    </button>
+  </div>
   <button id="payBtn" class="mt-4 w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white py-3 rounded-full font-bold shadow-lg hover:from-orange-600 hover:to-orange-700 transition-all duration-200">
-    Pay & Place Order
+    <span id="payBtnText">Pay & Place Order</span>
   </button>
+</section>
 </main>
 
-<div id="toast" class="fixed bottom-20 left-1/2 transform -translate-x-1/2 bg-orange-500 text-white px-6 py-3 rounded-full shadow-lg toast-hidden z-50">
-  Order Placed ✅
+<div id="toast" class="fixed bottom-20 left-1/2 transform -translate-x-1/2 bg-orange-500 text-white px-6 py-3 rounded-full shadow-lg toast-hidden z-50" role="status" aria-live="polite"></div>
+
+<div id="successPopup" class="popup-overlay">
+  <div class="popup text-center">
+    <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+      <circle class="checkmark__circle" cx="26" cy="26" r="25" fill="none"/>
+      <path class="checkmark__check" fill="none" d="M14 27l7 7 16-16"/>
+    </svg>
+    <h3 class="mt-3 text-xl font-semibold text-green-600">Order Placed Successfully!</h3>
+    <p class="mt-2 text-gray-600">Your order ID is <span id="orderId"></span></p>
+    <button id="continueShoppingBtn" class="mt-4 bg-orange-500 text-white py-2 px-4 rounded-lg font-semibold">Continue Shopping</button>
+  </div>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
-import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-// Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyCAGirQsFfQNInhUc9yuMD-QElaDnmRbKE",
   authDomain: "foodexpress-9b0ff.firebaseapp.com",
@@ -81,112 +109,125 @@ const firebaseConfig = {
   messagingSenderId: "818281594225",
   appId: "1:818281594225:web:205774c2914ae2b9b08ad0"
 };
+
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-const toast = document.getElementById("toast");
-function showToast(msg){
-  toast.innerText = msg;
-  toast.classList.remove("toast-hidden");
-  toast.classList.add("toast-show");
-  setTimeout(()=>{ toast.classList.remove("toast-show"); toast.classList.add("toast-hidden"); },1800);
-}
+const LOCAL_CART_KEY="fe_cart_v1";
+let cart=JSON.parse(localStorage.getItem(LOCAL_CART_KEY)||"[]");
+const toast=document.getElementById("toast");
 
-const container = document.getElementById("checkoutContainer");
-const totalEl = document.getElementById("checkoutTotal");
-const cart = JSON.parse(localStorage.getItem("fe_cart_v1") || "[]");
-const total = parseFloat(localStorage.getItem("fe_cart_total") || 0);
-let selectedPayment = null;
-let currentUser = null;
+function showToast(msg){ toast.innerText=msg; toast.classList.remove("toast-hidden"); toast.classList.add("toast-show"); setTimeout(()=>{ toast.classList.remove("toast-show"); toast.classList.add("toast-hidden"); },1500); }
+function persistCart(){ localStorage.setItem(LOCAL_CART_KEY,JSON.stringify(cart)); updateCartUI(); saveUserCart(); }
+async function saveUserCart(){ try{ const user=auth.currentUser; if(!user) return; const userRef=doc(db,"users",user.uid); await setDoc(userRef,{cart},{merge:true}); }catch(err){console.error(err);} }
 
-// Render Cart
-if(cart.length === 0){
-  container.innerHTML = '<p class="text-gray-500">Your cart is empty.</p>';
-  totalEl.innerText = "₹0";
-}else{
-  cart.forEach(item=>{
-    const itemTotal = item.price * item.quantity;
-    const div = document.createElement("div");
-    div.className = "bg-white rounded-2xl p-4 flex items-center gap-4 shadow-sm";
-    div.innerHTML = `
-      <img src="${item.image}" class="w-20 h-20 object-cover rounded-xl border" />
-      <div class="flex-1">
-        <div class="font-semibold text-lg">${item.name}</div>
-        <div class="text-gray-500">₹${item.price} × ${item.quantity} = ₹${itemTotal}</div>
-      </div>
-    `;
-    container.appendChild(div);
-  });
-  totalEl.innerText = "₹" + total;
-}
-
-// Payment Selection
-document.querySelectorAll(".payment-btn").forEach(btn=>{
-  btn.addEventListener("click", ()=>{
-    document.querySelectorAll(".payment-btn").forEach(b=>b.classList.remove("selected"));
-    btn.classList.add("selected");
-    selectedPayment = btn.id;
-  });
-});
-
-// Back Button
-document.getElementById("backBtn").addEventListener("click",()=>window.location.href="cart.html");
-
-// Firebase Save Function
-async function placeOrder(method, status){
-  if(!currentUser){ showToast("Please login first"); return; }
-  try{
-    await addDoc(collection(db,"users",currentUser.uid,"orders"),{
-      cart,
-      total,
-      paymentMethod: method,
-      status,
-      timestamp: serverTimestamp()
+function updateCartUI(){
+    const container=document.getElementById("cartContainer"); container.innerHTML=""; let total=0;
+    if(cart.length===0){ container.innerHTML='<p class="text-gray-500">Your cart is empty.</p>'; document.getElementById("cartTotal").innerText="₹0"; return; }
+    cart.forEach((item,index)=>{ 
+        const itemTotal=item.price*(item.quantity||1); total+=itemTotal;
+        const div=document.createElement("div");
+        div.className="cart-item bg-white rounded-xl p-3 flex items-center gap-4 shadow flex-wrap";
+        div.innerHTML=`<img src="${item.image}" class="w-20 h-20 object-cover rounded-lg"/>
+        <div class="flex-1">
+        <div class="font-semibold">${item.name}</div>
+        <div class="text-gray-500">₹${item.price} × <span class="quantity-box" id="qty-${index}">${item.quantity}</span> = ₹<span id="item-total-${index}">${itemTotal}</span></div>
+        <div class="mt-2 flex gap-2 flex-wrap">
+        <button class="decrease bg-gray-100 px-3 rounded-full">-</button>
+        <button class="increase bg-gray-100 px-3 rounded-full">+</button>
+        <button class="remove bg-red-500 text-white px-3 rounded-full">Remove</button>
+        </div></div>`;
+        container.appendChild(div);
+        div.querySelector(".decrease").addEventListener("click",()=>changeQuantity(index,-1));
+        div.querySelector(".increase").addEventListener("click",()=>changeQuantity(index,1));
+        div.querySelector(".remove").addEventListener("click",()=>removeItem(index));
     });
-    showToast(`Order placed via ${method} ✅`);
-    localStorage.removeItem("fe_cart_v1");
-    localStorage.removeItem("fe_cart_total");
-    setTimeout(()=>window.location.href="index.html",2000);
-  }catch(err){
-    console.error(err);
-    showToast("Error placing order ❌");
-  }
+    const cartTotalEl=document.getElementById("cartTotal"); cartTotalEl.innerText="₹"+total; cartTotalEl.classList.remove("animate-bump"); void cartTotalEl.offsetWidth; cartTotalEl.classList.add("animate-bump");
+}
+function changeQuantity(index,delta){ cart[index].quantity=(cart[index].quantity||1)+delta; if(cart[index].quantity<=0) cart.splice(index,1); persistCart(); showToast("Cart updated ✅"); }
+function removeItem(index){ cart.splice(index,1); persistCart(); showToast("Item removed ❌"); }
+
+document.getElementById("addAddressBtn").addEventListener("click",()=>{ document.getElementById("addressPopup").classList.add("active"); });
+document.getElementById("cancelAddressBtn").addEventListener("click",()=>{ document.getElementById("addressPopup").classList.remove("active"); });
+document.getElementById("saveAddressBtn").addEventListener("click",()=>{
+  const name=document.getElementById("addrName").value;
+  const phone=document.getElementById("addrPhone").value;
+  const street=document.getElementById("addrStreet").value;
+  const city=document.getElementById("addrCity").value;
+  const pincode=document.getElementById("addrPincode").value;
+  if(!name||!phone||!street||!city||!pincode){ showToast("Fill all address fields"); return; }
+  localStorage.setItem("fe_address",JSON.stringify({name,phone,street,city,pincode}));
+  document.getElementById("addressPopup").classList.remove("active");
+  showToast("Address saved ✅");
+  document.getElementById("paymentSection").classList.remove("hidden");
+});
+
+document.getElementById("backBtn").addEventListener("click",()=>{ history.back(); });
+
+const paymentButtons=document.querySelectorAll(".payment-btn");
+let selectedPayment=null;
+paymentButtons.forEach(btn=>{ btn.addEventListener("click",()=>{
+  paymentButtons.forEach(b=>b.classList.remove("selected"));
+  btn.classList.add("selected");
+  selectedPayment=btn.id;
+}); });
+
+function showOrderSuccess(orderId){ document.getElementById("orderId").innerText=orderId; document.getElementById("successPopup").classList.add("active"); cart=[]; persistCart(); }
+
+async function saveOrderToFirebase(orderId, txnId, status){
+    try {
+        const user = auth.currentUser;
+        if(!user) return;
+        const address = JSON.parse(localStorage.getItem("fe_address")||"{}");
+        await setDoc(doc(db, "orders", orderId), {
+            userId: user.uid,
+            items: cart,
+            total: cart.reduce((sum,i)=>sum+i.price*i.quantity,0),
+            address: address,
+            paymentMethod: selectedPayment==="gpayBtn"?"GPay":"PhonePe",
+            status: status,
+            txnId: txnId,
+            createdAt: new Date()
+        });
+    } catch(e){ console.error(e); }
 }
 
-// UPI Payment Function
-function openUPIPayment(app, amount){
-  const upiId = "merchantupiid@oksbi"; // 🔹 Replace with your UPI ID
-  const name = "Food Express";
-  const transactionNote = "Food Express Order";
-  const redirectUrl = "index.html"; // optional redirect after payment
-  const upiLink = `upi://pay?pa=${upiId}&pn=${name}&am=${amount}&cu=INR&tn=${transactionNote}`;
-
-  window.location.href = upiLink;
-  // After manual payment, user can come back — we can show success message then
-  showToast(`${app} payment initiated ✅`);
-  placeOrder(app, "Pending Verification");
-}
-
-// Pay Button
 document.getElementById("payBtn").addEventListener("click",()=>{
-  if(cart.length===0){ showToast("Cart is empty"); return; }
-  if(!selectedPayment){ showToast("Please select a payment method"); return; }
+    if(!cart.length){ showToast("Cart is empty"); return; }
+    if(!selectedPayment){ showToast("Select a payment method"); return; }
 
-  if(selectedPayment === "codBtn"){
-    placeOrder("Cash on Delivery", "Pending COD");
-  } else if(selectedPayment === "gpayBtn"){
-    openUPIPayment("GPay", total);
-  } else if(selectedPayment === "phonepeBtn"){
-    openUPIPayment("PhonePe", total);
-  }
+    const total = cart.reduce((sum,i)=>sum+i.price*i.quantity,0);
+    const orderId = "ORD"+Date.now();
+    const callbackUrl = encodeURIComponent(window.location.origin + `/checkout.html?orderId=${orderId}`);
+
+    let upiUrl = "";
+    if(selectedPayment==="gpayBtn")
+        upiUrl = `upi://pay?pa=your-upi@okaxis&pn=FoodExpress&am=${total}&cu=INR&url=${callbackUrl}`;
+    if(selectedPayment==="phonepeBtn")
+        upiUrl = `phonepe://pay?pa=your-upi@okaxis&pn=FoodExpress&am=${total}&cu=INR&url=${callbackUrl}`;
+
+    window.location.href = upiUrl;
 });
 
-// Auth Check
-onAuthStateChanged(auth,user=>{
-  if(user) currentUser = user;
-});
+// UPI callback simulation
+const params = new URLSearchParams(window.location.search);
+if(params.get("orderId")){
+    const orderId = params.get("orderId");
+    const txnId = params.get("txnId") || "UPI_TXN_"+Date.now();
+    const status = params.get("status") || "success"; // In real app, webhook confirms
+
+    if(status==="success"){
+        saveOrderToFirebase(orderId, txnId, status).then(()=> showOrderSuccess(orderId));
+    } else {
+        showToast("Payment failed ❌");
+    }
+}
+
+document.getElementById("continueShoppingBtn").addEventListener("click",()=>{ document.getElementById("successPopup").classList.remove("active"); window.location.href="index.html"; });
+
+onAuthStateChanged(auth,user=>{if(user) saveUserCart();});
+updateCartUI();
 </script>
-
 </body>
 </html>
