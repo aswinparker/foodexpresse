@@ -203,9 +203,9 @@ document.getElementById("payBtn").addEventListener("click",()=>{
 
     let upiUrl = "";
     if(selectedPayment==="gpayBtn")
-        upiUrl = `upi://pay?pa=your-upi@okaxis&pn=FoodExpress&am=${total}&cu=INR&url=${callbackUrl}`;
+        upiUrl = `upi://pay?pa=8438618540@ybl&pn=FoodExpress&am=${total}&cu=INR&url=${callbackUrl}`;
     if(selectedPayment==="phonepeBtn")
-        upiUrl = `phonepe://pay?pa=your-upi@okaxis&pn=FoodExpress&am=${total}&cu=INR&url=${callbackUrl}`;
+        upiUrl = `phonepe://pay?pa=8438618540@ybl&pn=FoodExpress&am=${total}&cu=INR&url=${callbackUrl}`;
 
     window.location.href = upiUrl;
 });
