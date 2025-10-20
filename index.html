@@ -23,6 +23,7 @@
 <!-- Firebase SDKs (v11) kept as before -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+  import { GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
   import { 
     getAuth, onAuthStateChanged, createUserWithEmailAndPassword, 
     signInWithEmailAndPassword, signOut 
@@ -44,8 +45,34 @@
   const auth = getAuth(app);
   const db = getFirestore(app);
   window.__fe = { auth, db, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, doc, getDoc, setDoc, updateDoc, onSnapshot, collection, addDoc, serverTimestamp };
-</script>
+  
+  // --- Google Login Setup ---
+const provider = new GoogleAuthProvider();
 
+// Trigger when user clicks Google Login
+window.googleLogin = async function() {
+  try {
+    const result = await signInWithPopup(auth, provider);
+    const user = result.user;
+
+    // Save user data to Firestore
+    const userRef = doc(db, "users", user.uid);
+    await setDoc(userRef, {
+      name: user.displayName,
+      email: user.email,
+      photo: user.photoURL,
+      createdAt: serverTimestamp()
+    }, { merge: true });
+
+    alert("Welcome " + user.displayName + "!");
+    document.getElementById("accountLabel").textContent = user.displayName;
+  } catch (error) {
+    console.error("Google Sign-In Error:", error);
+    alert("Login failed: " + error.message);
+  }
+};
+
+</script>
 <!-- Top bar -->
 <header class="bg-white shadow-sm sticky top-0 z-40">
   <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
@@ -207,6 +234,12 @@
       </div>
     </div>
   </section>
+  
+  <button onclick="googleLogin()" class="flex items-center gap-2 bg-white border border-gray-300 rounded-full px-4 py-2 shadow">
+  <img src="https://developers.google.com/identity/images/g-logo.png" class="w-5 h-5" alt="Google logo">
+  <span>Sign in with Google</span>
+</button>
+
 
   <!-- Top picks -->
   <section id="top-picks" class="mt-6">
@@ -395,11 +428,24 @@
 
     <p id="errorText" class="text-red-500 text-sm mb-2 hidden"></p>
 
+    <!-- Submit Button -->
     <button onclick="submitAuth()" class="bg-orange-500 text-white py-2 px-4 w-full rounded">Submit</button>
+
+    <!-- Google Login Button -->
+    <button onclick="googleLogin()" class="bg-white border border-gray-300 text-gray-800 py-2 px-4 w-full rounded flex items-center justify-center mt-2 hover:bg-gray-100">
+      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5 mr-2"/> Login with Google
+    </button>
+
     <p class="text-center text-sm mt-3 cursor-pointer text-blue-500" onclick="toggleAuthMode()" id="toggleText">Create account</p>
     <p class="text-center text-sm mt-3 cursor-pointer text-gray-500" onclick="closeLoginPopup()">Cancel</p>
   </div>
 </div>
+<!-- Google Login Button -->
+<button onclick="googleLogin()" class="bg-white border border-gray-300 text-gray-800 py-2 px-4 w-full rounded flex items-center justify-center mt-2 hover:bg-gray-100">
+  <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5 mr-2"/> Login with Google
+</button>
+
+
 
 <!-- Toast -->
 <div id="toast" class="fixed bottom-20 left-1/2 transform -translate-x-1/2 bg-orange-500 text-white px-5 py-3 rounded-full shadow-lg toast-hidden z-50">Added to Cart ✅</div>
@@ -591,6 +637,22 @@ async function updateLocation(){
   }, (err)=>{ console.error(err); locationText.innerText = "📍 Location blocked"; });
 }
 updateLocation();
+async function googleLogin() {
+  const { auth, GoogleAuthProvider, signInWithPopup } = window.__fe;
+  const provider = new GoogleAuthProvider();
+  try {
+    const result = await signInWithPopup(auth, provider);
+    closeLoginPopup();
+    showToast(`Logged in as ${result.user.email}`);
+  } catch(err) {
+    console.error(err);
+    showToast("Google login failed");
+  }
+}
+
+
+
+
 </script>
 </body>
 </html>
