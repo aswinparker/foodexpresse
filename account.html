@@ -54,38 +54,29 @@
     </div>
   </main>
 
-  <!-- Bottom Navigation -->
-  <div class="fixed bottom-0 left-0 right-0 bg-white shadow-lg border-t rounded-t-2xl">
-    <div id="bottomNav" class="flex justify-around items-center py-2">
-      
-      <!-- Home -->
-      <div class="nav-item flex flex-col items-center cursor-pointer text-gray-500 transition-all duration-300 transform" data-tab="home">
-        <span class="text-2xl">🏠</span>
-        <span class="text-xs font-medium">Home</span>
-      </div>
-      
-      <!-- Orders -->
-      <div class="nav-item flex flex-col items-center cursor-pointer text-gray-500 transition-all duration-300 transform" data-tab="orders">
-        <span class="text-2xl">📦</span>
-        <span class="text-xs font-medium">Orders</span>
-      </div>
-      
-      <!-- Cart -->
-      <div class="nav-item flex flex-col items-center relative cursor-pointer text-gray-500 transition-all duration-300 transform" data-tab="cart">
-        <span class="text-2xl">🛒</span>
-        <span class="absolute -top-1 -right-2 bg-red-500 text-white rounded-full text-[10px] px-1" id="cartCount">0</span>
-        <span class="text-xs font-medium">Cart</span>
-      </div>
-      
-      <!-- Account -->
-      <div class="nav-item flex flex-col items-center cursor-pointer text-orange-500 transition-all duration-300 transform scale-110" data-tab="account">
-        <span class="text-2xl">👤</span>
-        <span class="text-xs font-medium" id="accountLabel">Account</span>
-      </div>
+<!-- Bottom Navigation (mobile) -->
+<nav class="fixed bottom-4 left-0 right-0 flex justify-center z-50">
+  <div class="w-11/12 bg-white rounded-2xl shadow-lg p-2 flex justify-around items-center">
+    <div class="flex flex-col items-center text-orange-500">
+      <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-6 9 6v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div class="text-xs">Home</div>
+    </div>
+    <div class="flex flex-col items-center text-gray-500" onclick="goToOrders()">
+      <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 3h18v4H3zM5 7v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div class="text-xs">Orders</div>
+    </div>
+    <div class="flex flex-col items-center text-gray-700 cursor-pointer" onclick="goToCart()">
+      <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 6h15l-1.5 9h-12z" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9" cy="20" r="1"/><circle cx="19" cy="20" r="1"/></svg>
+      <div class="text-xs">Cart</div>
+    </div>
+    <div class="flex flex-col items-center text-gray-500" onclick="openLoginPopup()">
+      <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10z" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 20a8 8 0 0 1 16 0" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div class="text-xs">Account</div>
     </div>
   </div>
+</nav>
 
-  <!-- ✅ One unified script -->
+  <!-- Firebase + Bottom Nav Script -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -106,7 +97,6 @@
     const userEmail = document.getElementById("userEmail");
     const profilePic = document.getElementById("profilePic");
     const logoutBtn = document.getElementById("logoutBtn");
-    const accountLabel = document.getElementById("accountLabel");
 
     // Pastel avatar setup
     const pastelColors = ["#FFB3BA","#FFDFBA","#FFFFBA","#BAFFC9","#BAE1FF","#E0BBFF","#C2F0FC","#F1CBFF","#FFD6A5"];
@@ -124,15 +114,13 @@
       avatar.textContent=firstName.charAt(0).toUpperCase();
     }
 
-    // ✅ Handle Firebase login state
+    // Firebase login state
     onAuthStateChanged(auth,(user)=>{
       if(user){
         const fullName=user.displayName||user.email?.split("@")[0]||"User";
-        const firstNameRaw=fullName.split(" ")[0];
-        const firstName=firstNameRaw.charAt(0).toUpperCase()+firstNameRaw.slice(1).toLowerCase();
+        const firstName=fullName.split(" ")[0];
         userName.textContent=firstName;
         userEmail.textContent=user.email||"No Email";
-        accountLabel.textContent=firstName;
         if(user.photoURL){
           profilePic.src=user.photoURL;
           profilePic.style.display="block";
@@ -141,7 +129,6 @@
       } else {
         userName.textContent="Guest User";
         userEmail.textContent="";
-        accountLabel.textContent="Account";
         profilePic.src="assets/user.png";
         profilePic.style.display="block";
         const avatar=document.getElementById("avatarInitial"); if(avatar) avatar.remove();
@@ -152,7 +139,7 @@
       signOut(auth).then(()=>{ window.location.href="index.html"; }).catch((error)=>console.error("Logout Error:",error));
     });
 
-    // ✅ Bottom navigation
+    // Bottom navigation logic
     function setActiveTab(tabName){
       document.querySelectorAll("#bottomNav .nav-item").forEach(item=>{
         if(item.dataset.tab===tabName){
