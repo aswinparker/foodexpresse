@@ -643,37 +643,101 @@ setInterval(()=>{
 async function updateLocation() {
   const locationText = document.getElementById("locationText");
 
+  // Check if user has already allowed location
+  const storedLocation = localStorage.getItem("fe_user_location");
+  if (storedLocation) {
+    locationText.innerText = storedLocation;
+    return;
+  }
+
+  // Check if browser supports geolocation
   if (!navigator.geolocation) {
     locationText.innerText = "Location unavailable";
     return;
   }
 
-  navigator.geolocation.getCurrentPosition(async (position) => {
-    const { latitude, longitude } = position.coords;
+  // Ask for location
+  navigator.geolocation.getCurrentPosition(
+    async (position) => {
+      const { latitude, longitude } = position.coords;
 
-    try {
-      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`);
-      const data = await res.json();
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`);
+        const data = await res.json();
 
-      if (data.address) {
-        const city = data.address.city || data.address.town || data.address.village || data.address.county;
-        const state = data.address.state;
-        locationText.innerText = city && state ? `${city}, ${state}` : "Location found";
-      } else {
-        locationText.innerText = "Location found";
+        let displayLocation = "";
+        if (data.address.city) displayLocation = data.address.city;
+        else if (data.address.town) displayLocation = data.address.town;
+        else if (data.address.village) displayLocation = data.address.village;
+        else displayLocation = data.display_name.split(",")[0];
+
+        locationText.innerText = displayLocation;
+        // Save to localStorage so we don't ask again
+        localStorage.setItem("fe_user_location", displayLocation);
+      } catch (err) {
+        console.error(err);
+        locationText.innerText = "Location unavailable";
       }
-    } catch (err) {
-      console.error(err);
-      locationText.innerText = "Unable to fetch location";
+    },
+    (err) => {
+      console.warn("User denied location or error:", err);
+      locationText.innerText = "Location unavailable";
     }
-  }, (error) => {
-    console.error(error);
-    locationText.innerText = "Permission denied";
-  });
+  );
 }
 
-// Call the function on page load
+// Run on page load
 updateLocation();
+
+    function startLiveLocation() {
+      const locationText = document.getElementById("locationText");
+
+      // Check if user has already allowed location (localStorage)
+      const storedLocation = localStorage.getItem("fe_user_location");
+      if (storedLocation) {
+        locationText.innerText = storedLocation;
+        return;
+      }
+
+      if (!navigator.geolocation) {
+        locationText.innerText = "Location unavailable";
+        return;
+      }
+
+      // Watch the user's location
+      const watchId = navigator.geolocation.watchPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+
+          try {
+            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`);
+            const data = await res.json();
+
+            let displayLocation = "";
+            if (data.address.city) displayLocation = data.address.city;
+            else if (data.address.town) displayLocation = data.address.town;
+            else if (data.address.village) displayLocation = data.address.village;
+            else displayLocation = data.display_name.split(",")[0];
+
+            locationText.innerText = displayLocation;
+
+            // Save to localStorage so we don't ask again
+            localStorage.setItem("fe_user_location", displayLocation);
+          } catch (err) {
+            console.error(err);
+            locationText.innerText = "Location unavailable";
+          }
+        },
+        (err) => {
+          console.warn("User denied location or error:", err);
+          locationText.innerText = "Location unavailable";
+        },
+        { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
+      );
+    }
+
+    // Start live location tracking on page load
+    startLiveLocation();
 
 
 
