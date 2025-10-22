@@ -19,6 +19,7 @@
   </style>
 </head>
 <body class="bg-gray-50 font-sans text-gray-800"> 
+  
 
 <!-- Firebase SDKs (v11) kept as before -->
 <script type="module">
@@ -86,6 +87,7 @@ window.googleLogin = async function() {
         </div>
       </div>
     </div>
+    
 
     <div class="flex items-center gap-3">
     <!-- Search bar (responsive) -->
@@ -234,12 +236,6 @@ window.googleLogin = async function() {
       </div>
     </div>
   </section>
-  
-  <button onclick="googleLogin()" class="flex items-center gap-2 bg-white border border-gray-300 rounded-full px-4 py-2 shadow">
-  <img src="https://developers.google.com/identity/images/g-logo.png" class="w-5 h-5" alt="Google logo">
-  <span>Sign in with Google</span>
-</button>
-
 
   <!-- Top picks -->
   <section id="top-picks" class="mt-6">
@@ -431,11 +427,6 @@ window.googleLogin = async function() {
     <!-- Submit Button -->
     <button onclick="submitAuth()" class="bg-orange-500 text-white py-2 px-4 w-full rounded">Submit</button>
 
-    <!-- Google Login Button -->
-    <button onclick="googleLogin()" class="bg-white border border-gray-300 text-gray-800 py-2 px-4 w-full rounded flex items-center justify-center mt-2 hover:bg-gray-100">
-      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5 mr-2"/> Login with Google
-    </button>
-
     <p class="text-center text-sm mt-3 cursor-pointer text-blue-500" onclick="toggleAuthMode()" id="toggleText">Create account</p>
     <p class="text-center text-sm mt-3 cursor-pointer text-gray-500" onclick="closeLoginPopup()">Cancel</p>
   </div>
@@ -444,7 +435,30 @@ window.googleLogin = async function() {
 <button onclick="googleLogin()" class="bg-white border border-gray-300 text-gray-800 py-2 px-4 w-full rounded flex items-center justify-center mt-2 hover:bg-gray-100">
   <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5 mr-2"/> Login with Google
 </button>
-
+<script>
+async function googleLogin() {
+  const { auth, db, GoogleAuthProvider, signInWithPopup, doc, setDoc, serverTimestamp } = window.__fe;
+  const provider = new GoogleAuthProvider();
+  try {
+    const result = await signInWithPopup(auth, provider);
+    const user = result.user;
+    // Save user to Firestore
+    const userRef = doc(db, "users", user.uid);
+    await setDoc(userRef, {
+      name: user.displayName,
+      email: user.email,
+      photo: user.photoURL,
+      createdAt: serverTimestamp()
+    }, { merge: true });
+    closeLoginPopup();
+    showToast(`Logged in as ${user.displayName}`);
+    document.getElementById("accountLabel").textContent = user.displayName;
+  } catch(err) {
+    console.error(err);
+    showToast("Google login failed");
+  }
+}
+</script>
 
 
 <!-- Toast -->
@@ -457,7 +471,6 @@ window.googleLogin = async function() {
 /* -----------------------
   Cart helpers (kept, same behavior)
 ------------------------*/
-localStorage.removeItem("fe_cart_v1");
 const LOCAL_CART_KEY = "fe_cart_v1";
 let cart = JSON.parse(localStorage.getItem(LOCAL_CART_KEY) || "[]");
 function persistLocalCart(){ localStorage.setItem(LOCAL_CART_KEY, JSON.stringify(cart)); }
@@ -501,6 +514,7 @@ function flyToCart(imageEl){
   clone.style.width = imgRect.width + "px";
   clone.style.height = imgRect.height + "px";
   clone.style.opacity = "1";
+  clone.style.zIndex = 10000 + Date.now();
   document.body.appendChild(clone);
 
   const startX = imgRect.left;
@@ -598,10 +612,15 @@ async function submitAuth(){
 /* -----------------------
   On auth change
 ------------------------*/
-window.__fe.onAuthStateChanged(window.__fe.auth,(user)=>{
-  if(user) document.getElementById("accountLabel").innerText = user.email || "Account";
-  else document.getElementById("accountLabel").innerText = "Account";
+const { auth } = window.__fe;
+onAuthStateChanged(auth, (user) => {
+  if(user){
+    document.getElementById("accountLabel").innerHTML = `<img src="${user.photoURL}" class="w-6 h-6 rounded-full inline mr-1"/> ${user.displayName || user.email}`;
+  } else {
+    document.getElementById("accountLabel").innerText = "Account";
+  }
 });
+
 
 /* -----------------------
   Navigation helpers
@@ -621,38 +640,65 @@ setInterval(()=>{
 /* -----------------------
   Update location dynamically
 ------------------------*/
-async function updateLocation(){
+async function updateLocation() {
   const locationText = document.getElementById("locationText");
-  if (!navigator.geolocation){ locationText.innerText = "Location unavailable"; return; }
+
+  if (!navigator.geolocation) {
+    locationText.innerText = "Location unavailable";
+    return;
+  }
 
   navigator.geolocation.getCurrentPosition(async (position) => {
     const { latitude, longitude } = position.coords;
+
     try {
       const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`);
       const data = await res.json();
-      const city = data.address.city || data.address.town || data.address.village || data.address.county || "";
-      const state = data.address.state || "";
-      locationText.innerHTML = `📍 ${city}, ${state}`;
-    } catch(err){ locationText.innerText = `📍 ${latitude.toFixed(2)}, ${longitude.toFixed(2)}`; }
-  }, (err)=>{ console.error(err); locationText.innerText = "📍 Location blocked"; });
-}
-updateLocation();
-async function googleLogin() {
-  const { auth, GoogleAuthProvider, signInWithPopup } = window.__fe;
-  const provider = new GoogleAuthProvider();
-  try {
-    const result = await signInWithPopup(auth, provider);
-    closeLoginPopup();
-    showToast(`Logged in as ${result.user.email}`);
-  } catch(err) {
-    console.error(err);
-    showToast("Google login failed");
-  }
+
+      if (data.address) {
+        const city = data.address.city || data.address.town || data.address.village || data.address.county;
+        const state = data.address.state;
+        locationText.innerText = city && state ? `${city}, ${state}` : "Location found";
+      } else {
+        locationText.innerText = "Location found";
+      }
+    } catch (err) {
+      console.error(err);
+      locationText.innerText = "Unable to fetch location";
+    }
+  }, (error) => {
+    console.error(error);
+    locationText.innerText = "Permission denied";
+  });
 }
 
+// Call the function on page load
+updateLocation();
 
 
 
 </script>
+<script>
+  // Detect user login state
+  firebase.auth().onAuthStateChanged((user) => {
+    if (user) {
+      // If logged in, save details in Firestore (optional)
+      const db = firebase.firestore();
+      db.collection("users").doc(user.uid).set({
+        name: user.displayName || "User",
+        email: user.email || "",
+        phone: user.phoneNumber || "",
+        uid: user.uid,
+        lastLogin: new Date().toISOString(),
+      }, { merge: true });
+
+      // ✅ Redirect after login
+      window.location.href = "/home.html"; // Change this to your destination page
+    } else {
+      console.log("No user logged in");
+    }
+  });
+</script>
+
 </body>
 </html>
