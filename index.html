@@ -426,39 +426,18 @@ window.googleLogin = async function() {
 
     <!-- Submit Button -->
     <button onclick="submitAuth()" class="bg-orange-500 text-white py-2 px-4 w-full rounded">Submit</button>
+        <!-- 👇 Add Google Sign-in Button Here -->
+    <div class="mt-5 border-t pt-4">
+      <button onclick="googleLogin()" class="flex items-center justify-center w-full gap-2 border rounded-lg py-2 hover:bg-gray-50 transition">
+        <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5" alt="Google icon">
+        <span class="text-gray-700 font-medium">Sign in with Google</span>
+      </button>
+    </div>
 
     <p class="text-center text-sm mt-3 cursor-pointer text-blue-500" onclick="toggleAuthMode()" id="toggleText">Create account</p>
     <p class="text-center text-sm mt-3 cursor-pointer text-gray-500" onclick="closeLoginPopup()">Cancel</p>
-  </div>
+  </div>  
 </div>
-<!-- Google Login Button -->
-<button onclick="googleLogin()" class="bg-white border border-gray-300 text-gray-800 py-2 px-4 w-full rounded flex items-center justify-center mt-2 hover:bg-gray-100">
-  <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5 mr-2"/> Login with Google
-</button>
-<script>
-async function googleLogin() {
-  const { auth, db, GoogleAuthProvider, signInWithPopup, doc, setDoc, serverTimestamp } = window.__fe;
-  const provider = new GoogleAuthProvider();
-  try {
-    const result = await signInWithPopup(auth, provider);
-    const user = result.user;
-    // Save user to Firestore
-    const userRef = doc(db, "users", user.uid);
-    await setDoc(userRef, {
-      name: user.displayName,
-      email: user.email,
-      photo: user.photoURL,
-      createdAt: serverTimestamp()
-    }, { merge: true });
-    closeLoginPopup();
-    showToast(`Logged in as ${user.displayName}`);
-    document.getElementById("accountLabel").textContent = user.displayName;
-  } catch(err) {
-    console.error(err);
-    showToast("Google login failed");
-  }
-}
-</script>
 
 
 <!-- Toast -->
