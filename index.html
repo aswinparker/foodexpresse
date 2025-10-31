@@ -763,6 +763,49 @@ updateLocation();
     }
   });
 </script>
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+  const locationText = document.getElementById("locationText");
+
+  // 1️⃣ If location already saved in localStorage → load immediately
+  const savedLocation = localStorage.getItem("fe_user_location");
+  if (savedLocation) {
+    locationText.textContent = savedLocation;
+    return;
+  }
+
+  // 2️⃣ If not saved → ask for permission and fetch it
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(async (position) => {
+      const lat = position.coords.latitude;
+      const lon = position.coords.longitude;
+
+      try {
+        // Use reverse geocoding to get readable city name
+        const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`);
+        const data = await res.json();
+
+        const city = data.city || data.locality || data.principalSubdivision || "Unknown location";
+        locationText.textContent = city;
+
+        // 3️⃣ Store for future sessions
+        localStorage.setItem("fe_user_location", city);
+      } catch (err) {
+        console.error("Location fetch failed:", err);
+        locationText.textContent = "Location unavailable";
+      }
+    }, () => {
+      locationText.textContent = "Location access denied";
+    });
+  } else {
+    locationText.textContent = "Geolocation not supported";
+  }
+});
+</script>
+
+
+
+
 
 </body>
 </html>
