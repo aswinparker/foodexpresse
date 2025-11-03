@@ -6,29 +6,109 @@
   <title>Food Express</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
+    /* Hide scrollbar for horizontal sections */
     .snap-x::-webkit-scrollbar { display: none; }
-    .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: none; align-items: center; justify-content: center; z-index: 50; }
-    .animate-bump { transform: scale(1.08); transition: transform 0.18s; }
-    .fly-img { position: fixed; width: 64px; height: 64px; object-fit: cover; border-radius: 8px; pointer-events: none; z-index: 9999; will-change: transform, opacity; }
+    .snap-x {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* Overlay for modals/popups */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.6);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .overlay.active {
+      display: flex;
+      opacity: 1;
+    }
+
+    /* Cart bump animation */
+    .animate-bump {
+      transform: scale(1.08);
+      transition: transform 0.18s;
+    }
+    .animate-bump-reset { transform: scale(1); }
+
+    /* Fly-to-cart image animation */
+    .fly-img {
+      position: fixed;
+      width: 64px;
+      height: 64px;
+      object-fit: cover;
+      border-radius: 8px;
+      pointer-events: none;
+      z-index: 9999;
+      will-change: transform, opacity;
+      transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease;
+    }
+
+    /* Toast notifications */
     .toast-hidden { opacity: 0; transform: translateY(24px); }
-    .toast-show { opacity: 1; transform: translateY(0); transition: all 400ms ease; }
-    /* hero gradient */
-    .hero-gradient { background: linear-gradient(90deg,#FFEDD5 0%, #FFEDD5 40%, #FFF7ED 100%); }
-    /* small card hover */
-    .ad-card:hover { transform: translateY(-6px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+    .toast-show {
+      opacity: 1;
+      transform: translateY(0);
+      transition: all 400ms ease;
+      will-change: transform, opacity;
+    }
+
+    /* Hero gradient background */
+    .hero-gradient {
+      background: linear-gradient(90deg, #FFEDD5 0%, #FFEDD5 40%, #FFF7ED 100%);
+    }
+
+    /* Small card hover effect */
+    .ad-card {
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+    .ad-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    }
+
+   /* Slide animation helper */
+.search-open #searchSheet {
+  transform: translateY(0);
+}
+
+/* Slide-up animation */
+#searchOverlay {
+  transition: opacity 0.3s ease;
+}
+#searchSheet {
+  transform: translateY(100%);
+  transition: transform 0.35s ease;
+}
+#searchOverlay.active {
+  display: flex !important;
+  opacity: 1;
+}
+#searchOverlay.active #searchSheet {
+  transform: translateY(0);
+}
+
+
+
   </style>
 </head>
-<body class="bg-gray-50 font-sans text-gray-800"> 
+<body class="bg-amber-50 font-sans text-gray-800">
   
 
 <!-- Firebase SDKs (v11) kept as before -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-  import { GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
   import { 
-    getAuth, onAuthStateChanged, createUserWithEmailAndPassword, 
-    signInWithEmailAndPassword, signOut 
-  } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+  getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged,
+  createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut 
+} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+
   import { 
     getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, collection, addDoc, serverTimestamp 
   } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
@@ -37,7 +117,7 @@
     apiKey: "AIzaSyCAGirQsFfQNInhUc9yuMD-QElaDnmRbKE",
     authDomain: "foodexpress-9b0ff.firebaseapp.com",
     projectId: "foodexpress-9b0ff",
-    storageBucket: "foodexpress-9b0ff.firebasestorage.app",
+    storageBucket: "foodexpress-9b0ff.appspot.com",
     messagingSenderId: "818281594225",
     appId: "1:818281594225:web:205774c2914ae2b9b08ad0"
   };
@@ -45,16 +125,27 @@
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getFirestore(app);
-  window.__fe = { auth, db, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, doc, getDoc, setDoc, updateDoc, onSnapshot, collection, addDoc, serverTimestamp };
-  
-  // --- Google Login Setup ---
+
 const provider = new GoogleAuthProvider();
+window.__fe = { 
+  auth, db, provider,
+  onAuthStateChanged, createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword, signOut, signInWithPopup,
+  doc, getDoc, setDoc, updateDoc, onSnapshot, 
+  collection, addDoc, serverTimestamp 
+};
+
 
 // Trigger when user clicks Google Login
 window.googleLogin = async function() {
   try {
     const result = await signInWithPopup(auth, provider);
     const user = result.user;
+
+      // Optional: Log auth state
+  onAuthStateChanged(auth, user => {
+    console.log(user ? `Logged in: ${user.email}` : "User logged out");
+  });
 
     // Save user data to Firestore
     const userRef = doc(db, "users", user.uid);
@@ -66,7 +157,6 @@ window.googleLogin = async function() {
     }, { merge: true });
 
     alert("Welcome " + user.displayName + "!");
-    document.getElementById("accountLabel").textContent = user.displayName;
   } catch (error) {
     console.error("Google Sign-In Error:", error);
     alert("Login failed: " + error.message);
@@ -75,47 +165,61 @@ window.googleLogin = async function() {
 
 </script>
 <!-- Top bar -->
-<header class="bg-white shadow-sm sticky top-0 z-40">
-  <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-    <div class="flex items-center gap-3">
-      <!-- logo -->
-      <div class="flex items-center gap-2">
-        <div class="bg-orange-500 rounded-full w-10 h-10 flex items-center justify-center text-white font-bold shadow">FE</div>
-        <div>
-          <div class="text-sm font-semibold">Food Express</div>
-          <div id="locationText" class="text-[12px] text-gray-500">Loading location...</div>
-        </div>
-      </div>
-    </div>
-    
-
-    <div class="flex items-center gap-3">
-    <!-- Search bar (responsive) -->
-    <div class="flex-1 mx-3">
-      <div class="relative w-full">
-        <input id="searchInput" class="w-full pl-10 pr-4 py-2 rounded-full bg-gray-100 shadow-sm focus:outline-none" placeholder="Search food, restaurants or dishes" />
-        <svg class="w-5 h-5 absolute left-3 top-2.5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <path d="M21 21l-4.35-4.35" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <circle cx="11" cy="11" r="6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </div>
-    </div>
-
-
-      <button class="p-2 rounded-full hover:bg-gray-100" title="Notifications">
-        <!-- bell icon -->
-        <svg class="w-6 h-6 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0 1 18 14.158V11c0-3.07-1.64-5.64-4.5-6.32V4a1.5 1.5 0 0 0-3 0v.68C7.64 5.36 6 7.92 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </button>
-
-      <div id="cartIcon" class="relative cursor-pointer" onclick="goToCart()">
-        <svg class="w-7 h-7 text-gray-700" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 6h15l-1.5 9h-12z" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9" cy="20" r="1"/><circle cx="19" cy="20" r="1"/></svg>
-        <span id="cartCount" class="absolute -top-1 -right-2 bg-red-500 text-white rounded-full text-[10px] px-1">0</span>
-      </div>
-
-      <div class="ml-2 cursor-pointer" onclick="openLoginPopup()" id="accountLabel">Account</div>
+<!-- Header -->
+<header class="p-4 bg-white shadow-sm sticky top-0 z-50">
+  <div class="max-w-7xl mx-auto flex justify-center">
+    <div class="relative w-full max-w-xl">
+      <input
+        type="text"
+        placeholder="Search for food or restaurants..."
+        class="w-full border border-gray-300 rounded-full px-4 py-2 pl-10 focus:outline-none focus:ring-2 focus:ring-orange-500"
+        id="searchBox"
+      />
+      <svg
+        class="w-5 h-5 absolute left-3 top-2.5 text-gray-400"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1110.5 3a7.5 7.5 0 016.15 13.65z"
+        />
+      </svg>
     </div>
   </div>
+  <span id="accountLabel" class="font-semibold text-gray-700"></span>
 </header>
+
+<!-- 🔍 Full-Screen Search Overlay -->
+<div id="searchOverlay" class="hidden fixed inset-0 bg-white z-50 flex flex-col translate-y-full transition-transform duration-300 ease-out">
+  <!-- Top bar -->
+  <div class="flex items-center justify-between px-4 py-3 border-b">
+    <input id="searchInput" type="text" placeholder="Search for dishes or restaurants"
+      class="flex-1 bg-gray-100 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-orange-500 text-gray-700" />
+    <button id="closeSearch" class="ml-3 text-gray-500 hover:text-black text-xl">✕</button>
+  </div>
+
+  <!-- Content -->
+  <div class="p-4 flex-1 overflow-y-auto">
+    <h3 class="text-gray-700 font-semibold mb-3">Recent Searches</h3>
+    <ul id="recentList" class="space-y-2 mb-5"></ul>
+
+    <h3 class="text-gray-700 font-semibold mb-3">Popular</h3>
+    <div id="popularList" class="flex flex-wrap gap-2">
+      <span class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm cursor-pointer hover:bg-orange-100">Biryani</span>
+      <span class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm cursor-pointer hover:bg-orange-100">Pizza</span>
+      <span class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm cursor-pointer hover:bg-orange-100">Burger</span>
+      <span class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm cursor-pointer hover:bg-orange-100">Pasta</span>
+      <span class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm cursor-pointer hover:bg-orange-100">Coffee</span>
+    </div>
+  </div>
+</div>
+
+
+
 
 <!-- Hero + Main promos -->
 <main class="max-w-5xl mx-auto px-4 py-6">
@@ -169,7 +273,6 @@ window.googleLogin = async function() {
       <img src="https://i.postimg.cc/1tyQKPD9/promo.jpg" alt="promo" class="rounded-xl shadow-lg w-full object-cover h-48" />
     </div>
   </section>
-
   <!-- Promo strip carousel -->
   <section class="mt-6">
     <div class="overflow-x-auto snap-x snap-mandatory scroll-smooth px-1 py-2">
@@ -389,24 +492,48 @@ window.googleLogin = async function() {
 <!-- Bottom Navigation (mobile) -->
 <nav class="fixed bottom-4 left-0 right-0 flex justify-center z-50">
   <div class="w-11/12 bg-white rounded-2xl shadow-lg p-2 flex justify-around items-center">
-    <div class="flex flex-col items-center text-orange-500">
-      <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-6 9 6v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+
+    <!-- Home -->
+    <div class="nav-item flex flex-col items-center cursor-pointer text-orange-500" id="navHome" onclick="setActiveTab('home')">
+      <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path d="M3 9l9-6 9 6v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
       <div class="text-xs">Home</div>
     </div>
-    <div class="flex flex-col items-center text-gray-500" onclick="goToOrders()">
-      <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 3h18v4H3zM5 7v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+
+    <!-- Orders -->
+    <div class="nav-item flex flex-col items-center cursor-pointer text-gray-500" id="navOrders" onclick="setActiveTab('orders'); goToOrders()">
+      <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path d="M3 3h18v4H3zM5 7v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
       <div class="text-xs">Orders</div>
     </div>
-    <div class="flex flex-col items-center text-gray-700 cursor-pointer" onclick="goToCart()">
-      <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 6h15l-1.5 9h-12z" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9" cy="20" r="1"/><circle cx="19" cy="20" r="1"/></svg>
+
+    <!-- Cart -->
+    <div class="nav-item flex flex-col items-center cursor-pointer text-gray-500" id="navCart" onclick="setActiveTab('cart'); goToCart()">
+      <div id="cartIcon" class="relative">
+        <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M6 6h15l-1.5 9h-12z" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+          <circle cx="9" cy="20" r="1" />
+          <circle cx="19" cy="20" r="1" />
+        </svg>
+        <span id="cartCount" class="absolute -top-1 -right-2 bg-orange-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">0</span>
+      </div>
       <div class="text-xs">Cart</div>
     </div>
-    <div class="flex flex-col items-center text-gray-500" onclick="openLoginPopup()">
-      <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10z" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 20a8 8 0 0 1 16 0" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+
+    <!-- Account -->
+    <div class="nav-item flex flex-col items-center cursor-pointer text-gray-500" id="navAccount" onclick="setActiveTab('account'); openLoginPopup()">
+      <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10z" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
+        <path d="M4 20a8 8 0 0 1 16 0" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
       <div class="text-xs">Account</div>
     </div>
+
   </div>
 </nav>
+
 
 <!-- Login/Signup Popup (kept) -->
 <div id="loginPopup" class="overlay">
@@ -457,6 +584,30 @@ function cartTotalQuantity(){ return cart.reduce((s,i) => s + (Number(i.quantity
 function cartTotalAmount(){ return cart.reduce((s,i) => s + (Number(i.price)||0) * (Number(i.quantity)||0), 0); }
 function updateCartBadge(){ document.getElementById("cartCount").innerText = cartTotalQuantity(); persistLocalCart(); }
 updateCartBadge();
+
+
+// Highlight active bottom nav tab
+function setActiveTab(tab) {
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.classList.remove('text-orange-500');
+    item.classList.add('text-gray-500');
+  });
+
+  const active = document.getElementById(`nav${tab.charAt(0).toUpperCase() + tab.slice(1)}`);
+  if (active) {
+    active.classList.add('text-orange-500');
+    active.classList.remove('text-gray-500');
+  }
+}
+
+
+document.addEventListener("DOMContentLoaded", () => {
+  if (window.location.pathname.includes("orders")) setActiveTab("orders");
+  else if (window.location.pathname.includes("cart")) setActiveTab("cart");
+  else if (window.location.pathname.includes("account")) setActiveTab("account");
+  else setActiveTab("home");
+});
+
 
 /* -----------------------
   Toast
@@ -780,6 +931,96 @@ document.addEventListener("DOMContentLoaded", async () => {
     locationText.textContent = "Geolocation not supported";
   }
 });
+</script>
+<script>
+
+/* -----------------------
+   Swiggy/Zomato-Style Search Overlay
+------------------------*/
+const searchBox = document.getElementById("searchBox");
+const searchOverlay = document.getElementById("searchOverlay");
+const searchInput = document.getElementById("searchInput");
+const closeSearch = document.getElementById("closeSearch");
+const recentList = document.getElementById("recentList");
+const popularList = document.getElementById("popularList");
+
+let recentSearches = JSON.parse(localStorage.getItem("fe_recent") || "[]");
+renderRecent();
+
+// 🔹 Open overlay
+searchBox.addEventListener("focus", openSearchOverlay);
+searchBox.addEventListener("click", openSearchOverlay);
+
+function openSearchOverlay() {
+  searchOverlay.classList.remove("hidden");
+  requestAnimationFrame(() => searchOverlay.classList.remove("translate-y-full"));
+  setTimeout(() => searchInput.focus(), 350);
+}
+
+// 🔹 Close overlay
+closeSearch.addEventListener("click", closeSearchOverlay);
+function closeSearchOverlay() {
+  searchOverlay.classList.add("translate-y-full");
+  setTimeout(() => searchOverlay.classList.add("hidden"), 300);
+}
+
+// 🔹 Save on Enter
+searchInput.addEventListener("keydown", e => {
+  if (e.key === "Enter") {
+    const term = searchInput.value.trim();
+    if (!term) return;
+    addRecent(term);
+    closeSearchOverlay();
+    showToast(`Searching for "${term}"...`);
+  }
+});
+
+// 🔹 Add a recent term
+function addRecent(term) {
+  recentSearches = [term, ...recentSearches.filter(x => x !== term)].slice(0, 6);
+  localStorage.setItem("fe_recent", JSON.stringify(recentSearches));
+  renderRecent();
+}
+
+// 🔹 Render recent searches
+function renderRecent() {
+  recentList.innerHTML = recentSearches.length
+    ? recentSearches
+        .map(
+          i => `
+      <li class="px-4 py-2 bg-gray-100 rounded-lg flex justify-between items-center hover:bg-gray-200 cursor-pointer">
+        <span onclick="useSearch('${i}')">${i}</span>
+        <button class="text-gray-400 hover:text-red-500 text-sm" onclick="removeSearch('${i}')">✕</button>
+      </li>`
+        )
+        .join("")
+    : `<li class="text-gray-400 text-sm text-center py-6">No recent searches yet</li>`;
+}
+
+window.useSearch = term => {
+  searchBox.value = term;
+  closeSearchOverlay();
+  showToast(`Searching for "${term}"...`);
+};
+
+window.removeSearch = term => {
+  recentSearches = recentSearches.filter(x => x !== term);
+  localStorage.setItem("fe_recent", JSON.stringify(recentSearches));
+  renderRecent();
+};
+
+// 🔹 Popular tag click
+popularList.querySelectorAll("span").forEach(tag => {
+  tag.addEventListener("click", () => {
+    const term = tag.textContent.trim();
+    addRecent(term);
+    closeSearchOverlay();
+    showToast(`Searching for "${term}"...`);
+  });
+});
+
+
+
 </script>
 
 
