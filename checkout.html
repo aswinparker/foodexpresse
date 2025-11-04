@@ -23,24 +23,117 @@ body { font-family:'Inter',sans-serif; background:#f9f9f9; }
 @keyframes fill{100%{box-shadow:inset 0 0 0 30px #FF6B00;}}
 .payment-btn.selected{border-color:#FF6B00; background:#FFF4E6; box-shadow:0 4px 12px rgba(255,107,0,0.2);}
 @media (max-width:640px){ .cart-item { flex-direction: column; align-items: flex-start; } .cart-item img { width:100%; height:auto; margin-bottom:0.5rem; } #paymentGrid { flex-direction: column; } .flex-wrap { flex-wrap: wrap; } }
-/* Smooth slide animations for popup */
-#addressPopup {
-  transition: transform 0.35s ease, opacity 0.35s ease;
-  transform: translateY(100%);
+
+
+/* Overlay fade + blur animation */
+.popup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.32);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 60;
   opacity: 0;
   pointer-events: none;
+  transform: translateY(100%);
+  transition: opacity 0.35s ease, transform 0.35s ease;
 }
 
-#addressPopup.active {
-  transform: translateY(0);
+/* Slide-up and fade-in popup */
+.popup-overlay.active {
   opacity: 1;
   pointer-events: auto;
+  transform: translateY(0);
 }
 
-#addressPopup.closing {
+/* Smooth slide-down when closing */
+.popup-overlay.closing {
+  opacity: 0;
   transform: translateY(100%);
+}
+
+/* Popup box */
+.popup {
+  background: white;
+  border-radius: 1rem;
+  padding: 2rem;
+  width: 100%;
+  max-width: 400px;
+  transform: translateY(36px);
+  opacity: 0;
+  transition: all 0.35s ease;
+}
+
+.popup-overlay.active .popup {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.popup-overlay.closing .popup {
+  transform: translateY(36px);
   opacity: 0;
 }
+
+/* Allow touch interactions for swipe gesture */
+.popup {
+  touch-action: none;
+}
+
+/* Bottom sheet style */
+.popup-overlay {
+  align-items: flex-end; /* start from bottom */
+  justify-content: center;
+}
+
+.bottom-sheet {
+  border-radius: 1.5rem 1.5rem 0 0;
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+  transform: translateY(100%);
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.popup-overlay.active .bottom-sheet {
+  transform: translateY(0);
+  opacity: 1;
+}
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(251, 146, 60, 0.4);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(251, 146, 60, 0);
+    transform: scale(1.03);
+  }
+}
+
+.pulse-glow {
+  animation: pulseGlow 1.2s ease-in-out infinite;
+}
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(251, 146, 60, 0.4); }
+  50% { box-shadow: 0 0 15px 3px rgba(251, 146, 60, 0.3); }
+}
+
+.pulse-glow {
+  animation: pulseGlow 1.4s infinite;
+}
+
+#addressPopup { z-index: 70; }
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+.animate-shake {
+  animation: shake 0.4s ease;
+}
+
 
 
 
@@ -68,38 +161,55 @@ body { font-family:'Inter',sans-serif; background:#f9f9f9; }
   </button>
 </section>
 
+<!-- 🏠 Address Popup -->
 <div id="addressPopup" class="popup-overlay">
   <div class="popup">
-    <h3 class="text-xl font-semibold mb-3 text-orange-600">Add Delivery Address</h3>
-    <input id="addrName" type="text" placeholder="Full name" class="w-full px-3 py-2 border rounded-lg mb-2"/>
-    <input id="addrPhone" type="tel" placeholder="Phone number" class="w-full px-3 py-2 border rounded-lg mb-2"/>
-    <input id="addrStreet" type="text" placeholder="House / Street / Locality" class="w-full px-3 py-2 border rounded-lg mb-2"/>
-    <div class="grid grid-cols-2 gap-2 mb-2">
-      <input id="addrCity" type="text" placeholder="City" class="px-3 py-2 border rounded-lg"/>
-      <input id="addrPincode" type="text" placeholder="Pincode" class="px-3 py-2 border rounded-lg"/>
+    <h3 class="text-xl font-semibold mb-3 text-orange-600 text-center">🏠 Add Delivery Address</h3>
+
+    <input id="addrName" type="text" placeholder="Full name" class="w-full px-3 py-2 border rounded-lg mb-2" required />
+<input id="addrPhone" 
+  type="tel" 
+  placeholder="Phone number" 
+  class="w-full px-3 py-2 border rounded-lg mb-2 focus:ring-2 focus:ring-orange-500" 
+  required 
+  pattern="[0-9]{10}" 
+  inputmode="numeric"
+/>
+<small id="phoneError" class="text-red-500 text-sm hidden">Enter a valid 10-digit number</small>
+    <input id="addrStreet" type="text" placeholder="House / Street / Locality" class="w-full px-3 py-2 border rounded-lg mb-2" required />
+
+    <div class="grid grid-cols-2 gap-2 mb-3">
+      <input id="addrCity" type="text" placeholder="City" class="px-3 py-2 border rounded-lg" required />
+      <input id="addrPincode" type="text" placeholder="Pincode" class="px-3 py-2 border rounded-lg" required />
     </div>
- <!-- Buttons -->
-<div class="flex gap-2 mt-2">
-  <button id="saveAddressBtn" class="flex-1 bg-orange-500 text-white py-2.5 rounded-lg font-semibold">Save</button>
-  <button id="cancelAddressBtn" class="flex-1 bg-gray-100 text-gray-700 py-2.5 rounded-lg">Cancel</button>
-</div>
-
-<!-- 📍 Use Current Location Button -->
-<button id="useCurrentLocationBtn"
-  class="mt-4 w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold py-3 rounded-full shadow-lg hover:from-blue-600 hover:to-blue-700 active:scale-[0.98] transition-all duration-200">
-  <svg id="locSpinner" class="hidden animate-spin w-5 h-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none"
-    viewBox="0 0 24 24">
-    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-    <path class="opacity-75" fill="currentColor"
-      d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-  </svg>
-  <img id="locIcon" src="https://cdn-icons-png.flaticon.com/512/684/684908.png" class="w-5 h-5" alt="location icon"/>
-  <span id="locText">Use Current Location</span>
-</button>
 
 
+    <!-- 📍 Use Current Location Button -->
+    <button id="useCurrentLocationBtn"
+      class="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold py-3 rounded-full shadow-lg hover:from-blue-600 hover:to-blue-700 active:scale-[0.98] transition-all duration-200 mb-4">
+      <svg id="locSpinner" class="hidden animate-spin w-5 h-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none"
+        viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor"
+          d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+      </svg>
+      <img id="locIcon" src="https://cdn-icons-png.flaticon.com/512/684/684908.png" class="w-5 h-5" alt="location icon" />
+      <span id="locText">Use Current Location</span>
+    </button>
+
+    <div class="flex gap-2">
+      <button id="saveAddressBtn" class="flex-1 bg-orange-500 text-white py-2 rounded-lg font-semibold">
+        Save Address
+      </button>
+      <button id="cancelAddressBtn" class="flex-1 bg-gray-100 text-gray-700 py-2 rounded-lg">
+        Cancel
+      </button>
+    </div>
   </div>
 </div>
+
+
+
 
 <section id="paymentSection" class="bg-white p-5 rounded-2xl shadow-md hidden">
   <h2 class="text-xl font-semibold mb-3">Select Payment Method</h2>
@@ -187,36 +297,169 @@ function removeItem(index){ cart.splice(index,1); persistCart(); showToast("Item
 
 
 
+// 🟠 Address Popup Open/Close
 const addressPopup = document.getElementById("addressPopup");
+const paymentSection = document.getElementById("paymentSection");
 
-// 🟢 Open popup (slide up)
 document.getElementById("addAddressBtn").addEventListener("click", () => {
-  addressPopup.classList.remove("closing");
   addressPopup.classList.add("active");
+   setTimeout(() => document.getElementById("addrPhone").focus(), 400);
 });
 
-// 🔴 Close popup (slide down)
 document.getElementById("cancelAddressBtn").addEventListener("click", () => {
   addressPopup.classList.add("closing");
   setTimeout(() => {
     addressPopup.classList.remove("active", "closing");
-  }, 350); // match transition duration
+  }, 350);
 });
 
-document.getElementById("saveAddressBtn").addEventListener("click",()=>{
-  const name=document.getElementById("addrName").value;
-  const phone=document.getElementById("addrPhone").value;
-  const street=document.getElementById("addrStreet").value;
-  const city=document.getElementById("addrCity").value;
-  const pincode=document.getElementById("addrPincode").value;
-  if(!name||!phone||!street||!city||!pincode){ showToast("Fill all address fields"); return; }
-  localStorage.setItem("fe_address",JSON.stringify({name,phone,street,city,pincode}));
-  document.getElementById("addressPopup").classList.remove("active");
-  showToast("Address saved ✅");
+
+
+
+// ======= 📍 DETECT LOCATION (Auto-fill street, city, pincode) =======
+const detectLocationBtn = document.getElementById("detectLocationBtn");
+
+if (detectLocationBtn) {
+  detectLocationBtn.addEventListener("click", () => {
+    showToast("📍 Detecting your location...");
+
+    if (!navigator.geolocation) {
+      showToast("❌ Geolocation not supported");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
+          );
+          const data = await res.json();
+
+          // Extract details
+          const address = data.address || {};
+          const street =
+            address.road ||
+            address.neighbourhood ||
+            address.suburb ||
+            address.village ||
+            "";
+          const city =
+            address.city ||
+            address.town ||
+            address.state_district ||
+            address.county ||
+            "";
+          const pincode = address.postcode || "";
+
+          // Fill the fields
+          document.getElementById("addrStreet").value = street;
+          document.getElementById("addrCity").value = city;
+          document.getElementById("addrPincode").value = pincode;
+
+          showToast("✅ Location detected successfully!");
+        } catch (err) {
+          console.error(err);
+          showToast("⚠️ Failed to detect location");
+        }
+      },
+      (error) => {
+        console.error(error);
+        showToast("⚠️ Please allow location access");
+      }
+    );
+  });
+}
+
+// ======= 📞 PHONE NUMBER VALIDATION + SAVE ADDRESS =======
+const phoneInput = document.getElementById("addrPhone");
+
+phoneInput.addEventListener("input", () => {
+  // Allow only digits, max 10
+  phoneInput.value = phoneInput.value.replace(/\D/g, "").slice(0, 10);
+});
+
+document.getElementById("saveAddressBtn").addEventListener("click", () => {
+  const name = document.getElementById("addrName");
+  const phone = document.getElementById("addrPhone");
+  const street = document.getElementById("addrStreet");
+  const city = document.getElementById("addrCity");
+  const pincode = document.getElementById("addrPincode");
+  const phoneError = document.getElementById("phoneError");
+
+  // reset errors
+  phoneError.classList.add("hidden");
+  [name, phone, street, city, pincode].forEach(input => input.classList.remove("border-red-500"));
+
+  // check empty fields
+  let missingFields = [];
+  if (!name.value.trim()) missingFields.push("Full Name");
+  if (!phone.value.trim()) missingFields.push("Phone Number");
+  if (!street.value.trim()) missingFields.push("Street");
+  if (!city.value.trim()) missingFields.push("City");
+  if (!pincode.value.trim()) missingFields.push("Pincode");
+
+  if (missingFields.length > 0) {
+    showToast(`⚠️ Please fill: ${missingFields.join(", ")}`);
+    missingFields.forEach(field => {
+      switch(field){
+        case "Full Name": name.classList.add("border-red-500"); break;
+        case "Phone Number": phone.classList.add("border-red-500"); break;
+        case "Street": street.classList.add("border-red-500"); break;
+        case "City": city.classList.add("border-red-500"); break;
+        case "Pincode": pincode.classList.add("border-red-500"); break;
+      }
+    });
+    return;
+  }
+if (!/^[0-9]{10}$/.test(phone.value.trim())) {
+  phoneError.classList.remove("hidden");
+  phone.classList.add("border-red-500", "animate-shake");
+  showToast("📞 Enter a valid 10-digit phone number");
+  setTimeout(() => phone.classList.remove("animate-shake"), 500);
+  return;
+}
+
+
+  // ✅ Save address
+    const address = {
+    name: name.value.trim(),
+    phone: phone.value.trim(),
+    street: street.value.trim(),
+    city: city.value.trim(),
+    pincode: pincode.value.trim(),
+  };
+  localStorage.setItem("fe_address", JSON.stringify({ name, phone, street, city, pincode }));
+  showToast("✅ Address saved successfully!");
+
+  // 🧾 Show payment section
   document.getElementById("paymentSection").classList.remove("hidden");
+
+  // 💾 Smooth close of popup
+  addressPopup.classList.add("closing");
+  setTimeout(() => {
+    addressPopup.classList.remove("active", "closing");
+    // Clear inputs
+    document.getElementById("addrName").value = "";
+    document.getElementById("addrPhone").value = "";
+    document.getElementById("addrStreet").value = "";
+    document.getElementById("addrCity").value = "";
+    document.getElementById("addrPincode").value = "";
+  }, 380);
+
+  // 🧭 Optional: scroll to payment section
+  setTimeout(() => {
+    document.getElementById("paymentSection").scrollIntoView({ behavior: "smooth" });
+  }, 500);
 });
 
-// *** current location ***//
+
+
+
+
+// 🧭 Detect and Fill Current Location
 const locBtn = document.getElementById("useCurrentLocationBtn");
 const locText = document.getElementById("locText");
 const locIcon = document.getElementById("locIcon");
@@ -224,13 +467,13 @@ const locSpinner = document.getElementById("locSpinner");
 
 locBtn.addEventListener("click", () => {
   if (!navigator.geolocation) {
-    showToast("Geolocation not supported ❌");
+    showToast("❌ Geolocation not supported");
     return;
   }
 
   // Start loading animation
   locBtn.disabled = true;
-  locText.textContent = "Detecting your location...";
+  locText.textContent = "Detecting location...";
   locIcon.classList.add("hidden");
   locSpinner.classList.remove("hidden");
 
@@ -243,7 +486,18 @@ locBtn.addEventListener("click", () => {
       const data = await res.json();
       const address = data.address || {};
 
-      // 🏠 Fill fields
+   // 🏠 Combine parts for a detailed street/locality field
+      const streetParts = [
+        address.house_number,
+        address.road,
+        address.neighbourhood,
+        address.suburb,
+        address.state_district
+      ].filter(Boolean);
+
+      const streetFull = streetParts.join(", ");
+
+      // Fill form fields automatically
       document.getElementById("addrStreet").value =
         `${address.house_number || ""} ${address.road || ""} ${address.suburb || ""}`.trim();
       document.getElementById("addrCity").value =
@@ -252,23 +506,27 @@ locBtn.addEventListener("click", () => {
       document.getElementById("addrName").value =
         address.neighbourhood || "My Home";
 
+          // Save address to localStorage
+  localStorage.setItem("fe_address", JSON.stringify({ name, phone, street, city, pincode }));
+  document.getElementById("addressPopup").classList.remove("active");
+  showToast("✅ Address saved successfully!");
+  document.getElementById("paymentSection").classList.remove("hidden");
+
       // ✅ UI feedback
-      showToast("📍 Location detected!");
+      showToast("📍 Location detected! Address filled automatically");
       locText.textContent = "Location Detected!";
       locBtn.classList.replace("from-blue-500", "from-green-500");
       locBtn.classList.replace("to-blue-600", "to-green-600");
+      locBtn.classList.add("pulse-glow");
 
-// 🎬 Smooth slide-down close after detection
-setTimeout(() => {
-  addressPopup.classList.add("closing");
-  setTimeout(() => {
-    addressPopup.classList.remove("active", "closing");
-  }, 350);
-}, 1200);
+    // Re-enable button
+      locBtn.disabled = false;
+      locSpinner.classList.add("hidden");
+      locIcon.classList.remove("hidden")
 
-    } catch (e) {
-      console.error(e);
-      showToast("Unable to fetch address ❌");
+    } catch (error) {
+      console.error(error);
+      showToast("❌ Unable to fetch address");
       locText.textContent = "Try Again";
     } finally {
       locBtn.disabled = false;
@@ -276,7 +534,7 @@ setTimeout(() => {
       locIcon.classList.remove("hidden");
     }
   }, () => {
-    showToast("Location access denied ❌");
+    showToast("⚠️ Location access denied");
     locText.textContent = "Use Current Location";
     locBtn.disabled = false;
     locSpinner.classList.add("hidden");
@@ -284,7 +542,6 @@ setTimeout(() => {
   });
 });
 
- 
 
 
 
