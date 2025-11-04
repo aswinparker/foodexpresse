@@ -23,6 +23,27 @@ body { font-family:'Inter',sans-serif; background:#f9f9f9; }
 @keyframes fill{100%{box-shadow:inset 0 0 0 30px #FF6B00;}}
 .payment-btn.selected{border-color:#FF6B00; background:#FFF4E6; box-shadow:0 4px 12px rgba(255,107,0,0.2);}
 @media (max-width:640px){ .cart-item { flex-direction: column; align-items: flex-start; } .cart-item img { width:100%; height:auto; margin-bottom:0.5rem; } #paymentGrid { flex-direction: column; } .flex-wrap { flex-wrap: wrap; } }
+/* Smooth slide animations for popup */
+#addressPopup {
+  transition: transform 0.35s ease, opacity 0.35s ease;
+  transform: translateY(100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+#addressPopup.active {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+#addressPopup.closing {
+  transform: translateY(100%);
+  opacity: 0;
+}
+
+
+
 </style>
 </head>
 <body class="text-gray-800">
@@ -57,10 +78,26 @@ body { font-family:'Inter',sans-serif; background:#f9f9f9; }
       <input id="addrCity" type="text" placeholder="City" class="px-3 py-2 border rounded-lg"/>
       <input id="addrPincode" type="text" placeholder="Pincode" class="px-3 py-2 border rounded-lg"/>
     </div>
-    <div class="flex gap-2">
-      <button id="saveAddressBtn" class="flex-1 bg-orange-500 text-white py-2 rounded-lg font-semibold">Save</button>
-      <button id="cancelAddressBtn" class="flex-1 bg-gray-100 text-gray-700 py-2 rounded-lg">Cancel</button>
-    </div>
+ <!-- Buttons -->
+<div class="flex gap-2 mt-2">
+  <button id="saveAddressBtn" class="flex-1 bg-orange-500 text-white py-2.5 rounded-lg font-semibold">Save</button>
+  <button id="cancelAddressBtn" class="flex-1 bg-gray-100 text-gray-700 py-2.5 rounded-lg">Cancel</button>
+</div>
+
+<!-- 📍 Use Current Location Button -->
+<button id="useCurrentLocationBtn"
+  class="mt-4 w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold py-3 rounded-full shadow-lg hover:from-blue-600 hover:to-blue-700 active:scale-[0.98] transition-all duration-200">
+  <svg id="locSpinner" class="hidden animate-spin w-5 h-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none"
+    viewBox="0 0 24 24">
+    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+    <path class="opacity-75" fill="currentColor"
+      d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+  </svg>
+  <img id="locIcon" src="https://cdn-icons-png.flaticon.com/512/684/684908.png" class="w-5 h-5" alt="location icon"/>
+  <span id="locText">Use Current Location</span>
+</button>
+
+
   </div>
 </div>
 
@@ -148,8 +185,24 @@ function updateCartUI(){
 function changeQuantity(index,delta){ cart[index].quantity=(cart[index].quantity||1)+delta; if(cart[index].quantity<=0) cart.splice(index,1); persistCart(); showToast("Cart updated ✅"); }
 function removeItem(index){ cart.splice(index,1); persistCart(); showToast("Item removed ❌"); }
 
-document.getElementById("addAddressBtn").addEventListener("click",()=>{ document.getElementById("addressPopup").classList.add("active"); });
-document.getElementById("cancelAddressBtn").addEventListener("click",()=>{ document.getElementById("addressPopup").classList.remove("active"); });
+
+
+const addressPopup = document.getElementById("addressPopup");
+
+// 🟢 Open popup (slide up)
+document.getElementById("addAddressBtn").addEventListener("click", () => {
+  addressPopup.classList.remove("closing");
+  addressPopup.classList.add("active");
+});
+
+// 🔴 Close popup (slide down)
+document.getElementById("cancelAddressBtn").addEventListener("click", () => {
+  addressPopup.classList.add("closing");
+  setTimeout(() => {
+    addressPopup.classList.remove("active", "closing");
+  }, 350); // match transition duration
+});
+
 document.getElementById("saveAddressBtn").addEventListener("click",()=>{
   const name=document.getElementById("addrName").value;
   const phone=document.getElementById("addrPhone").value;
@@ -162,6 +215,78 @@ document.getElementById("saveAddressBtn").addEventListener("click",()=>{
   showToast("Address saved ✅");
   document.getElementById("paymentSection").classList.remove("hidden");
 });
+
+// *** current location ***//
+const locBtn = document.getElementById("useCurrentLocationBtn");
+const locText = document.getElementById("locText");
+const locIcon = document.getElementById("locIcon");
+const locSpinner = document.getElementById("locSpinner");
+
+locBtn.addEventListener("click", () => {
+  if (!navigator.geolocation) {
+    showToast("Geolocation not supported ❌");
+    return;
+  }
+
+  // Start loading animation
+  locBtn.disabled = true;
+  locText.textContent = "Detecting your location...";
+  locIcon.classList.add("hidden");
+  locSpinner.classList.remove("hidden");
+
+  navigator.geolocation.getCurrentPosition(async (pos) => {
+    const { latitude, longitude } = pos.coords;
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
+      );
+      const data = await res.json();
+      const address = data.address || {};
+
+      // 🏠 Fill fields
+      document.getElementById("addrStreet").value =
+        `${address.house_number || ""} ${address.road || ""} ${address.suburb || ""}`.trim();
+      document.getElementById("addrCity").value =
+        address.city || address.town || address.village || "";
+      document.getElementById("addrPincode").value = address.postcode || "";
+      document.getElementById("addrName").value =
+        address.neighbourhood || "My Home";
+
+      // ✅ UI feedback
+      showToast("📍 Location detected!");
+      locText.textContent = "Location Detected!";
+      locBtn.classList.replace("from-blue-500", "from-green-500");
+      locBtn.classList.replace("to-blue-600", "to-green-600");
+
+// 🎬 Smooth slide-down close after detection
+setTimeout(() => {
+  addressPopup.classList.add("closing");
+  setTimeout(() => {
+    addressPopup.classList.remove("active", "closing");
+  }, 350);
+}, 1200);
+
+    } catch (e) {
+      console.error(e);
+      showToast("Unable to fetch address ❌");
+      locText.textContent = "Try Again";
+    } finally {
+      locBtn.disabled = false;
+      locSpinner.classList.add("hidden");
+      locIcon.classList.remove("hidden");
+    }
+  }, () => {
+    showToast("Location access denied ❌");
+    locText.textContent = "Use Current Location";
+    locBtn.disabled = false;
+    locSpinner.classList.add("hidden");
+    locIcon.classList.remove("hidden");
+  });
+});
+
+ 
+
+
 
 document.getElementById("backBtn").addEventListener("click",()=>{ history.back(); });
 
