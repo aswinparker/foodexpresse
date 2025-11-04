@@ -93,7 +93,78 @@
 #searchOverlay.active #searchSheet {
   transform: translateY(0);
 }
+/* Overlay + animation enhancements */
+.fly-img { pointer-events: none; border-radius: 9999px; }
+.animate-bump { transform: scale(1.1); transition: transform 0.25s ease; }
 
+/* 🔶 Orange shimmer animation */
+@keyframes shimmerMove {
+  0% { background-position: -200px 0; }
+  100% { background-position: calc(200px + 100%) 0; }
+}
+
+.shimmer-box {
+  background: linear-gradient(
+    100deg,
+    #fef3c7 20%,
+    #fcd34d 40%,
+    #fef3c7 60%
+  );
+  background-size: 200% 100%;
+  animation: shimmerMove 1.2s infinite linear;
+}
+
+/* --- Modern Trending Cards --- */
+.trending-card {
+  background: white;
+  border-radius: 1rem;
+  transition: all 0.25s ease;
+}
+.trending-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(255, 102, 0, 0.15);
+}
+
+/* --- Add Button Gradient --- */
+.add-btn {
+  background: linear-gradient(90deg, #ff7e00, #ff4d00);
+  color: #fff;
+  font-weight: 600;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  padding: 0.4rem 0.9rem;
+  transition: 0.25s;
+}
+.add-btn:hover {
+  filter: brightness(1.1);
+}
+
+/* --- Sticky Bottom Cart Bar --- */
+#miniCartBar {
+  position: fixed;
+  bottom: -100px;
+  left: 0;
+  right: 0;
+  background: #ff7e00;
+  color: #fff;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.4rem;
+  transition: all 0.3s ease;
+  z-index: 80;
+}
+#miniCartBar.show {
+  bottom: 0;
+}
+#miniCartBar button {
+  background: white;
+  color: #ff7e00;
+  font-weight: 600;
+  border-radius: 9999px;
+  padding: 0.5rem 1.2rem;
+}
 
 
   </style>
@@ -194,7 +265,9 @@ window.googleLogin = async function() {
 </header>
 
 <!-- 🔍 Full-Screen Search Overlay -->
-<div id="searchOverlay" class="hidden fixed inset-0 bg-white z-50 flex flex-col translate-y-full transition-transform duration-300 ease-out">
+<div id="searchOverlay"
+  class="hidden fixed inset-0 bg-white z-50 flex flex-col translate-y-full transition-transform duration-300 ease-out">
+
   <!-- Top bar -->
   <div class="flex items-center justify-between px-4 py-3 border-b">
     <input id="searchInput" type="text" placeholder="Search for dishes or restaurants"
@@ -202,20 +275,21 @@ window.googleLogin = async function() {
     <button id="closeSearch" class="ml-3 text-gray-500 hover:text-black text-xl">✕</button>
   </div>
 
-  <!-- Content -->
-  <div class="p-4 flex-1 overflow-y-auto">
-    <h3 class="text-gray-700 font-semibold mb-3">Recent Searches</h3>
-    <ul id="recentList" class="space-y-2 mb-5"></ul>
+  <!-- Results container (live search results appear here) -->
+  <div id="resultsContainer" class="p-4 flex-1 overflow-y-auto"></div>
+</div>
 
-    <h3 class="text-gray-700 font-semibold mb-3">Popular</h3>
-    <div id="popularList" class="flex flex-wrap gap-2">
-      <span class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm cursor-pointer hover:bg-orange-100">Biryani</span>
-      <span class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm cursor-pointer hover:bg-orange-100">Pizza</span>
-      <span class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm cursor-pointer hover:bg-orange-100">Burger</span>
-      <span class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm cursor-pointer hover:bg-orange-100">Pasta</span>
-      <span class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm cursor-pointer hover:bg-orange-100">Coffee</span>
-    </div>
+<!-- 🧁 Bottom Sheet Food Preview -->
+<div id="foodSheet" class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-[90] flex items-end">
+  <div class="bg-white w-full rounded-t-3xl shadow-xl p-5 translate-y-full transition-transform duration-300 ease-out" id="foodSheetInner">
+    <div class="w-16 h-1 bg-gray-300 rounded-full mx-auto mb-4"></div>
+    <div id="foodSheetContent" class="space-y-4 text-center"></div>
   </div>
+</div>
+
+<!-- 🛒 Cart Icon (Top-right) -->
+<div class="fixed top-4 right-5 z-[95]">
+  <img id="cartIcon" src="https://cdn-icons-png.flaticon.com/512/891/891462.png" class="w-8 h-8 cursor-pointer" />
 </div>
 
 
@@ -933,95 +1007,312 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 </script>
 <script>
-
 /* -----------------------
-   Swiggy/Zomato-Style Search Overlay
+   Food Express 🔍 Smart Search Overlay (Zomato/Swiggy style, no recents)
 ------------------------*/
 const searchBox = document.getElementById("searchBox");
 const searchOverlay = document.getElementById("searchOverlay");
 const searchInput = document.getElementById("searchInput");
 const closeSearch = document.getElementById("closeSearch");
-const recentList = document.getElementById("recentList");
-const popularList = document.getElementById("popularList");
 
-let recentSearches = JSON.parse(localStorage.getItem("fe_recent") || "[]");
-renderRecent();
+// Results container
+const resultsContainer = document.getElementById("resultsContainer");
+resultsContainer.className = "p-4 space-y-2 overflow-y-auto max-h-[80vh]";
 
-// 🔹 Open overlay
+// 🍴 Mock dataset (replace with Firestore later)
+const data = [
+  { name: "Chicken Biryani", category: "Dish", img: "https://source.unsplash.com/80x80/?chicken-biryani" },
+  { name: "Paneer Butter Masala", category: "Dish", img: "https://source.unsplash.com/80x80/?paneer-butter-masala" },
+  { name: "Margherita Pizza", category: "Dish", img: "https://source.unsplash.com/80x80/?pizza" },
+  { name: "Domino’s Pizza", category: "Restaurant", img: "https://source.unsplash.com/80x80/?dominos" },
+  { name: "Starbucks", category: "Restaurant", img: "https://source.unsplash.com/80x80/?coffee-shop" },
+  { name: "Burger King", category: "Restaurant", img: "https://source.unsplash.com/80x80/?burger" },
+  { name: "Idli & Dosa Corner", category: "Restaurant", img: "https://source.unsplash.com/80x80/?idli-dosa" },
+];
+
+// 🟠 Open overlay
 searchBox.addEventListener("focus", openSearchOverlay);
 searchBox.addEventListener("click", openSearchOverlay);
 
 function openSearchOverlay() {
   searchOverlay.classList.remove("hidden");
   requestAnimationFrame(() => searchOverlay.classList.remove("translate-y-full"));
-  setTimeout(() => searchInput.focus(), 350);
+  setTimeout(() => searchInput.focus(), 300);
+    showTrending(); // show by default
 }
+searchInput.focus();
+  showShimmer(); // show shimmer immediately on open
 
-// 🔹 Close overlay
+
+// 🟠 Close overlay
 closeSearch.addEventListener("click", closeSearchOverlay);
 function closeSearchOverlay() {
   searchOverlay.classList.add("translate-y-full");
   setTimeout(() => searchOverlay.classList.add("hidden"), 300);
 }
 
-// 🔹 Save on Enter
-searchInput.addEventListener("keydown", e => {
-  if (e.key === "Enter") {
-    const term = searchInput.value.trim();
-    if (!term) return;
-    addRecent(term);
-    closeSearchOverlay();
-    showToast(`Searching for "${term}"...`);
+// 🟠 Handle input typing
+let typingTimeout;
+
+searchInput.addEventListener("input", (e) => {
+  const term = e.target.value.trim().toLowerCase();
+  clearTimeout(typingTimeout);
+
+  if (term === "") {
+    resultsContainer.innerHTML = `<p class="text-gray-400 text-sm text-center py-8">Start typing to search...</p>`;
+    return;
   }
+
+  // Show shimmer instantly
+  showShimmer();
+
+  // Simulate small network delay
+  typingTimeout = setTimeout(() => {
+    const results = data.filter((item) => item.name.toLowerCase().includes(term));
+    renderResults(results, term);
+  }, 600);
 });
 
-// 🔹 Add a recent term
-function addRecent(term) {
-  recentSearches = [term, ...recentSearches.filter(x => x !== term)].slice(0, 6);
-  localStorage.setItem("fe_recent", JSON.stringify(recentSearches));
-  renderRecent();
-}
 
-// 🔹 Render recent searches
-function renderRecent() {
-  recentList.innerHTML = recentSearches.length
-    ? recentSearches
-        .map(
-          i => `
-      <li class="px-4 py-2 bg-gray-100 rounded-lg flex justify-between items-center hover:bg-gray-200 cursor-pointer">
-        <span onclick="useSearch('${i}')">${i}</span>
-        <button class="text-gray-400 hover:text-red-500 text-sm" onclick="removeSearch('${i}')">✕</button>
-      </li>`
-        )
-        .join("")
-    : `<li class="text-gray-400 text-sm text-center py-6">No recent searches yet</li>`;
-}
+// 🟠 Render live results (Zomato-style cards)
+function renderResults(results, term) {
+  fadeOut(resultsContainer, () => {
+    if (results.length === 0) {
+      resultsContainer.innerHTML = `
+        <p class="text-gray-400 text-sm text-center py-8">
+          No matches for "${term}"
+        </p>`;
+      return;
+    }
 
-window.useSearch = term => {
-  searchBox.value = term;
-  closeSearchOverlay();
-  showToast(`Searching for "${term}"...`);
-};
-
-window.removeSearch = term => {
-  recentSearches = recentSearches.filter(x => x !== term);
-  localStorage.setItem("fe_recent", JSON.stringify(recentSearches));
-  renderRecent();
-};
-
-// 🔹 Popular tag click
-popularList.querySelectorAll("span").forEach(tag => {
-  tag.addEventListener("click", () => {
-    const term = tag.textContent.trim();
-    addRecent(term);
-    closeSearchOverlay();
-    showToast(`Searching for "${term}"...`);
+    resultsContainer.innerHTML = `
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 px-3 py-4">
+        ${results
+          .map(
+            (r) => `
+            <div 
+              class="flex items-center gap-3 bg-white p-3 rounded-xl shadow-sm border border-gray-100 hover:border-orange-300 hover:shadow-md transition cursor-pointer"
+              onclick="selectResult('${r.name}')"
+            >
+              <img src="${r.img}" alt="${r.name}" 
+                class="w-16 h-16 rounded-xl object-cover" />
+              <div class="flex-1">
+                <p class="font-medium text-gray-800">${r.name}</p>
+                <p class="text-xs text-gray-500">${r.category}</p>
+                <p class="text-orange-500 text-sm font-semibold mt-1">₹${(Math.random() * 200 + 100).toFixed(0)}</p>
+              </div>
+              <button class="bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-medium hover:bg-orange-600 transition">
+                Add
+              </button>
+            </div>
+          `
+          )
+          .join("")}
+      </div>`;
   });
+}
+
+
+// =========================
+// 🍲 Swiggy/Zomato Bottom Sheet Preview
+// =========================
+const foodSheet = document.getElementById("foodSheet");
+const foodSheetInner = document.getElementById("foodSheetInner");
+const foodSheetContent = document.getElementById("foodSheetContent");
+let activeItem = null;
+
+window.selectResult = (term) => {
+  const item = data.find((d) => d.name === term);
+  if (!item) return;
+  openFoodSheet(item);
+};
+
+// 🟠 Open food bottom sheet
+function openFoodSheet(item) {
+  activeItem = item;
+  const randomPrice = (Math.random() * 200 + 100).toFixed(0);
+  const rating = (Math.random() * 1.2 + 3.8).toFixed(1);
+  const reviews = Math.floor(Math.random() * 600 + 100);
+
+  foodSheetContent.innerHTML = `
+    <img src="${item.img}" alt="${item.name}" class="w-28 h-28 mx-auto rounded-2xl object-cover shadow-md" />
+    <div>
+      <h3 class="text-xl font-semibold text-gray-800">${item.name}</h3>
+      <p class="text-sm text-gray-500">${item.category}</p>
+      <div class="flex items-center justify-center gap-2 mt-1">
+        <span class="text-yellow-500">⭐</span>
+        <span class="text-gray-700 font-medium">${rating}</span>
+        <span class="text-gray-400 text-sm">(${reviews})</span>
+      </div>
+      <p class="text-orange-500 font-bold text-lg mt-1">₹${randomPrice}</p>
+    </div>
+
+    <div class="flex items-center justify-center gap-4 mt-4">
+      <button id="decQty" class="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center text-xl font-bold text-gray-700">−</button>
+      <span id="foodQty" class="text-lg font-semibold text-gray-700">1</span>
+      <button id="incQty" class="w-9 h-9 bg-orange-500 text-white rounded-full flex items-center justify-center text-xl font-bold hover:bg-orange-600">+</button>
+    </div>
+
+    <button id="addToCart" class="mt-5 w-full bg-orange-500 text-white font-semibold py-3 rounded-full shadow-md hover:bg-orange-600 transition">Add to Cart</button>
+    <button id="viewDetails" class="mt-2 w-full text-orange-500 font-medium hover:text-orange-600">View Details ➜</button>
+  `;
+
+  foodSheet.classList.remove("hidden");
+  requestAnimationFrame(() => foodSheetInner.classList.remove("translate-y-full"));
+
+  // Quantity logic
+  let qty = 1;
+  const qtyDisplay = document.getElementById("foodQty");
+  document.getElementById("incQty").onclick = () => (qtyDisplay.textContent = ++qty);
+  document.getElementById("decQty").onclick = () => {
+    if (qty > 1) qtyDisplay.textContent = --qty;
+  };
+
+  // ✅ Add to cart with animation + global cart update
+  document.getElementById("addToCart").onclick = () => {
+    const price = parseFloat(randomPrice);
+    flyToCart(foodSheetContent.querySelector("img"));
+    for (let i = 0; i < qty; i++) {
+      handleAddToCart(
+        document.getElementById("addToCart"),
+        item.name,
+        price,
+        item.img
+      );
+    }
+    showToast(`${qty} × ${item.name} added to cart 🛒`);
+  }; 
+
+  // View details
+  document.getElementById("viewDetails").onclick = () => {
+    closeFoodSheet();
+    closeSearchOverlay();
+    window.location.href = `/food.html?item=${encodeURIComponent(item.name)}`;
+  };
+}
+
+// 🟠 Close food sheet
+foodSheet.addEventListener("click", (e) => {
+  if (e.target === foodSheet) closeFoodSheet();
+});
+function closeFoodSheet() {
+  foodSheetInner.classList.add("translate-y-full");
+  setTimeout(() => foodSheet.classList.add("hidden"), 300);
+}
+
+// 🟠 Toast
+function showToast(msg) {
+  const toast = document.createElement("div");
+  toast.textContent = msg;
+  toast.className =
+    "fixed bottom-6 left-1/2 -translate-x-1/2 bg-orange-500 text-white text-sm px-4 py-2 rounded-full shadow-lg opacity-0 transition-opacity z-[70]";
+  document.body.appendChild(toast);
+  requestAnimationFrame(() => (toast.style.opacity = "1"));
+  setTimeout(() => {
+    toast.style.opacity = "0";
+    setTimeout(() => toast.remove(), 500);
+  }, 1800);
+}
+
+// 🟠 Fly-to-cart animation
+function flyToCart(imgSrc) {
+  const cartIcon = document.querySelector("#cartIcon");
+  if (!cartIcon) return;
+  const img = document.createElement("img");
+  img.src = imgSrc;
+  img.className = "fly-img";
+  document.body.appendChild(img);
+
+  const { left, top } = cartIcon.getBoundingClientRect();
+  img.style.cssText = `
+    position: fixed; width: 80px; height: 80px; border-radius: 50%;
+    object-fit: cover; top: ${window.innerHeight - 200}px; left: 50%;
+    transform: translateX(-50%); z-index: 999;
+    transition: all 0.8s cubic-bezier(.25,.8,.25,1);
+  `;
+  requestAnimationFrame(() => {
+    img.style.top = `${top + window.scrollY}px`;
+    img.style.left = `${left}px`;
+    img.style.width = "20px";
+    img.style.height = "20px";
+    img.style.opacity = "0.2";
+  });
+  setTimeout(() => img.remove(), 900);
+  cartIcon.classList.add("animate-bump");
+  setTimeout(() => cartIcon.classList.remove("animate-bump"), 300);
+}
+
+// 🟠 Zomato-style food card shimmer
+function showShimmer() {
+  resultsContainer.innerHTML = `
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 px-3 py-4 shimmer-wrapper opacity-100 transition-opacity duration-300">
+      ${Array(6)
+        .fill(0)
+        .map(
+          () => `
+          <div class="flex items-center gap-3 bg-white p-3 rounded-xl shadow-sm border border-gray-100">
+            <div class="w-16 h-16 rounded-xl shimmer-box"></div>
+            <div class="flex-1 space-y-2">
+              <div class="h-3 w-3/4 rounded shimmer-box"></div>
+              <div class="h-3 w-1/2 rounded shimmer-box"></div>
+              <div class="h-3 w-1/3 rounded shimmer-box"></div>
+            </div>
+          </div>
+        `
+        )
+        .join("")}
+    </div>
+  `;
+}
+
+
+
+// 🟠 Handle input typing with shimmer + fade transition
+searchInput.addEventListener("input", (e) => {
+  const term = e.target.value.trim().toLowerCase();
+
+   if (term === "") {
+    showTrending(); // show “Trending Near You”
+    return;
+  }
+
+  // Show shimmer first
+  showShimmer();
+
+  // Simulate loading delay for visual effect
+  setTimeout(() => {
+    const results = data.filter((item) => item.name.toLowerCase().includes(term));
+    fadeOut(resultsContainer, () => renderResults(results, term)); // fade out shimmer → show results
+  }, 600);
 });
 
+// 🟠 Smooth fade-out before showing results
+function fadeOut(element, callback) {
+  element.style.opacity = "1";
+  element.style.transition = "opacity 0.25s ease";
+  element.style.opacity = "0";
+
+  setTimeout(() => {
+    callback();
+    fadeIn(element);
+  }, 250);
+}
+
+// 🟠 Smooth fade-in for new results
+function fadeIn(element) {
+  element.style.opacity = "0";
+  requestAnimationFrame(() => {
+    element.style.transition = "opacity 0.3s ease";
+    element.style.opacity = "1";
+  });
+}
 
 
 </script>
+
+
+
+
 
 
 
