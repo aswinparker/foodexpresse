@@ -381,6 +381,11 @@ window.googleLogin = async function() {
     .promo-slide { width: 260px; }
     #promoInner { padding-left: 16px; padding-right: 16px; }
   }
+
+  #promoCarousel {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+  }
 </style>
 
 <script>
@@ -389,135 +394,129 @@ const promoInner = document.getElementById("promoInner");
 let slides = Array.from(promoInner.querySelectorAll(".promo-slide"));
 const originalCount = slides.length;
 
-// Clone slides for seamless infinite loop
-slides.forEach(slide => promoInner.appendChild(slide.cloneNode(true)));
+// --- Clone slides for seamless infinite loop ---
+slides.forEach(slide => {
+  promoInner.appendChild(slide.cloneNode(true)); // clone at end
+  promoInner.insertBefore(slide.cloneNode(true), promoInner.firstChild); // clone at start
+});
 slides = Array.from(promoInner.querySelectorAll(".promo-slide"));
 
-// Setup dots for original slides
+let index = originalCount; // start at the first real slide
+let autoScroll;
+
+// --- Dots setup ---
 const dotsContainer = document.getElementById("promoDots");
 for(let i=0;i<originalCount;i++){
   const dot = document.createElement("span");
   dot.className = "w-2 h-2 rounded-full bg-gray-400/50 transition-all";
   if(i===0) dot.classList.add("bg-orange-500","w-3","h-3");
-  dot.addEventListener("click", ()=>{ index=i; scrollToIndex(); });
+  dot.addEventListener("click", ()=>{ goToSlide(i); });
   dotsContainer.appendChild(dot);
 }
 const dots = dotsContainer.querySelectorAll("span");
 
-let index = 0;
-let autoScroll;
-
-// Calculate slide width dynamically
 function getSlideWidth(idx) {
   const s = slides[idx];
   return s.offsetWidth + parseInt(getComputedStyle(s).marginRight);
 }
 
-// Scroll to slide by index
-function scrollToIndex(instant=false) {
+// Scroll to slide
+function scrollToIndex(instant=false){
   let offset = 0;
   for(let i=0;i<index;i++) offset += getSlideWidth(i);
   carousel.scrollTo({ left: offset, behavior: instant ? "auto" : "smooth" });
   updateDots();
 }
 
-function updateDots() {
+// Update dots
+function updateDots(){
+  const realIndex = (index - originalCount + originalCount) % originalCount;
   dots.forEach((d,i)=>{
     d.className = "w-2 h-2 rounded-full bg-gray-400/50 transition-all";
-    if(i===index) d.classList.add("bg-orange-500","w-3","h-3");
+    if(i===realIndex) d.classList.add("bg-orange-500","w-3","h-3");
   });
 }
 
-// Slide next automatically
-function slideNext() {
-  index++;
-  if(index >= originalCount) index = 0;
+// Go to a specific real slide
+function goToSlide(i){
+  index = i + originalCount;
   scrollToIndex();
 }
 
-// Auto-scroll with seamless infinite loop
-function startAutoScroll() {
-  autoScroll = setInterval(slideNext, 3000);
+// Auto-slide
+function slideNext(){
+  index++;
+  scrollToIndex();
+  adjustInfinite();
 }
-function stopAutoScroll() { clearInterval(autoScroll); }
+
+function startAutoScroll(){ autoScroll = setInterval(slideNext, 3000); }
+function stopAutoScroll(){ clearInterval(autoScroll); }
+
 carousel.addEventListener("mouseenter", stopAutoScroll);
 carousel.addEventListener("mouseleave", startAutoScroll);
 
-// Initial scroll
 scrollToIndex(true);
 startAutoScroll();
 
-// --- Momentum swipe ---
-let isDown=false, startX, scrollLeft, velocity=0, lastX=0, lastTime=0, momentumID;
+// --- Swipe by one slide ---
+let startX = 0;
+let isDragging = false;
+let dragDiff = 0;
 
-function stopMomentum() { cancelAnimationFrame(momentumID); velocity=0; }
+function onDragStart(x){
+  isDragging = true;
+  startX = x;
+  dragDiff = 0;
+  stopAutoScroll();
+}
 
-function momentum() {
-  carousel.scrollLeft += velocity;
-  velocity *= 0.95;
-  if(Math.abs(velocity) > 0.5) momentumID = requestAnimationFrame(momentum);
-  else snapToNearest();
+function onDragMove(x){
+  if(!isDragging) return;
+  dragDiff = x - startX;
+}
+
+function onDragEnd(){
+  if(!isDragging) return;
+  isDragging = false;
+  if(Math.abs(dragDiff) > 30){ // swipe threshold
+    if(dragDiff < 0) index++; // next slide
+    else index--; // prev slide
+  }
+  scrollToIndex();
+  adjustInfinite();
+  startAutoScroll();
 }
 
 // Mouse events
-carousel.addEventListener('mousedown', e=>{
-  isDown=true;
-  stopMomentum();
-  startX = e.pageX - carousel.offsetLeft;
-  scrollLeft = carousel.scrollLeft;
-  lastX = e.pageX; lastTime = Date.now();
-});
-carousel.addEventListener('mouseup', e=>{
-  isDown=false;
-  const dt = Date.now() - lastTime;
-  velocity = (lastX - e.pageX)/dt*20;
-  momentum();
-});
-carousel.addEventListener('mouseleave', ()=>{ if(isDown){ isDown=false; momentum(); } });
-carousel.addEventListener('mousemove', e=>{
-  if(!isDown) return;
-  const x = e.pageX - carousel.offsetLeft;
-  carousel.scrollLeft = scrollLeft + (startX - x);
-  const now = Date.now();
-  velocity = (lastX - e.pageX)/(now-lastTime)*20;
-  lastX = e.pageX; lastTime = now;
-});
+carousel.addEventListener('mousedown', e => onDragStart(e.pageX));
+carousel.addEventListener('mousemove', e => onDragMove(e.pageX));
+carousel.addEventListener('mouseup', onDragEnd);
+carousel.addEventListener('mouseleave', onDragEnd);
 
 // Touch events
-carousel.addEventListener('touchstart', e=>{
-  isDown=true;
-  stopMomentum();
-  startX = e.touches[0].pageX - carousel.offsetLeft;
-  scrollLeft = carousel.scrollLeft;
-  lastX = e.touches[0].pageX; lastTime = Date.now();
-});
-carousel.addEventListener('touchmove', e=>{
-  if(!isDown) return;
-  const x = e.touches[0].pageX - carousel.offsetLeft;
-  carousel.scrollLeft = scrollLeft + (startX - x);
-  const now = Date.now();
-  velocity = (lastX - e.touches[0].pageX)/(now-lastTime)*20;
-  lastX = e.touches[0].pageX; lastTime = now;
-});
-carousel.addEventListener('touchend', e=>{
-  isDown=false;
-  momentum();
-});
+carousel.addEventListener('touchstart', e => onDragStart(e.touches[0].pageX));
+carousel.addEventListener('touchmove', e => onDragMove(e.touches[0].pageX));
+carousel.addEventListener('touchend', onDragEnd);
 
-// Snap to nearest
-function snapToNearest(){
-  const scrollLeft = carousel.scrollLeft;
-  let acc=0, nearest=0;
-  for(let i=0;i<originalCount;i++){
-    acc += getSlideWidth(i);
-    if(scrollLeft < acc){ nearest=i; break; }
+// --- Seamless infinite loop adjustment ---
+function adjustInfinite(){
+  // Jump to the real slide without animation
+  if(index >= slides.length - originalCount){
+    index = index - originalCount;
+    scrollToIndex(true);
   }
-  index = nearest;
-  scrollToIndex();
+  if(index < originalCount){
+    index = index + originalCount;
+    scrollToIndex(true);
+  }
 }
 
+// Handle resize
 window.addEventListener("resize", ()=>scrollToIndex(true));
 </script>
+
+
 
 
 
