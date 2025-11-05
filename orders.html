@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Food Express - Orders</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Card hover */
+    .order-card:hover { transform: translateY(-4px); box-shadow: 0 8px 16px rgba(0,0,0,0.1); transition: all 0.3s; }
+    /* Toast animation (optional) */
+    .toast-hidden { opacity: 0; transform: translateY(24px); }
+    .toast-show { opacity: 1; transform: translateY(0); transition: all 400ms ease; }
+  </style>
+</head>
+
+<body class="bg-gray-100 font-sans text-gray-800">
+
+<header class="bg-white shadow-sm sticky top-0 z-40">
+  <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+    <div class="text-xl font-bold text-orange-500">Food Express</div>
+    <div class="cursor-pointer" id="homeBtn">Home</div>
+  </div>
+</header>
+
+<main class="max-w-5xl mx-auto px-4 py-6">
+  <h1 class="text-2xl font-bold mb-4">Your Orders</h1>
+
+  <div id="ordersList" class="space-y-4">
+    <!-- Orders will populate here -->
+  </div>
+</main>
+
+<!-- Bottom Navigation (mobile) -->
+<nav class="fixed bottom-4 left-0 right-0 flex justify-center z-50">
+  <div class="w-11/12 bg-white rounded-2xl shadow-lg p-2 flex justify-around items-center">
+    <div class="nav-item flex flex-col items-center cursor-pointer" data-page="index.html" onclick="window.location.href='index.html'">
+      <svg class="nav-icon w-6 h-6 transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path d="M3 9l9-6 9 6v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <div class="nav-text text-xs transition-colors duration-200">Home</div>
+    </div>
+
+    <div class="nav-item flex flex-col items-center cursor-pointer" data-page="orders.html" onclick="window.location.href='orders.html'">
+      <svg class="nav-icon w-6 h-6 transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path d="M3 3h18v4H3zM5 7v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <div class="nav-text text-xs transition-colors duration-200">Orders</div>
+    </div>
+
+    <div class="nav-item flex flex-col items-center cursor-pointer" data-page="cart.html" onclick="goToCart()">
+      <svg class="nav-icon w-6 h-6 transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path d="M6 6h15l-1.5 9h-12z" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="9" cy="20" r="1"/>
+        <circle cx="19" cy="20" r="1"/>
+      </svg>
+      <div class="nav-text text-xs transition-colors duration-200">Cart</div>
+    </div>
+    
+
+    <div class="nav-item flex flex-col items-center cursor-pointer" data-page="account.html" onclick="openLoginPopup()">
+      <svg class="nav-icon w-6 h-6 transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10z" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M4 20a8 8 0 0 1 16 0" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <div class="nav-text text-xs transition-colors duration-200">Account</div>
+    </div>
+  </div>
+</nav>
+
+<script>
+function goToCart() {
+  window.location.href = "cart.html"; // Navigate to the cart page
+}
+</script>
+
+
+<script>
+  // Highlight active nav item
+  const currentPage = window.location.pathname.split("/").pop(); // e.g., "orders.html"
+  document.querySelectorAll(".nav-item").forEach(item => {
+    const icon = item.querySelector(".nav-icon");
+    const text = item.querySelector(".nav-text");
+
+    if(item.dataset.page === currentPage){
+      icon.classList.add("text-orange-500", "scale-110");
+      text.classList.add("text-orange-500", "font-semibold");
+    } else {
+      icon.classList.add("text-gray-400");
+      text.classList.add("text-gray-500", "font-normal");
+    }
+  });
+</script>
+
+
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCAGirQsFfQNInhUc9yuMD-QElaDnmRbKE",
+  authDomain: "foodexpress-9b0ff.firebaseapp.com",
+  projectId: "foodexpress-9b0ff",
+  storageBucket: "foodexpress-9b0ff.firebasestorage.app",
+  messagingSenderId: "818281594225",
+  appId: "1:818281594225:web:205774c2914ae2b9b08ad0"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+document.getElementById("homeBtn").addEventListener("click", ()=>{
+  window.location.href = "index.html";
+});
+
+async function loadOrders(user){
+  const ordersList = document.getElementById("ordersList");
+  ordersList.innerHTML = "<p class='text-gray-500'>Loading orders...</p>";
+
+  const userOrdersRef = collection(db, "users", user.uid, "orders");
+  const snap = await getDocs(userOrdersRef);
+
+  if (snap.empty){
+    ordersList.innerHTML = "<p class='text-gray-500'>No orders yet.</p>";
+    return;
+  }
+
+  ordersList.innerHTML = "";
+
+  snap.forEach(doc=>{
+    const o = doc.data();
+    const div = document.createElement("div");
+    div.className = "order-card p-4 bg-white rounded-xl shadow cursor-pointer";
+    div.innerHTML = `
+      <div class="flex justify-between items-center">
+        <div class="font-semibold text-lg">${o.restaurant || "Restaurant"}</div>
+        <div class="text-sm text-gray-500">${o.items.length} items</div>
+      </div>
+      <div class="mt-2 flex items-center gap-2">
+        ${o.items.map(i=>`<img src="${i.image || 'https://via.placeholder.com/40'}" class="w-10 h-10 object-cover rounded-lg"/>`).join("")}
+      </div>
+      <div class="mt-3 flex justify-between items-center">
+        <div class="text-orange-600 font-bold text-lg">₹${o.total}</div>
+        <div class="text-xs text-green-600 font-semibold">${o.status || "Pending"}</div>
+      </div>
+    `;
+    div.addEventListener("click", ()=> {
+      window.location.href = `order-details.html?orderId=${doc.id}`;
+    });
+    ordersList.appendChild(div);
+  });
+}
+
+// Listen for auth state outside the function
+onAuthStateChanged(auth, user=>{
+  if(!user){
+    document.getElementById("ordersList").innerHTML = "<p class='text-red-500'>Please login to view orders.</p>";
+    return;
+  }
+  loadOrders(user);
+});
+</script>
+
+
+</body>
+</html>
