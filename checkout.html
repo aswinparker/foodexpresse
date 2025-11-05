@@ -1,615 +1,1488 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Food Express - Cart & Checkout</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<style>
-body { font-family:'Inter',sans-serif; background:#f9f9f9; }
-.toast-hidden{opacity:0; transform:translateY(24px); pointer-events:none;}
-.toast-show{opacity:1; transform:translateY(0); transition: all 320ms cubic-bezier(.2,.9,.3,1); pointer-events:auto;}
-.animate-bump{transform:scale(1.08); transition:transform 0.18s;}
-.quantity-box{min-width:30px; text-align:center; font-weight:bold;}
-.popup-overlay{position:fixed; inset:0; background: rgba(0,0,0,0.32); backdrop-filter: blur(6px); display:flex; align-items:center; justify-content:center; z-index:60; opacity:0; pointer-events:none; transition: all .28s;}
-.popup-overlay.active{opacity:1; pointer-events:auto;}
-.popup{transform:translateY(36px); opacity:0; transition: all .28s ease; max-width:95vw; background:white; border-radius:1rem; padding:2rem;}
-.popup-overlay.active .popup{transform:translateY(0); opacity:1;}
-.checkmark{width:60px; height:60px; border-radius:50%; display:inline-block; stroke-width:2; stroke:#fff; stroke-miterlimit:10; box-shadow: inset 0px 0px 0px #fff; animation: fill .4s ease-in-out .4s forwards, scale .3s ease-in-out .9s both;}
-.checkmark__circle{stroke-dasharray:166; stroke-dashoffset:166; stroke-width:2; stroke-miterlimit:10; stroke:#FF6B00; fill:none; animation: stroke .6s cubic-bezier(.65,0,.45,1) forwards;}
-.checkmark__check{transform-origin:50% 50%; stroke-dasharray:48; stroke-dashoffset:48; animation: stroke .3s cubic-bezier(.65,0,.45,1) .8s forwards;}
-@keyframes stroke{100%{stroke-dashoffset:0;}}
-@keyframes scale{0%,100%{transform:none;}50%{transform:scale3d(1.1,1.1,1);}}
-@keyframes fill{100%{box-shadow:inset 0 0 0 30px #FF6B00;}}
-.payment-btn.selected{border-color:#FF6B00; background:#FFF4E6; box-shadow:0 4px 12px rgba(255,107,0,0.2);}
-@media (max-width:640px){ .cart-item { flex-direction: column; align-items: flex-start; } .cart-item img { width:100%; height:auto; margin-bottom:0.5rem; } #paymentGrid { flex-direction: column; } .flex-wrap { flex-wrap: wrap; } }
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Food Express</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Hide scrollbar for horizontal sections */
+    .snap-x::-webkit-scrollbar { display: none; }
+    .snap-x {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
 
+    /* Overlay for modals/popups */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.6);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .overlay.active {
+      display: flex;
+      opacity: 1;
+    }
 
-/* Overlay fade + blur animation */
-.popup-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.32);
-  backdrop-filter: blur(6px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 60;
-  opacity: 0;
-  pointer-events: none;
-  transform: translateY(100%);
-  transition: opacity 0.35s ease, transform 0.35s ease;
-}
+    /* Cart bump animation */
+    .animate-bump {
+      transform: scale(1.08);
+      transition: transform 0.18s;
+    }
+    .animate-bump-reset { transform: scale(1); }
 
-/* Slide-up and fade-in popup */
-.popup-overlay.active {
-  opacity: 1;
-  pointer-events: auto;
+    /* Fly-to-cart image animation */
+    .fly-img {
+      position: fixed;
+      width: 64px;
+      height: 64px;
+      object-fit: cover;
+      border-radius: 8px;
+      pointer-events: none;
+      z-index: 9999;
+      will-change: transform, opacity;
+      transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease;
+    }
+
+    /* Toast notifications */
+    .toast-hidden { opacity: 0; transform: translateY(24px); }
+    .toast-show {
+      opacity: 1;
+      transform: translateY(0);
+      transition: all 400ms ease;
+      will-change: transform, opacity;
+    }
+
+    /* Hero gradient background */
+    .hero-gradient {
+      background: linear-gradient(90deg, #FFEDD5 0%, #FFEDD5 40%, #FFF7ED 100%);
+    }
+
+    /* Small card hover effect */
+    .ad-card {
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+    .ad-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    }
+
+   /* Slide animation helper */
+.search-open #searchSheet {
   transform: translateY(0);
 }
 
-/* Smooth slide-down when closing */
-.popup-overlay.closing {
-  opacity: 0;
+/* Slide-up animation */
+#searchOverlay {
+  transition: opacity 0.3s ease;
+}
+#searchSheet {
   transform: translateY(100%);
+  transition: transform 0.35s ease;
+}
+#searchOverlay.active {
+  display: flex !important;
+  opacity: 1;
+}
+#searchOverlay.active #searchSheet {
+  transform: translateY(0);
+}
+/* Overlay + animation enhancements */
+.fly-img { pointer-events: none; border-radius: 9999px; }
+.animate-bump { transform: scale(1.1); transition: transform 0.25s ease; }
+
+/* 🔶 Orange shimmer animation */
+@keyframes shimmerMove {
+  0% { background-position: -200px 0; }
+  100% { background-position: calc(200px + 100%) 0; }
 }
 
-/* Popup box */
-.popup {
+.shimmer-box {
+  background: linear-gradient(
+    100deg,
+    #fef3c7 20%,
+    #fcd34d 40%,
+    #fef3c7 60%
+  );
+  background-size: 200% 100%;
+  animation: shimmerMove 1.2s infinite linear;
+}
+
+/* --- Modern Trending Cards --- */
+.trending-card {
   background: white;
   border-radius: 1rem;
-  padding: 2rem;
-  width: 100%;
-  max-width: 400px;
-  transform: translateY(36px);
-  opacity: 0;
-  transition: all 0.35s ease;
+  transition: all 0.25s ease;
+}
+.trending-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(255, 102, 0, 0.15);
 }
 
-.popup-overlay.active .popup {
-  transform: translateY(0);
-  opacity: 1;
+/* --- Add Button Gradient --- */
+.add-btn {
+  background: linear-gradient(90deg, #ff7e00, #ff4d00);
+  color: #fff;
+  font-weight: 600;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  padding: 0.4rem 0.9rem;
+  transition: 0.25s;
+}
+.add-btn:hover {
+  filter: brightness(1.1);
 }
 
-.popup-overlay.closing .popup {
-  transform: translateY(36px);
-  opacity: 0;
+/* --- Sticky Bottom Cart Bar --- */
+#miniCartBar {
+  position: fixed;
+  bottom: -100px;
+  left: 0;
+  right: 0;
+  background: #ff7e00;
+  color: #fff;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.4rem;
+  transition: all 0.3s ease;
+  z-index: 80;
 }
-
-/* Allow touch interactions for swipe gesture */
-.popup {
-  touch-action: none;
+#miniCartBar.show {
+  bottom: 0;
 }
-
-/* Bottom sheet style */
-.popup-overlay {
-  align-items: flex-end; /* start from bottom */
-  justify-content: center;
-}
-
-.bottom-sheet {
-  border-radius: 1.5rem 1.5rem 0 0;
-  width: 100%;
-  max-width: 500px;
-  margin: 0 auto;
-  transform: translateY(100%);
-  transition: transform 0.3s ease, opacity 0.3s ease;
-}
-
-.popup-overlay.active .bottom-sheet {
-  transform: translateY(0);
-  opacity: 1;
-}
-@keyframes pulseGlow {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(251, 146, 60, 0.4);
-    transform: scale(1);
-  }
-  50% {
-    box-shadow: 0 0 0 8px rgba(251, 146, 60, 0);
-    transform: scale(1.03);
-  }
-}
-
-.pulse-glow {
-  animation: pulseGlow 1.2s ease-in-out infinite;
-}
-@keyframes pulseGlow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(251, 146, 60, 0.4); }
-  50% { box-shadow: 0 0 15px 3px rgba(251, 146, 60, 0.3); }
-}
-
-.pulse-glow {
-  animation: pulseGlow 1.4s infinite;
-}
-
-#addressPopup { z-index: 70; }
-
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  20%, 60% { transform: translateX(-6px); }
-  40%, 80% { transform: translateX(6px); }
-}
-.animate-shake {
-  animation: shake 0.4s ease;
+#miniCartBar button {
+  background: white;
+  color: #ff7e00;
+  font-weight: 600;
+  border-radius: 9999px;
+  padding: 0.5rem 1.2rem;
 }
 
 
-
-
-</style>
+  </style>
 </head>
-<body class="text-gray-800">
+<body class="bg-amber-50 font-sans text-gray-800">
+  
 
-<header class="bg-white shadow-md sticky top-0 z-40">
-  <div class="max-w-5xl mx-auto px-5 py-4 flex items-center justify-between">
-    <div class="text-2xl font-extrabold text-orange-500">🍽️ Food Express</div>
-    <button id="backBtn" class="text-orange-500 font-semibold">← Back</button>
-  </div>
-</header>
-
-<main class="max-w-5xl mx-auto px-4 py-6 space-y-6">
-<section id="cartSection">
-  <h1 class="text-3xl font-bold mb-3">Your Cart</h1>
-  <div id="cartContainer" class="space-y-4"></div>
-  <div class="mt-6 bg-white p-5 rounded-2xl shadow flex justify-between items-center">
-    <span class="text-lg font-semibold">Total:</span>
-    <span id="cartTotal" class="text-2xl font-bold text-orange-600">₹0</span>
-  </div>
-  <button id="addAddressBtn" class="mt-4 w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white py-3 rounded-full font-bold shadow-lg hover:from-orange-600 hover:to-orange-700 transition-all duration-200">
-    Add Delivery Address
-  </button>
-</section>
-
-<!-- 🏠 Address Popup -->
-<div id="addressPopup" class="popup-overlay">
-  <div class="popup">
-    <h3 class="text-xl font-semibold mb-3 text-orange-600 text-center">🏠 Add Delivery Address</h3>
-
-    <input id="addrName" type="text" placeholder="Full name" class="w-full px-3 py-2 border rounded-lg mb-2" required />
-<input id="addrPhone" 
-  type="tel" 
-  placeholder="Phone number" 
-  class="w-full px-3 py-2 border rounded-lg mb-2 focus:ring-2 focus:ring-orange-500" 
-  required 
-  pattern="[0-9]{10}" 
-  inputmode="numeric"
-/>
-<small id="phoneError" class="text-red-500 text-sm hidden">Enter a valid 10-digit number</small>
-    <input id="addrStreet" type="text" placeholder="House / Street / Locality" class="w-full px-3 py-2 border rounded-lg mb-2" required />
-
-    <div class="grid grid-cols-2 gap-2 mb-3">
-      <input id="addrCity" type="text" placeholder="City" class="px-3 py-2 border rounded-lg" required />
-      <input id="addrPincode" type="text" placeholder="Pincode" class="px-3 py-2 border rounded-lg" required />
-    </div>
-
-
-    <!-- 📍 Use Current Location Button -->
-    <button id="useCurrentLocationBtn"
-      class="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold py-3 rounded-full shadow-lg hover:from-blue-600 hover:to-blue-700 active:scale-[0.98] transition-all duration-200 mb-4">
-      <svg id="locSpinner" class="hidden animate-spin w-5 h-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none"
-        viewBox="0 0 24 24">
-        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-        <path class="opacity-75" fill="currentColor"
-          d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-      </svg>
-      <img id="locIcon" src="https://cdn-icons-png.flaticon.com/512/684/684908.png" class="w-5 h-5" alt="location icon" />
-      <span id="locText">Use Current Location</span>
-    </button>
-
-    <div class="flex gap-2">
-      <button id="saveAddressBtn" class="flex-1 bg-orange-500 text-white py-2 rounded-lg font-semibold">
-        Save Address
-      </button>
-      <button id="cancelAddressBtn" class="flex-1 bg-gray-100 text-gray-700 py-2 rounded-lg">
-        Cancel
-      </button>
-    </div>
-  </div>
-</div>
-
-
-
-
-<section id="paymentSection" class="bg-white p-5 rounded-2xl shadow-md hidden">
-  <h2 class="text-xl font-semibold mb-3">Select Payment Method</h2>
-  <div id="paymentGrid" class="flex gap-4 flex-col sm:flex-row">
-    <button class="payment-btn flex items-center gap-3 p-3 border rounded-xl shadow-sm hover:shadow-md transition-all" id="gpayBtn">
-      <img src="https://i.postimg.cc/7Z8gybDt/google-pay-6124998.png" class="w-10 h-10 object-contain" alt="GPay"/>
-      <div><div class="font-medium">GPay (UPI)</div><div class="text-xs text-gray-500">Open app to pay</div></div>
-    </button>
-    <button class="payment-btn flex items-center gap-3 p-3 border rounded-xl shadow-sm hover:shadow-md transition-all" id="phonepeBtn">
-      <img src="https://img.icons8.com/color/48/phone-pe.png" class="w-10 h-10 object-contain" alt="PhonePe"/>
-      <div><div class="font-medium">PhonePe (UPI)</div><div class="text-xs text-gray-500">Open app to pay</div></div>
-    </button>
-  </div>
-  <button id="payBtn" class="mt-4 w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white py-3 rounded-full font-bold shadow-lg hover:from-orange-600 hover:to-orange-700 transition-all duration-200">
-    <span id="payBtnText">Pay & Place Order</span>
-  </button>
-</section>
-</main>
-
-<div id="toast" class="fixed bottom-20 left-1/2 transform -translate-x-1/2 bg-orange-500 text-white px-6 py-3 rounded-full shadow-lg toast-hidden z-50" role="status" aria-live="polite"></div>
-
-<div id="successPopup" class="popup-overlay">
-  <div class="popup text-center">
-    <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
-      <circle class="checkmark__circle" cx="26" cy="26" r="25" fill="none"/>
-      <path class="checkmark__check" fill="none" d="M14 27l7 7 16-16"/>
-    </svg>
-    <h3 class="mt-3 text-xl font-semibold text-green-600">Order Placed Successfully!</h3>
-    <p class="mt-2 text-gray-600">Your order ID is <span id="orderId"></span></p>
-    <button id="continueShoppingBtn" class="mt-4 bg-orange-500 text-white py-2 px-4 rounded-lg font-semibold">Continue Shopping</button>
-  </div>
-</div>
-
+<!-- Firebase SDKs (v11) kept as before -->
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
-import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+  import { 
+  getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged,
+  createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut 
+} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyCAGirQsFfQNInhUc9yuMD-QElaDnmRbKE",
-  authDomain: "foodexpress-9b0ff.firebaseapp.com",
-  projectId: "foodexpress-9b0ff",
-  storageBucket: "foodexpress-9b0ff.firebasestorage.app",
-  messagingSenderId: "818281594225",
-  appId: "1:818281594225:web:205774c2914ae2b9b08ad0"
+  import { 
+    getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, collection, addDoc, serverTimestamp 
+  } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCAGirQsFfQNInhUc9yuMD-QElaDnmRbKE",
+    authDomain: "foodexpress-9b0ff.firebaseapp.com",
+    projectId: "foodexpress-9b0ff",
+    storageBucket: "foodexpress-9b0ff.appspot.com",
+    messagingSenderId: "818281594225",
+    appId: "1:818281594225:web:205774c2914ae2b9b08ad0"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+const provider = new GoogleAuthProvider();
+window.__fe = { 
+  auth, db, provider,
+  onAuthStateChanged, createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword, signOut, signInWithPopup,
+  doc, getDoc, setDoc, updateDoc, onSnapshot, 
+  collection, addDoc, serverTimestamp 
 };
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
 
-const LOCAL_CART_KEY="fe_cart_v1";
-let cart=JSON.parse(localStorage.getItem(LOCAL_CART_KEY)||"[]");
-const toast=document.getElementById("toast");
+// Trigger when user clicks Google Login
+window.googleLogin = async function() {
+  try {
+    const result = await signInWithPopup(auth, provider);
+    const user = result.user;
 
-function showToast(msg){ toast.innerText=msg; toast.classList.remove("toast-hidden"); toast.classList.add("toast-show"); setTimeout(()=>{ toast.classList.remove("toast-show"); toast.classList.add("toast-hidden"); },1500); }
-function persistCart(){ localStorage.setItem(LOCAL_CART_KEY,JSON.stringify(cart)); updateCartUI(); saveUserCart(); }
-async function saveUserCart(){ try{ const user=auth.currentUser; if(!user) return; const userRef=doc(db,"users",user.uid); await setDoc(userRef,{cart},{merge:true}); }catch(err){console.error(err);} }
+      // Optional: Log auth state
+  onAuthStateChanged(auth, user => {
+    console.log(user ? `Logged in: ${user.email}` : "User logged out");
+  });
 
-function updateCartUI(){
-    const container=document.getElementById("cartContainer"); container.innerHTML=""; let total=0;
-    if(cart.length===0){ container.innerHTML='<p class="text-gray-500">Your cart is empty.</p>'; document.getElementById("cartTotal").innerText="₹0"; return; }
-    cart.forEach((item,index)=>{ 
-        const itemTotal=item.price*(item.quantity||1); total+=itemTotal;
-        const div=document.createElement("div");
-        div.className="cart-item bg-white rounded-xl p-3 flex items-center gap-4 shadow flex-wrap";
-        div.innerHTML=`<img src="${item.image}" class="w-20 h-20 object-cover rounded-lg"/>
-        <div class="flex-1">
-        <div class="font-semibold">${item.name}</div>
-        <div class="text-gray-500">₹${item.price} × <span class="quantity-box" id="qty-${index}">${item.quantity}</span> = ₹<span id="item-total-${index}">${itemTotal}</span></div>
-        <div class="mt-2 flex gap-2 flex-wrap">
-        <button class="decrease bg-gray-100 px-3 rounded-full">-</button>
-        <button class="increase bg-gray-100 px-3 rounded-full">+</button>
-        <button class="remove bg-red-500 text-white px-3 rounded-full">Remove</button>
-        </div></div>`;
-        container.appendChild(div);
-        div.querySelector(".decrease").addEventListener("click",()=>changeQuantity(index,-1));
-        div.querySelector(".increase").addEventListener("click",()=>changeQuantity(index,1));
-        div.querySelector(".remove").addEventListener("click",()=>removeItem(index));
-    });
-    const cartTotalEl=document.getElementById("cartTotal"); cartTotalEl.innerText="₹"+total; cartTotalEl.classList.remove("animate-bump"); void cartTotalEl.offsetWidth; cartTotalEl.classList.add("animate-bump");
+    // Save user data to Firestore
+    const userRef = doc(db, "users", user.uid);
+    await setDoc(userRef, {
+      name: user.displayName,
+      email: user.email,
+      photo: user.photoURL,
+      createdAt: serverTimestamp()
+    }, { merge: true });
+
+    alert("Welcome " + user.displayName + "!");
+  } catch (error) {
+    console.error("Google Sign-In Error:", error);
+    alert("Login failed: " + error.message);
+  }
+};
+
+</script>
+<!-- Top bar -->
+<!-- Header -->
+<header class="p-4 bg-white shadow-sm sticky top-0 z-50">
+  <div class="max-w-7xl mx-auto flex justify-center">
+    <div class="relative w-full max-w-xl">
+      <input
+        type="text"
+        placeholder="Search for food or restaurants..."
+        class="w-full border border-gray-300 rounded-full px-4 py-2 pl-10 focus:outline-none focus:ring-2 focus:ring-orange-500"
+        id="searchBox"
+      />
+      <svg
+        class="w-5 h-5 absolute left-3 top-2.5 text-gray-400"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1110.5 3a7.5 7.5 0 016.15 13.65z"
+        />
+      </svg>
+    </div>
+  </div>
+  <span id="accountLabel" class="font-semibold text-gray-700"></span>
+</header>
+
+<!-- 🔍 Full-Screen Search Overlay -->
+<div id="searchOverlay"
+  class="hidden fixed inset-0 bg-white z-50 flex flex-col translate-y-full transition-transform duration-300 ease-out">
+
+  <!-- Top bar -->
+  <div class="flex items-center justify-between px-4 py-3 border-b">
+    <input id="searchInput" type="text" placeholder="Search for dishes or restaurants"
+      class="flex-1 bg-gray-100 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-orange-500 text-gray-700" />
+    <button id="closeSearch" class="ml-3 text-gray-500 hover:text-black text-xl">✕</button>
+  </div>
+
+  <!-- Results container (live search results appear here) -->
+  <div id="resultsContainer" class="p-4 flex-1 overflow-y-auto"></div>
+</div>
+
+<!-- 🧁 Bottom Sheet Food Preview -->
+<div id="foodSheet" class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-[90] flex items-end">
+  <div class="bg-white w-full rounded-t-3xl shadow-xl p-5 translate-y-full transition-transform duration-300 ease-out" id="foodSheetInner">
+    <div class="w-16 h-1 bg-gray-300 rounded-full mx-auto mb-4"></div>
+    <div id="foodSheetContent" class="space-y-4 text-center"></div>
+  </div>
+</div>
+
+<!-- 🛒 Cart Icon (Top-right) -->
+<div class="fixed top-4 right-5 z-[95]">
+  <img id="cartIcon" src="https://cdn-icons-png.flaticon.com/512/891/891462.png" class="w-8 h-8 cursor-pointer" />
+</div>
+
+
+
+
+<!-- Hero + Main promos -->
+<main class="max-w-5xl mx-auto px-4 py-6">
+  <section class="hero-gradient rounded-xl p-5 flex flex-col md:flex-row gap-4 items-center">
+    <div class="flex-1">
+      <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Hot Deals Today — Up to <span class="text-orange-600">50% OFF</span></h1>
+      <p class="text-sm text-gray-600 mt-2">Free delivery on orders above ₹199. Exclusive combos & limited-time coupons. Use code <span class="font-semibold">FE50</span></p>
+
+      <div class="mt-4 flex gap-3">
+        <button onclick="scrollToSection('top-picks')" class="bg-orange-500 text-white px-4 py-2 rounded-full shadow">Order Now</button>
+        <button onclick="scrollToSection('offers')" class="bg-white border border-gray-200 px-4 py-2 rounded-full">View Offers</button>
+      </div>
+
+      <div class="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="bg-white p-3 rounded-lg flex items-center gap-3 shadow-sm ad-card">
+          <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 3h18v4H3zM5 7v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div>
+            <div class="text-sm font-semibold">Free Delivery</div>
+            <div class="text-xs text-gray-500">On orders ₹199+</div>
+          </div>
+        </div>
+
+        <div class="bg-white p-3 rounded-lg flex items-center gap-3 shadow-sm ad-card">
+          <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2v6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 11h14" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 22v-6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div>
+            <div class="text-sm font-semibold">Combo Offers</div>
+            <div class="text-xs text-gray-500">Save up to 30%</div>
+          </div>
+        </div>
+
+        <div class="bg-white p-3 rounded-lg flex items-center gap-3 shadow-sm ad-card">
+          <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2a10 10 0 1 0 0 20" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 6v6l4 2" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div>
+            <div class="text-sm font-semibold">Quick Delivery</div>
+            <div class="text-xs text-gray-500">Average 30–40 min</div>
+          </div>
+        </div>
+
+        <div class="bg-white p-3 rounded-lg flex items-center gap-3 shadow-sm ad-card">
+          <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2l2 6h6l-5 4 2 6-5-4-5 4 2-6L4 8h6z" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div>
+            <div class="text-sm font-semibold">Earn Points</div>
+            <div class="text-xs text-gray-500">Rewards & cashback</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="w-full md:w-80">
+      <img src="https://i.postimg.cc/1tyQKPD9/promo.jpg" alt="promo" class="rounded-xl shadow-lg w-full object-cover h-48" />
+    </div>
+  </section>
+
+
+
+<!-- Promo strip carousel -->
+<section class="mt-6 relative">
+  <div class="overflow-x-auto snap-x snap-mandatory scroll-smooth px-2 py-2" id="promoCarousel">
+    <div class="flex gap-3 w-max" id="promoInner">
+      <img src="https://i.postimg.cc/rpjTgVCD/Save-50-on-Delicious-Meals.png" class="promo-slide" />
+      <img src="https://i.postimg.cc/ryBpDphK/Promotional-Sale-Carousel-Showcase-1.png" class="promo-slide" />
+      <img src="https://i.postimg.cc/1tyQKPD9/promo.jpg" class="promo-slide" />
+      <img src="https://i.postimg.cc/j5GRn84X/Delicious-Dishes-from-Food-Express.png" class="promo-slide" />
+    </div>
+  </div>
+
+  <!-- Dots -->
+  <div class="flex justify-center mt-2 gap-2" id="promoDots"></div>
+</section>
+
+<style>
+  .promo-slide {
+    height: 140px;
+    flex-shrink: 0;
+    border-radius: 0.75rem;
+    object-fit: cover;
+    scroll-snap-align: start;
+    transition: transform 0.3s ease;
+  }
+
+  @media(min-width:1025px) { .promo-slide { width: 420px; } }
+  @media(max-width:1024px) { .promo-slide { width: 320px; } }
+  @media(max-width:640px) { 
+    .promo-slide { width: 260px; }
+    #promoInner { padding-left: 16px; padding-right: 16px; }
+  }
+</style>
+
+<script>
+const carousel = document.getElementById("promoCarousel");
+const promoInner = document.getElementById("promoInner");
+let slides = Array.from(promoInner.querySelectorAll(".promo-slide"));
+const originalCount = slides.length;
+
+// Clone slides for seamless infinite loop
+slides.forEach(slide => promoInner.appendChild(slide.cloneNode(true)));
+slides = Array.from(promoInner.querySelectorAll(".promo-slide"));
+
+// Setup dots for original slides
+const dotsContainer = document.getElementById("promoDots");
+for(let i=0;i<originalCount;i++){
+  const dot = document.createElement("span");
+  dot.className = "w-2 h-2 rounded-full bg-gray-400/50 transition-all";
+  if(i===0) dot.classList.add("bg-orange-500","w-3","h-3");
+  dot.addEventListener("click", ()=>{ index=i; scrollToIndex(); });
+  dotsContainer.appendChild(dot);
 }
-function changeQuantity(index,delta){ cart[index].quantity=(cart[index].quantity||1)+delta; if(cart[index].quantity<=0) cart.splice(index,1); persistCart(); showToast("Cart updated ✅"); }
-function removeItem(index){ cart.splice(index,1); persistCart(); showToast("Item removed ❌"); }
+const dots = dotsContainer.querySelectorAll("span");
 
+let index = 0;
+let autoScroll;
 
+// Calculate slide width dynamically
+function getSlideWidth(idx) {
+  const s = slides[idx];
+  return s.offsetWidth + parseInt(getComputedStyle(s).marginRight);
+}
 
-// 🟠 Address Popup Open/Close
-const addressPopup = document.getElementById("addressPopup");
-const paymentSection = document.getElementById("paymentSection");
+// Scroll to slide by index
+function scrollToIndex(instant=false) {
+  let offset = 0;
+  for(let i=0;i<index;i++) offset += getSlideWidth(i);
+  carousel.scrollTo({ left: offset, behavior: instant ? "auto" : "smooth" });
+  updateDots();
+}
 
-document.getElementById("addAddressBtn").addEventListener("click", () => {
-  addressPopup.classList.add("active");
-   setTimeout(() => document.getElementById("addrPhone").focus(), 400);
+function updateDots() {
+  dots.forEach((d,i)=>{
+    d.className = "w-2 h-2 rounded-full bg-gray-400/50 transition-all";
+    if(i===index) d.classList.add("bg-orange-500","w-3","h-3");
+  });
+}
+
+// Slide next automatically
+function slideNext() {
+  index++;
+  if(index >= originalCount) index = 0;
+  scrollToIndex();
+}
+
+// Auto-scroll with seamless infinite loop
+function startAutoScroll() {
+  autoScroll = setInterval(slideNext, 3000);
+}
+function stopAutoScroll() { clearInterval(autoScroll); }
+carousel.addEventListener("mouseenter", stopAutoScroll);
+carousel.addEventListener("mouseleave", startAutoScroll);
+
+// Initial scroll
+scrollToIndex(true);
+startAutoScroll();
+
+// --- Momentum swipe ---
+let isDown=false, startX, scrollLeft, velocity=0, lastX=0, lastTime=0, momentumID;
+
+function stopMomentum() { cancelAnimationFrame(momentumID); velocity=0; }
+
+function momentum() {
+  carousel.scrollLeft += velocity;
+  velocity *= 0.95;
+  if(Math.abs(velocity) > 0.5) momentumID = requestAnimationFrame(momentum);
+  else snapToNearest();
+}
+
+// Mouse events
+carousel.addEventListener('mousedown', e=>{
+  isDown=true;
+  stopMomentum();
+  startX = e.pageX - carousel.offsetLeft;
+  scrollLeft = carousel.scrollLeft;
+  lastX = e.pageX; lastTime = Date.now();
+});
+carousel.addEventListener('mouseup', e=>{
+  isDown=false;
+  const dt = Date.now() - lastTime;
+  velocity = (lastX - e.pageX)/dt*20;
+  momentum();
+});
+carousel.addEventListener('mouseleave', ()=>{ if(isDown){ isDown=false; momentum(); } });
+carousel.addEventListener('mousemove', e=>{
+  if(!isDown) return;
+  const x = e.pageX - carousel.offsetLeft;
+  carousel.scrollLeft = scrollLeft + (startX - x);
+  const now = Date.now();
+  velocity = (lastX - e.pageX)/(now-lastTime)*20;
+  lastX = e.pageX; lastTime = now;
 });
 
-document.getElementById("cancelAddressBtn").addEventListener("click", () => {
-  addressPopup.classList.add("closing");
-  setTimeout(() => {
-    addressPopup.classList.remove("active", "closing");
-  }, 350);
+// Touch events
+carousel.addEventListener('touchstart', e=>{
+  isDown=true;
+  stopMomentum();
+  startX = e.touches[0].pageX - carousel.offsetLeft;
+  scrollLeft = carousel.scrollLeft;
+  lastX = e.touches[0].pageX; lastTime = Date.now();
+});
+carousel.addEventListener('touchmove', e=>{
+  if(!isDown) return;
+  const x = e.touches[0].pageX - carousel.offsetLeft;
+  carousel.scrollLeft = scrollLeft + (startX - x);
+  const now = Date.now();
+  velocity = (lastX - e.touches[0].pageX)/(now-lastTime)*20;
+  lastX = e.touches[0].pageX; lastTime = now;
+});
+carousel.addEventListener('touchend', e=>{
+  isDown=false;
+  momentum();
+});
+
+// Snap to nearest
+function snapToNearest(){
+  const scrollLeft = carousel.scrollLeft;
+  let acc=0, nearest=0;
+  for(let i=0;i<originalCount;i++){
+    acc += getSlideWidth(i);
+    if(scrollLeft < acc){ nearest=i; break; }
+  }
+  index = nearest;
+  scrollToIndex();
+}
+
+window.addEventListener("resize", ()=>scrollToIndex(true));
+</script>
+
+
+
+
+
+
+
+  <!-- Categories -->
+  <section class="mt-6">
+    <h2 class="text-lg font-bold mb-3">Categories</h2>
+    <div class="flex overflow-x-auto space-x-3 p-1">
+      <!-- icon + label cards -->
+      <div class="bg-white rounded-xl px-4 py-3 shadow-sm flex items-center gap-3 min-w-[120px]">
+        <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">🍔</div>
+        <div>
+          <div class="text-sm font-semibold">Burger</div>
+          <div class="text-xs text-gray-500">120 places</div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl px-4 py-3 shadow-sm flex items-center gap-3 min-w-[120px]">
+        <div class="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center">🍕</div>
+        <div>
+          <div class="text-sm font-semibold">Pizza</div>
+          <div class="text-xs text-gray-500">95 places</div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl px-4 py-3 shadow-sm flex items-center gap-3 min-w-[120px]">
+        <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">🥗</div>
+        <div>
+          <div class="text-sm font-semibold">Salads</div>
+          <div class="text-xs text-gray-500">60 places</div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl px-4 py-3 shadow-sm flex items-center gap-3 min-w-[120px]">
+        <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">🍣</div>
+        <div>
+          <div class="text-sm font-semibold">Sushi</div>
+          <div class="text-xs text-gray-500">22 places</div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl px-4 py-3 shadow-sm flex items-center gap-3 min-w-[120px]">
+        <div class="w-10 h-10 rounded-full bg-pink-100 flex items-center justify-center">🌮</div>
+        <div>
+          <div class="text-sm font-semibold">Tacos</div>
+          <div class="text-xs text-gray-500">34 places</div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl px-4 py-3 shadow-sm flex items-center gap-3 min-w-[120px]">
+        <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center">🍛</div>
+        <div>
+          <div class="text-sm font-semibold">Biryani</div>
+          <div class="text-xs text-gray-500">48 places</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Top picks -->
+  <section id="top-picks" class="mt-6">
+    <h2 class="text-lg font-bold mb-3">Top picks</h2>
+    <div class="flex overflow-x-auto space-x-4 pb-6">
+      <!-- repeat several cards (static sample data) -->
+      <div class="w-64 bg-white shadow rounded-xl p-3 flex-shrink-0 card">
+        <img src="https://i.imgur.com/0y8Ftya.jpg" class="w-full h-36 object-cover rounded-lg product-image" />
+        <h3 class="mt-2 font-bold">Cheese Burger</h3>
+        <p class="text-gray-500 text-sm">Burger Haven • 31 min • 4.8★</p>
+        <p class="text-orange-600 font-bold mt-1">₹89</p>
+        <div class="mt-2 flex gap-2">
+          <button onclick="handleAddToCart(this, 'Cheese Burger', 89, 'https://i.imgur.com/0y8Ftya.jpg')" class="bg-orange-500 text-white rounded-full w-full py-1">Add</button>
+          <button class="bg-gray-100 rounded-full px-3">+Fav</button>
+        </div>
+      </div>
+
+      <div class="w-64 bg-white shadow rounded-xl p-3 flex-shrink-0 card">
+        <img src="https://i.imgur.com/nQF2zWb.jpg" class="w-full h-36 object-cover rounded-lg product-image" />
+        <h3 class="mt-2 font-bold">BBQ Bacon Burger</h3>
+        <p class="text-gray-500 text-sm">Burger Haven • 27 min • 4.6★</p>
+        <p class="text-orange-600 font-bold mt-1">₹99</p>
+        <div class="mt-2 flex gap-2">
+          <button onclick="handleAddToCart(this, 'BBQ Bacon Burger', 99, 'https://i.imgur.com/nQF2zWb.jpg')" class="bg-orange-500 text-white rounded-full w-full py-1">Add</button>
+          <button class="bg-gray-100 rounded-full px-3">+Fav</button>
+        </div>
+      </div>
+
+      <div class="w-64 bg-white shadow rounded-xl p-3 flex-shrink-0 card">
+        <img src="https://i.imgur.com/0aKQ3kD.jpg" class="w-full h-36 object-cover rounded-lg product-image" />
+        <h3 class="mt-2 font-bold">Margherita Pizza</h3>
+        <p class="text-gray-500 text-sm">Pizza Palace • 25 min • 4.7★</p>
+        <p class="text-orange-600 font-bold mt-1">₹249</p>
+        <div class="mt-2 flex gap-2">
+          <button onclick="handleAddToCart(this, 'Margherita Pizza', 249, 'https://i.imgur.com/0aKQ3kD.jpg')" class="bg-orange-500 text-white rounded-full w-full py-1">Add</button>
+          <button class="bg-gray-100 rounded-full px-3">+Fav</button>
+        </div>
+      </div>
+
+      <div class="w-64 bg-white shadow rounded-xl p-3 flex-shrink-0 card">
+        <img src="https://i.imgur.com/1fYx9Kj.jpg" class="w-full h-36 object-cover rounded-lg product-image" />
+        <h3 class="mt-2 font-bold">Veg Biryani</h3>
+        <p class="text-gray-500 text-sm">Biryani House • 35 min • 4.5★</p>
+        <p class="text-orange-600 font-bold mt-1">₹129</p>
+        <div class="mt-2 flex gap-2">
+          <button onclick="handleAddToCart(this, 'Veg Biryani', 129, 'https://i.imgur.com/1fYx9Kj.jpg')" class="bg-orange-500 text-white rounded-full w-full py-1">Add</button>
+          <button class="bg-gray-100 rounded-full px-3">+Fav</button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Offers grid (ads) -->
+  <section id="offers" class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="col-span-2 bg-white rounded-xl p-4 shadow">
+      <h3 class="font-bold mb-2">Limited Time Offers</h3>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div class="p-3 rounded-lg bg-gradient-to-r from-orange-50 to-white flex items-center gap-3">
+          <img src="https://i.imgur.com/0y8Ftya.jpg" class="w-20 h-16 object-cover rounded" />
+          <div>
+            <div class="font-semibold">Buy 1 Get 1 Free</div>
+            <div class="text-sm text-gray-600">Only at Burger Haven</div>
+          </div>
+        </div>
+
+        <div class="p-3 rounded-lg bg-gradient-to-r from-yellow-50 to-white flex items-center gap-3">
+          <img src="https://i.imgur.com/0aKQ3kD.jpg" class="w-20 h-16 object-cover rounded" />
+          <div>
+            <div class="font-semibold">Pizza Combo — Save ₹99</div>
+            <div class="text-sm text-gray-600">Use code PIZZA99</div>
+          </div>
+        </div>
+
+        <div class="p-3 rounded-lg bg-gradient-to-r from-green-50 to-white flex items-center gap-3">
+          <img src="https://i.imgur.com/1fYx9Kj.jpg" class="w-20 h-16 object-cover rounded" />
+          <div>
+            <div class="font-semibold">Family Biryani Pack</div>
+            <div class="text-sm text-gray-600">Feeds 4+ — Free raita</div>
+          </div>
+        </div>
+
+        <div class="p-3 rounded-lg bg-gradient-to-r from-blue-50 to-white flex items-center gap-3">
+          <img src="https://i.imgur.com/nQF2zWb.jpg" class="w-20 h-16 object-cover rounded" />
+          <div>
+            <div class="font-semibold">BBQ Feast</div>
+            <div class="text-sm text-gray-600">Up to 25% off</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl p-4 shadow">
+      <h3 class="font-bold mb-2">Sponsored</h3>
+      <img src="https://i.imgur.com/3yKq9vG.jpg" class="w-full rounded-lg object-cover h-40" />
+    </div>
+  </section>
+
+  <!-- Recommended for you -->
+  <section class="mt-6">
+    <h2 class="text-lg font-bold mb-3">Recommended for you</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+      <!-- static grid cards -->
+      <div class="bg-white rounded-xl p-3 shadow">
+        <img src="https://i.imgur.com/0y8Ftya.jpg" class="w-full h-36 object-cover rounded-lg" />
+        <div class="mt-2 flex justify-between items-start">
+          <div>
+            <div class="font-semibold">Cheese Burger</div>
+            <div class="text-xs text-gray-500">Burger Haven • 4.8★</div>
+          </div>
+          <div class="text-orange-600 font-bold">₹89</div>
+        </div>
+        <div class="mt-3 flex gap-2">
+          <button onclick="handleAddToCart(this, 'Cheese Burger', 89, 'https://i.imgur.com/0y8Ftya.jpg')" class="bg-orange-500 text-white rounded-full w-full py-1">Add</button>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl p-3 shadow">
+        <img src="https://i.imgur.com/0aKQ3kD.jpg" class="w-full h-36 object-cover rounded-lg" />
+        <div class="mt-2 flex justify-between items-start">
+          <div>
+            <div class="font-semibold">Margherita Pizza</div>
+            <div class="text-xs text-gray-500">Pizza Palace • 4.7★</div>
+          </div>
+          <div class="text-orange-600 font-bold">₹249</div>
+        </div>
+        <div class="mt-3 flex gap-2">
+          <button onclick="handleAddToCart(this, 'Margherita Pizza', 249, 'https://i.imgur.com/0aKQ3kD.jpg')" class="bg-orange-500 text-white rounded-full w-full py-1">Add</button>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl p-3 shadow">
+        <img src="https://i.imgur.com/1fYx9Kj.jpg" class="w-full h-36 object-cover rounded-lg" />
+        <div class="mt-2 flex justify-between items-start">
+          <div>
+            <div class="font-semibold">Veg Biryani</div>
+            <div class="text-xs text-gray-500">Biryani House • 4.5★</div>
+          </div>
+          <div class="text-orange-600 font-bold">₹129</div>
+        </div>
+        <div class="mt-3 flex gap-2">
+          <button onclick="handleAddToCart(this, 'Veg Biryani', 129, 'https://i.imgur.com/1fYx9Kj.jpg')" class="bg-orange-500 text-white rounded-full w-full py-1">Add</button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<!-- Bottom Navigation (mobile) -->
+<nav class="fixed bottom-4 left-0 right-0 flex justify-center z-50">
+  <div class="w-11/12 bg-white rounded-2xl shadow-lg p-2 flex justify-around items-center">
+
+    <!-- Home -->
+    <div class="nav-item flex flex-col items-center cursor-pointer text-orange-500" id="navHome" onclick="setActiveTab('home')">
+      <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path d="M3 9l9-6 9 6v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+      <div class="text-xs">Home</div>
+    </div>
+
+    <!-- Orders -->
+    <div class="nav-item flex flex-col items-center cursor-pointer text-gray-500" id="navOrders" onclick="setActiveTab('orders'); goToOrders()">
+      <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path d="M3 3h18v4H3zM5 7v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+      <div class="text-xs">Orders</div>
+    </div>
+
+    <!-- Cart -->
+    <div class="nav-item flex flex-col items-center cursor-pointer text-gray-500" id="navCart" onclick="setActiveTab('cart'); goToCart()">
+      <div id="cartIcon" class="relative">
+        <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M6 6h15l-1.5 9h-12z" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+          <circle cx="9" cy="20" r="1" />
+          <circle cx="19" cy="20" r="1" />
+        </svg>
+        <span id="cartCount" class="absolute -top-1 -right-2 bg-orange-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">0</span>
+      </div>
+      <div class="text-xs">Cart</div>
+    </div>
+
+    <!-- Account -->
+    <div class="nav-item flex flex-col items-center cursor-pointer text-gray-500" id="navAccount" onclick="setActiveTab('account'); openLoginPopup()">
+      <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10z" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
+        <path d="M4 20a8 8 0 0 1 16 0" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+      <div class="text-xs">Account</div>
+    </div>
+
+  </div>
+</nav>
+
+
+<!-- Login/Signup Popup (kept) -->
+<div id="loginPopup" class="overlay">
+  <div class="bg-white p-6 rounded-lg w-80">
+    <h2 class="text-lg font-bold mb-4" id="popupTitle">Login</h2>
+    <input type="text" id="nameField" placeholder="Name" class="border p-2 w-full mb-2 hidden" />
+    <input type="email" id="emailField" placeholder="Email" class="border p-2 w-full mb-2" />
+    <div class="relative mb-2">
+      <input type="password" id="passwordField" placeholder="Password" class="border p-2 w-full" />
+      <button type="button" onclick="togglePassword('passwordField', this)" class="absolute right-2 top-2 text-gray-500">Show</button>
+    </div>
+    <div class="relative mb-4 hidden" id="confirmPasswordContainer">
+      <input type="password" id="confirmPasswordField" placeholder="Confirm Password" class="border p-2 w-full" />
+    </div>
+
+    <p id="errorText" class="text-red-500 text-sm mb-2 hidden"></p>
+
+    <!-- Submit Button -->
+    <button onclick="submitAuth()" class="bg-orange-500 text-white py-2 px-4 w-full rounded">Submit</button>
+        <!-- 👇 Add Google Sign-in Button Here -->
+    <div class="mt-5 border-t pt-4">
+      <button onclick="googleLogin()" class="flex items-center justify-center w-full gap-2 border rounded-lg py-2 hover:bg-gray-50 transition">
+        <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5" alt="Google icon">
+        <span class="text-gray-700 font-medium">Sign in with Google</span>
+      </button>
+    </div>
+
+    <p class="text-center text-sm mt-3 cursor-pointer text-blue-500" onclick="toggleAuthMode()" id="toggleText">Create account</p>
+    <p class="text-center text-sm mt-3 cursor-pointer text-gray-500" onclick="closeLoginPopup()">Cancel</p>
+  </div>  
+</div>
+
+
+<!-- Toast -->
+<div id="toast" class="fixed bottom-20 left-1/2 transform -translate-x-1/2 bg-orange-500 text-white px-5 py-3 rounded-full shadow-lg toast-hidden z-50">Added to Cart ✅</div>
+
+<!-- fly target -->
+<div id="flyContainer"></div>
+
+<script>
+/* -----------------------
+  Cart helpers (kept, same behavior)
+------------------------*/
+const LOCAL_CART_KEY = "fe_cart_v1";
+let cart = JSON.parse(localStorage.getItem(LOCAL_CART_KEY) || "[]");
+function persistLocalCart(){ localStorage.setItem(LOCAL_CART_KEY, JSON.stringify(cart)); }
+function cartTotalQuantity(){ return cart.reduce((s,i) => s + (Number(i.quantity)||0), 0); }
+function cartTotalAmount(){ return cart.reduce((s,i) => s + (Number(i.price)||0) * (Number(i.quantity)||0), 0); }
+function updateCartBadge(){ document.getElementById("cartCount").innerText = cartTotalQuantity(); persistLocalCart(); }
+updateCartBadge();
+
+
+// Highlight active bottom nav tab
+function setActiveTab(tab) {
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.classList.remove('text-orange-500');
+    item.classList.add('text-gray-500');
+  });
+
+  const active = document.getElementById(`nav${tab.charAt(0).toUpperCase() + tab.slice(1)}`);
+  if (active) {
+    active.classList.add('text-orange-500');
+    active.classList.remove('text-gray-500');
+  }
+}
+
+
+document.addEventListener("DOMContentLoaded", () => {
+  if (window.location.pathname.includes("orders")) setActiveTab("orders");
+  else if (window.location.pathname.includes("cart")) setActiveTab("cart");
+  else if (window.location.pathname.includes("account")) setActiveTab("account");
+  else setActiveTab("home");
 });
 
 
+/* -----------------------
+  Toast
+------------------------*/
+let toastQueue = [], toastShowing = false;
+function showToast(msg){
+  const toast = document.getElementById("toast");
+  toastQueue.push(msg);
+  if(toastShowing) return;
+  toastShowing = true;
+  const next = () => {
+    if(!toastQueue.length){ toastShowing=false; return; }
+    const m = toastQueue.shift();
+    toast.innerText = m;
+    toast.classList.remove("toast-hidden");
+    toast.classList.add("toast-show");
+    setTimeout(()=>{ toast.classList.remove("toast-show"); toast.classList.add("toast-hidden"); setTimeout(next, 450); },1500);
+  };
+  next();
+}
+
+/* -----------------------
+  Fly-to-cart animation (curved motion)
+------------------------*/
+function flyToCart(imageEl){
+  if(!imageEl) return;
+  const imgRect = imageEl.getBoundingClientRect();
+  const cartIcon = document.getElementById("cartIcon");
+
+  const clone = imageEl.cloneNode(true);
+  clone.classList.add("fly-img");
+  clone.style.left = imgRect.left + "px";
+  clone.style.top = imgRect.top + "px";
+  clone.style.width = imgRect.width + "px";
+  clone.style.height = imgRect.height + "px";
+  clone.style.opacity = "1";
+  clone.style.zIndex = 10000 + Date.now();
+  document.body.appendChild(clone);
+
+  const startX = imgRect.left;
+  const startY = imgRect.top;
+  const endX = cartIcon.getBoundingClientRect().left;
+  const endY = cartIcon.getBoundingClientRect().top;
+  const dx = endX - startX;
+  const dy = endY - startY;
+  const peak = -Math.min(150, dy - 50);
+
+  let progress = 0, duration = 800, fps = 60, interval = 1000/fps;
+
+  function animate(){
+    progress += interval;
+    const t = Math.min(progress/duration,1);
+    const x = (1-t)*(1-t)*startX + 2*(1-t)*t*(startX+dx/2) + t*t*endX;
+    const y = (1-t)*(1-t)*startY + 2*(1-t)*t*(startY+peak) + t*t*endY;
+    clone.style.transform = `translate(${x-startX}px, ${y-startY}px) scale(${1-0.7*t})`;
+    clone.style.opacity = 1 - 0.5*t;
+    if(t<1) requestAnimationFrame(animate);
+    else {
+      const cartEl = cartIcon.querySelector("span:first-child") || cartIcon;
+      cartEl.animate([{transform:"scale(1)"},{transform:"scale(1.15)"},{transform:"scale(1)"}],{duration:260,easing:"ease-out"});
+      clone.remove();
+    }
+  }
+  animate();
+}
+
+/* -----------------------
+  Add to cart
+------------------------*/
+function handleAddToCart(button,name,price,imageUrl){
+  const card = button.closest(".card") || button.closest(".bg-white");
+  const imageEl = card ? card.querySelector(".product-image, img") : null;
+  if(imageEl) flyToCart(imageEl);
+  if(button) { button.classList.add("animate-bump"); setTimeout(()=>button.classList.remove("animate-bump"),260); }
+
+  const existingIndex = cart.findIndex(i => i.name===name && String(i.price)===String(price));
+  if(existingIndex>=0) cart[existingIndex].quantity=(Number(cart[existingIndex].quantity)||0)+1;
+  else cart.push({name,price:Number(price),quantity:1,image:imageUrl||""});
+  updateCartBadge();
+  showToast(`${name} added ✅`);
+  saveUserCart();
+}
+
+/* -----------------------
+  Save cart to Firestore if logged in
+------------------------*/
+async function saveUserCart(){
+  try{
+    const { auth, db, doc, setDoc } = window.__fe;
+    const user = auth.currentUser;
+    if(!user){ persistLocalCart(); return; }
+    const userRef = doc(db,"users",user.uid);
+    await setDoc(userRef,{cart},{merge:true});
+  }catch(err){ console.error("saveUserCart error:",err); }
+}
+
+/* -----------------------
+  Auth helpers
+------------------------*/
+let authMode="login";
+function openLoginPopup(){ const { auth } = window.__fe; if(auth.currentUser){ window.location.href="account.html"; return; } document.getElementById("loginPopup").style.display="flex"; }
+function closeLoginPopup(){ document.getElementById("loginPopup").style.display="none"; }
+function toggleAuthMode(){ authMode = authMode==="login"?"signup":"login"; document.getElementById("popupTitle").innerText = authMode==="login"?"Login":"Sign Up"; document.getElementById("toggleText").innerText = authMode==="login"?"Create account":"Already have account?"; document.getElementById("nameField").classList.toggle("hidden"); document.getElementById("confirmPasswordContainer").classList.toggle("hidden"); }
+function togglePassword(id,btn){ const f = document.getElementById(id); f.type = f.type==="password"?"text":"password"; }
+
+/* -----------------------
+  Submit auth
+------------------------*/
+async function submitAuth(){
+  const { auth, createUserWithEmailAndPassword, signInWithEmailAndPassword } = window.__fe;
+  const email = document.getElementById("emailField").value;
+  const password = document.getElementById("passwordField").value;
+  const name = document.getElementById("nameField").value;
+  const errorEl = document.getElementById("errorText");
+  errorEl.classList.add("hidden");
+
+  if(authMode==="signup"){
+    try{
+      await createUserWithEmailAndPassword(auth,email,password);
+      closeLoginPopup();
+      showToast("Account created 🎉");
+    }catch(err){ errorEl.innerText=err.message; errorEl.classList.remove("hidden"); }
+  }else{
+    try{
+      await signInWithEmailAndPassword(auth,email,password);
+      closeLoginPopup();
+      showToast("Logged in ✅");
+    }catch(err){ errorEl.innerText=err.message; errorEl.classList.remove("hidden"); }
+  }
+}
+
+/* -----------------------
+  On auth change
+------------------------*/
+const { auth } = window.__fe;
+onAuthStateChanged(auth, (user) => {
+  if(user){
+    document.getElementById("accountLabel").innerHTML = `<img src="${user.photoURL}" class="w-6 h-6 rounded-full inline mr-1"/> ${user.displayName || user.email}`;
+  } else {
+    document.getElementById("accountLabel").innerText = "Account";
+  }
+});
 
 
-// ======= 📍 DETECT LOCATION (Auto-fill street, city, pincode) =======
-const detectLocationBtn = document.getElementById("detectLocationBtn");
+/* -----------------------
+  Navigation helpers
+------------------------*/
+function goToCart(){ window.location.href = "cart.html"; }
+function goToOrders(){ window.location.href = "orders.html"; }
+function scrollToSection(id){ const el = document.getElementById(id); if(el) el.scrollIntoView({behavior:'smooth', block:'start'}); }
 
-if (detectLocationBtn) {
-  detectLocationBtn.addEventListener("click", () => {
-    showToast("📍 Detecting your location...");
+/* -----------------------
+  Promo auto-scroll
+------------------------*/
+setInterval(()=>{
+  const container = document.getElementById("promoInner");
+  if(container) container.scrollBy({left:420,behavior:"smooth"});
+},3500);
 
-    if (!navigator.geolocation) {
-      showToast("❌ Geolocation not supported");
+/* -----------------------
+  Update location dynamically
+------------------------*/
+async function updateLocation() {
+  const locationText = document.getElementById("locationText");
+
+  // Check if user has already allowed location
+  const storedLocation = localStorage.getItem("fe_user_location");
+  if (storedLocation) {
+    locationText.innerText = storedLocation;
+    return;
+  }
+
+  // Check if browser supports geolocation
+  if (!navigator.geolocation) {
+    locationText.innerText = "Location unavailable";
+    return;
+  }
+
+  // Ask for location
+  navigator.geolocation.getCurrentPosition(
+    async (position) => {
+      const { latitude, longitude } = position.coords;
+
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`);
+        const data = await res.json();
+
+        let displayLocation = "";
+        if (data.address.city) displayLocation = data.address.city;
+        else if (data.address.town) displayLocation = data.address.town;
+        else if (data.address.village) displayLocation = data.address.village;
+        else displayLocation = data.display_name.split(",")[0];
+
+        locationText.innerText = displayLocation;
+        // Save to localStorage so we don't ask again
+        localStorage.setItem("fe_user_location", displayLocation);
+      } catch (err) {
+        console.error(err);
+        locationText.innerText = "Location unavailable";
+      }
+    },
+    (err) => {
+      console.warn("User denied location or error:", err);
+      locationText.innerText = "Location unavailable";
+    }
+  );
+}
+
+// Run on page load
+updateLocation();
+
+    function startLiveLocation() {
+      const locationText = document.getElementById("locationText");
+
+      // Check if user has already allowed location (localStorage)
+      const storedLocation = localStorage.getItem("fe_user_location");
+      if (storedLocation) {
+        locationText.innerText = storedLocation;
+        return;
+      }
+
+      if (!navigator.geolocation) {
+        locationText.innerText = "Location unavailable";
+        return;
+      }
+
+      // Watch the user's location
+      const watchId = navigator.geolocation.watchPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+
+          try {
+            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`);
+            const data = await res.json();
+
+            let displayLocation = "";
+            if (data.address.city) displayLocation = data.address.city;
+            else if (data.address.town) displayLocation = data.address.town;
+            else if (data.address.village) displayLocation = data.address.village;
+            else displayLocation = data.display_name.split(",")[0];
+
+            locationText.innerText = displayLocation;
+
+            // Save to localStorage so we don't ask again
+            localStorage.setItem("fe_user_location", displayLocation);
+          } catch (err) {
+            console.error(err);
+            locationText.innerText = "Location unavailable";
+          }
+        },
+        (err) => {
+          console.warn("User denied location or error:", err);
+          locationText.innerText = "Location unavailable";
+        },
+        { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
+      );
+    }
+
+    // Start live location tracking on page load
+    startLiveLocation();
+
+
+
+</script>
+<script>
+  // Detect user login state
+  firebase.auth().onAuthStateChanged((user) => {
+    if (user) {
+      // If logged in, save details in Firestore (optional)
+      const db = firebase.firestore();
+      db.collection("users").doc(user.uid).set({
+        name: user.displayName || "User",
+        email: user.email || "",
+        phone: user.phoneNumber || "",
+        uid: user.uid,
+        lastLogin: new Date().toISOString(),
+      }, { merge: true });
+
+      // ✅ Redirect after login
+      window.location.href = "/home.html"; // Change this to your destination page
+    } else {
+      console.log("No user logged in");
+    }
+  });
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+  const locationText = document.getElementById("locationText");
+
+  // 1️⃣ If location already saved in localStorage → load immediately
+  const savedLocation = localStorage.getItem("fe_user_location");
+  if (savedLocation) {
+    locationText.textContent = savedLocation;
+    return;
+  }
+
+  // 2️⃣ If not saved → ask for permission and fetch it
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(async (position) => {
+      const lat = position.coords.latitude;
+      const lon = position.coords.longitude;
+
+      try {
+        // Use reverse geocoding to get readable city name
+        const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`);
+        const data = await res.json();
+
+        const city = data.city || data.locality || data.principalSubdivision || "Unknown location";
+        locationText.textContent = city;
+
+        // 3️⃣ Store for future sessions
+        localStorage.setItem("fe_user_location", city);
+      } catch (err) {
+        console.error("Location fetch failed:", err);
+        locationText.textContent = "Location unavailable";
+      }
+    }, () => {
+      locationText.textContent = "Location access denied";
+    });
+  } else {
+    locationText.textContent = "Geolocation not supported";
+  }
+});
+</script>
+<script>
+/* -----------------------
+   Food Express 🔍 Smart Search Overlay (Zomato/Swiggy style, no recents)
+------------------------*/
+const searchBox = document.getElementById("searchBox");
+const searchOverlay = document.getElementById("searchOverlay");
+const searchInput = document.getElementById("searchInput");
+const closeSearch = document.getElementById("closeSearch");
+
+// Results container
+const resultsContainer = document.getElementById("resultsContainer");
+resultsContainer.className = "p-4 space-y-2 overflow-y-auto max-h-[80vh]";
+
+// 🍴 Mock dataset (replace with Firestore later)
+const data = [
+  { name: "Chicken Biryani", category: "Dish", price: 180, img: "https://source.unsplash.com/80x80/?chicken-biryani" },
+  { name: "Paneer Butter Masala", category: "Dish", price: 160, img: "https://source.unsplash.com/80x80/?paneer-butter-masala" },
+  { name: "Margherita Pizza", category: "Dish", price: 220, img: "https://source.unsplash.com/80x80/?pizza" },
+  { name: "Domino’s Pizza", category: "Restaurant", price: 250, img: "https://source.unsplash.com/80x80/?dominos" },
+  { name: "Starbucks", category: "Restaurant", price: 150, img: "https://source.unsplash.com/80x80/?coffee-shop" },
+  { name: "Burger King", category: "Restaurant", price: 180, img: "https://source.unsplash.com/80x80/?burger" },
+  { name: "Idli & Dosa Corner", category: "Restaurant", price: 120, img: "https://source.unsplash.com/80x80/?idli-dosa" },
+];
+
+
+// 🟠 Open overlay
+searchBox.addEventListener("focus", openSearchOverlay);
+searchBox.addEventListener("click", openSearchOverlay);
+
+function openSearchOverlay() {
+  searchOverlay.classList.remove("hidden");
+  requestAnimationFrame(() => searchOverlay.classList.remove("translate-y-full"));
+  setTimeout(() => searchInput.focus(), 300);
+    showTrending(); // show by default
+}
+searchInput.focus();
+  showShimmer(); // show shimmer immediately on open
+
+
+// 🟠 Close overlay
+closeSearch.addEventListener("click", closeSearchOverlay);
+function closeSearchOverlay() {
+  searchOverlay.classList.add("translate-y-full");
+  setTimeout(() => searchOverlay.classList.add("hidden"), 300);
+}
+
+// 🟠 Handle input typing
+let typingTimeout;
+
+searchInput.addEventListener("input", (e) => {
+  const term = e.target.value.trim().toLowerCase();
+  clearTimeout(typingTimeout);
+
+  if (term === "") {
+    resultsContainer.innerHTML = `<p class="text-gray-400 text-sm text-center py-8">Start typing to search...</p>`;
+    return;
+  }
+
+  // Show shimmer instantly
+  showShimmer();
+
+  // Simulate small network delay
+  typingTimeout = setTimeout(() => {
+    const results = data.filter((item) => item.name.toLowerCase().includes(term));
+    renderResults(results, term);
+  }, 600);
+});
+
+
+// 🟠 Render live results (Zomato-style cards)
+function renderResults(results, term) {
+  fadeOut(resultsContainer, () => {
+    if (results.length === 0) {
+      resultsContainer.innerHTML = `
+        <p class="text-gray-400 text-sm text-center py-8">
+          No matches for "${term}"
+        </p>`;
       return;
     }
 
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude } = position.coords;
+    resultsContainer.innerHTML = `
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 px-3 py-4">
+        ${results
+          .map(
+            (r) => `
+            <div 
+              class="flex items-center gap-3 bg-white p-3 rounded-xl shadow-sm border border-gray-100 hover:border-orange-300 hover:shadow-md transition cursor-pointer"
+              onclick="selectResult('${r.name}')"
+            >
+              <img src="${r.img}" alt="${r.name}" 
+                class="w-16 h-16 rounded-xl object-cover" />
+              <div class="flex-1">
+                <p class="font-medium text-gray-800">${r.name}</p>
+                <p class="text-xs text-gray-500">${r.category}</p>
+                <p class="text-orange-500 text-sm font-semibold mt-1">₹${r.price}</p>
+              </div>
+              <button 
+                class="bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-medium hover:bg-orange-600 transition"
+                onclick='openFoodSheet(${JSON.stringify(r)})'>
+                 Add
+              </button>
 
-        try {
-          const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
-          );
-          const data = await res.json();
-
-          // Extract details
-          const address = data.address || {};
-          const street =
-            address.road ||
-            address.neighbourhood ||
-            address.suburb ||
-            address.village ||
-            "";
-          const city =
-            address.city ||
-            address.town ||
-            address.state_district ||
-            address.county ||
-            "";
-          const pincode = address.postcode || "";
-
-          // Fill the fields
-          document.getElementById("addrStreet").value = street;
-          document.getElementById("addrCity").value = city;
-          document.getElementById("addrPincode").value = pincode;
-
-          showToast("✅ Location detected successfully!");
-        } catch (err) {
-          console.error(err);
-          showToast("⚠️ Failed to detect location");
-        }
-      },
-      (error) => {
-        console.error(error);
-        showToast("⚠️ Please allow location access");
-      }
-    );
+            </div>
+          `
+          )
+          .join("")}
+      </div>`;
   });
 }
 
-// ======= 📞 PHONE NUMBER VALIDATION + SAVE ADDRESS =======
-const phoneInput = document.getElementById("addrPhone");
 
-phoneInput.addEventListener("input", () => {
-  // Allow only digits, max 10
-  phoneInput.value = phoneInput.value.replace(/\D/g, "").slice(0, 10);
-});
+// =========================
+// 🍲 Swiggy/Zomato Bottom Sheet Preview
+// =========================
+const foodSheet = document.getElementById("foodSheet");
+const foodSheetInner = document.getElementById("foodSheetInner");
+const foodSheetContent = document.getElementById("foodSheetContent");
+let activeItem = null;
 
-document.getElementById("saveAddressBtn").addEventListener("click", () => {
-  const name = document.getElementById("addrName");
-  const phone = document.getElementById("addrPhone");
-  const street = document.getElementById("addrStreet");
-  const city = document.getElementById("addrCity");
-  const pincode = document.getElementById("addrPincode");
-  const phoneError = document.getElementById("phoneError");
+window.selectResult = (term) => {
+  const item = data.find((d) => d.name === term);
+  if (!item) return;
+  openFoodSheet(item);
+};
 
-  // reset errors
-  phoneError.classList.add("hidden");
-  [name, phone, street, city, pincode].forEach(input => input.classList.remove("border-red-500"));
+// 🟠 Open food bottom sheet
+function openFoodSheet(item) {
+  activeItem = item;
+  const fixedPrice = item.price;
+  const rating = (Math.random() * 1.2 + 3.8).toFixed(1);
+  const reviews = Math.floor(Math.random() * 600 + 100);
 
-  // check empty fields
-  let missingFields = [];
-  if (!name.value.trim()) missingFields.push("Full Name");
-  if (!phone.value.trim()) missingFields.push("Phone Number");
-  if (!street.value.trim()) missingFields.push("Street");
-  if (!city.value.trim()) missingFields.push("City");
-  if (!pincode.value.trim()) missingFields.push("Pincode");
+  foodSheetContent.innerHTML = `
+    <img src="${item.img}" alt="${item.name}" class="w-28 h-28 mx-auto rounded-2xl object-cover shadow-md" />
+    <div>
+      <h3 class="text-xl font-semibold text-gray-800">${item.name}</h3>
+      <p class="text-sm text-gray-500">${item.category}</p>
+      <div class="flex items-center justify-center gap-2 mt-1">
+        <span class="text-yellow-500">⭐</span>
+        <span class="text-gray-700 font-medium">${rating}</span>
+        <span class="text-gray-400 text-sm">(${reviews})</span>
+      </div>
+        <p class="text-orange-500 font-bold text-lg mt-1">₹${fixedPrice}</p>
+    </div>
 
-  if (missingFields.length > 0) {
-    showToast(`⚠️ Please fill: ${missingFields.join(", ")}`);
-    missingFields.forEach(field => {
-      switch(field){
-        case "Full Name": name.classList.add("border-red-500"); break;
-        case "Phone Number": phone.classList.add("border-red-500"); break;
-        case "Street": street.classList.add("border-red-500"); break;
-        case "City": city.classList.add("border-red-500"); break;
-        case "Pincode": pincode.classList.add("border-red-500"); break;
-      }
-    });
-    return;
-  }
-if (!/^[0-9]{10}$/.test(phone.value.trim())) {
-  phoneError.classList.remove("hidden");
-  phone.classList.add("border-red-500", "animate-shake");
-  showToast("📞 Enter a valid 10-digit phone number");
-  setTimeout(() => phone.classList.remove("animate-shake"), 500);
-  return;
-}
+    <div class="flex items-center justify-center gap-4 mt-4">
+      <button id="decQty" class="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center text-xl font-bold text-gray-700">−</button>
+      <span id="foodQty" class="text-lg font-semibold text-gray-700">1</span>
+      <button id="incQty" class="w-9 h-9 bg-orange-500 text-white rounded-full flex items-center justify-center text-xl font-bold hover:bg-orange-600">+</button>
+    </div>
 
+    <button id="addToCart" class="mt-5 w-full bg-orange-500 text-white font-semibold py-3 rounded-full shadow-md hover:bg-orange-600 transition">Add to Cart</button>
+    <button id="viewDetails" class="mt-2 w-full text-orange-500 font-medium hover:text-orange-600">View Details ➜</button>
+  `;
 
-  // ✅ Save address
-    const address = {
-    name: name.value.trim(),
-    phone: phone.value.trim(),
-    street: street.value.trim(),
-    city: city.value.trim(),
-    pincode: pincode.value.trim(),
+  foodSheet.classList.remove("hidden");
+  requestAnimationFrame(() => foodSheetInner.classList.remove("translate-y-full"));
+
+  // Quantity logic
+  let qty = 1;
+  const qtyDisplay = document.getElementById("foodQty");
+  document.getElementById("incQty").onclick = () => (qtyDisplay.textContent = ++qty);
+  document.getElementById("decQty").onclick = () => {
+    if (qty > 1) qtyDisplay.textContent = --qty;
   };
-  localStorage.setItem("fe_address", JSON.stringify({ name, phone, street, city, pincode }));
-  showToast("✅ Address saved successfully!");
 
-  // 🧾 Show payment section
-  document.getElementById("paymentSection").classList.remove("hidden");
+// ✅ Add to cart with animation + global cart update
+document.getElementById("addToCart").onclick = () => {
+  const price = item.price; // use fixed price
+  flyToCart(foodSheetContent.querySelector("img"));
+  for (let i = 0; i < qty; i++) {
+    handleAddToCart(
+      document.getElementById("addToCart"),
+      item.name,
+      price,
+      item.img
+    );
+  }
+  showToast(`${qty} × ${item.name} added to cart 🛒`);
+  closeFoodSheet(); // optional: auto-close after adding
+};
 
-  // 💾 Smooth close of popup
-  addressPopup.classList.add("closing");
-  setTimeout(() => {
-    addressPopup.classList.remove("active", "closing");
-    // Clear inputs
-    document.getElementById("addrName").value = "";
-    document.getElementById("addrPhone").value = "";
-    document.getElementById("addrStreet").value = "";
-    document.getElementById("addrCity").value = "";
-    document.getElementById("addrPincode").value = "";
-  }, 380);
 
-  // 🧭 Optional: scroll to payment section
-  setTimeout(() => {
-    document.getElementById("paymentSection").scrollIntoView({ behavior: "smooth" });
-  }, 500);
+
+  // View details
+  document.getElementById("viewDetails").onclick = () => {
+    closeFoodSheet();
+    closeSearchOverlay();
+    window.location.href = `/food.html?item=${encodeURIComponent(item.name)}`;
+  };
+}
+
+// 🟠 Close food sheet
+foodSheet.addEventListener("click", (e) => {
+  if (e.target === foodSheet) closeFoodSheet();
 });
+function closeFoodSheet() {
+  foodSheetInner.classList.add("translate-y-full");
+  setTimeout(() => foodSheet.classList.add("hidden"), 300);
+}
+
+// 🟠 Toast
+function showToast(msg) {
+  const toast = document.createElement("div");
+  toast.textContent = msg;
+  toast.className =
+    "fixed bottom-6 left-1/2 -translate-x-1/2 bg-orange-500 text-white text-sm px-4 py-2 rounded-full shadow-lg opacity-0 transition-opacity z-[70]";
+  document.body.appendChild(toast);
+  requestAnimationFrame(() => (toast.style.opacity = "1"));
+  setTimeout(() => {
+    toast.style.opacity = "0";
+    setTimeout(() => toast.remove(), 500);
+  }, 1800);
+}
+
+// 🟠 Fly-to-cart animation
+function flyToCart(imgSrc) {
+  const cartIcon = document.querySelector("#cartIcon");
+  if (!cartIcon) return;
+  const img = document.createElement("img");
+  img.src = imgSrc;
+  img.className = "fly-img";
+  document.body.appendChild(img);
+
+  const { left, top } = cartIcon.getBoundingClientRect();
+  img.style.cssText = `
+    position: fixed; width: 80px; height: 80px; border-radius: 50%;
+    object-fit: cover; top: ${window.innerHeight - 200}px; left: 50%;
+    transform: translateX(-50%); z-index: 999;
+    transition: all 0.8s cubic-bezier(.25,.8,.25,1);
+  `;
+  requestAnimationFrame(() => {
+    img.style.top = `${top + window.scrollY}px`;
+    img.style.left = `${left}px`;
+    img.style.width = "20px";
+    img.style.height = "20px";
+    img.style.opacity = "0.2";
+  });
+  setTimeout(() => img.remove(), 900);
+  cartIcon.classList.add("animate-bump");
+  setTimeout(() => cartIcon.classList.remove("animate-bump"), 300);
+}
+
+// 🟠 Zomato-style food card shimmer
+function showShimmer() {
+  resultsContainer.innerHTML = `
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 px-3 py-4 shimmer-wrapper opacity-100 transition-opacity duration-300">
+      ${Array(6)
+        .fill(0)
+        .map(
+          () => `
+          <div class="flex items-center gap-3 bg-white p-3 rounded-xl shadow-sm border border-gray-100">
+            <div class="w-16 h-16 rounded-xl shimmer-box"></div>
+            <div class="flex-1 space-y-2">
+              <div class="h-3 w-3/4 rounded shimmer-box"></div>
+              <div class="h-3 w-1/2 rounded shimmer-box"></div>
+              <div class="h-3 w-1/3 rounded shimmer-box"></div>
+            </div>
+          </div>
+        `
+        )
+        .join("")}
+    </div>
+  `;
+}
 
 
 
+// 🟠 Handle input typing with shimmer + fade transition
+searchInput.addEventListener("input", (e) => {
+  const term = e.target.value.trim().toLowerCase();
 
-
-// 🧭 Detect and Fill Current Location
-const locBtn = document.getElementById("useCurrentLocationBtn");
-const locText = document.getElementById("locText");
-const locIcon = document.getElementById("locIcon");
-const locSpinner = document.getElementById("locSpinner");
-
-locBtn.addEventListener("click", () => {
-  if (!navigator.geolocation) {
-    showToast("❌ Geolocation not supported");
+   if (term === "") {
+    showTrending(); // show “Trending Near You”
     return;
   }
 
-  // Start loading animation
-  locBtn.disabled = true;
-  locText.textContent = "Detecting location...";
-  locIcon.classList.add("hidden");
-  locSpinner.classList.remove("hidden");
+  // Show shimmer first
+  showShimmer();
 
-  navigator.geolocation.getCurrentPosition(async (pos) => {
-    const { latitude, longitude } = pos.coords;
-    try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
-      );
-      const data = await res.json();
-      const address = data.address || {};
+  // Simulate loading delay for visual effect
+  setTimeout(() => {
+    const results = data.filter((item) => item.name.toLowerCase().includes(term));
+    fadeOut(resultsContainer, () => renderResults(results, term)); // fade out shimmer → show results
+  }, 600);
+});
 
-   // 🏠 Combine parts for a detailed street/locality field
-      const streetParts = [
-        address.house_number,
-        address.road,
-        address.neighbourhood,
-        address.suburb,
-        address.state_district
-      ].filter(Boolean);
+// 🟠 Smooth fade-out before showing results
+function fadeOut(element, callback) {
+  element.style.opacity = "1";
+  element.style.transition = "opacity 0.25s ease";
+  element.style.opacity = "0";
 
-      const streetFull = streetParts.join(", ");
+  setTimeout(() => {
+    callback();
+    fadeIn(element);
+  }, 250);
+}
 
-      // Fill form fields automatically
-      document.getElementById("addrStreet").value =
-        `${address.house_number || ""} ${address.road || ""} ${address.suburb || ""}`.trim();
-      document.getElementById("addrCity").value =
-        address.city || address.town || address.village || "";
-      document.getElementById("addrPincode").value = address.postcode || "";
-      document.getElementById("addrName").value =
-        address.neighbourhood || "My Home";
-
-          // Save address to localStorage
-  localStorage.setItem("fe_address", JSON.stringify({ name, phone, street, city, pincode }));
-  document.getElementById("addressPopup").classList.remove("active");
-  showToast("✅ Address saved successfully!");
-  document.getElementById("paymentSection").classList.remove("hidden");
-
-      // ✅ UI feedback
-      showToast("📍 Location detected! Address filled automatically");
-      locText.textContent = "Location Detected!";
-      locBtn.classList.replace("from-blue-500", "from-green-500");
-      locBtn.classList.replace("to-blue-600", "to-green-600");
-      locBtn.classList.add("pulse-glow");
-
-    // Re-enable button
-      locBtn.disabled = false;
-      locSpinner.classList.add("hidden");
-      locIcon.classList.remove("hidden")
-
-    } catch (error) {
-      console.error(error);
-      showToast("❌ Unable to fetch address");
-      locText.textContent = "Try Again";
-    } finally {
-      locBtn.disabled = false;
-      locSpinner.classList.add("hidden");
-      locIcon.classList.remove("hidden");
-    }
-  }, () => {
-    showToast("⚠️ Location access denied");
-    locText.textContent = "Use Current Location";
-    locBtn.disabled = false;
-    locSpinner.classList.add("hidden");
-    locIcon.classList.remove("hidden");
+// 🟠 Smooth fade-in for new results
+function fadeIn(element) {
+  element.style.opacity = "0";
+  requestAnimationFrame(() => {
+    element.style.transition = "opacity 0.3s ease";
+    element.style.opacity = "1";
   });
-});
-
-
-
-
-document.getElementById("backBtn").addEventListener("click",()=>{ history.back(); });
-
-const paymentButtons=document.querySelectorAll(".payment-btn");
-let selectedPayment=null;
-paymentButtons.forEach(btn=>{ btn.addEventListener("click",()=>{
-  paymentButtons.forEach(b=>b.classList.remove("selected"));
-  btn.classList.add("selected");
-  selectedPayment=btn.id;
-}); });
-
-function showOrderSuccess(orderId){ document.getElementById("orderId").innerText=orderId; document.getElementById("successPopup").classList.add("active"); cart=[]; persistCart(); }
-
-async function saveOrderToFirebase(orderId, txnId, status){
-    try {
-        const user = auth.currentUser;
-        if(!user) return;
-        const address = JSON.parse(localStorage.getItem("fe_address")||"{}");
-        await setDoc(doc(db, "orders", orderId), {
-            userId: user.uid,
-            items: cart,
-            total: cart.reduce((sum,i)=>sum+i.price*i.quantity,0),
-            address: address,
-            paymentMethod: selectedPayment==="gpayBtn"?"GPay":"PhonePe",
-            status: status,
-            txnId: txnId,
-            createdAt: new Date()
-        });
-    } catch(e){ console.error(e); }
 }
 
-document.getElementById("payBtn").addEventListener("click",()=>{
-    if(!cart.length){ showToast("Cart is empty"); return; }
-    if(!selectedPayment){ showToast("Select a payment method"); return; }
 
-    const total = cart.reduce((sum,i)=>sum+i.price*i.quantity,0);
-    const orderId = "ORD"+Date.now();
-    const callbackUrl = encodeURIComponent(window.location.origin + `/checkout.html?orderId=${orderId}`);
-
-    let upiUrl = "";
-    if(selectedPayment==="gpayBtn")
-        upiUrl = `upi://pay?pa=8438618540@ybl&pn=FoodExpress&am=${total}&cu=INR&url=${callbackUrl}`;
-    if(selectedPayment==="phonepeBtn")
-        upiUrl = `phonepe://pay?pa=8438618540@ybl&pn=FoodExpress&am=${total}&cu=INR&url=${callbackUrl}`;
-
-    window.location.href = upiUrl;
-});
-
-// UPI callback simulation
-const params = new URLSearchParams(window.location.search);
-if(params.get("orderId")){
-    const orderId = params.get("orderId");
-    const txnId = params.get("txnId") || "UPI_TXN_"+Date.now();
-    const status = params.get("status") || "success"; // In real app, webhook confirms
-
-    if(status==="success"){
-        saveOrderToFirebase(orderId, txnId, status).then(()=> showOrderSuccess(orderId));
-    } else {
-        showToast("Payment failed ❌");
-    }
-}
-
-document.getElementById("continueShoppingBtn").addEventListener("click",()=>{ document.getElementById("successPopup").classList.remove("active"); window.location.href="index.html"; });
-
-onAuthStateChanged(auth,user=>{if(user) saveUserCart();});
-updateCartUI();
 </script>
+
+
 </body>
 </html>
