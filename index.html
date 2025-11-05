@@ -347,17 +347,183 @@ window.googleLogin = async function() {
       <img src="https://i.postimg.cc/1tyQKPD9/promo.jpg" alt="promo" class="rounded-xl shadow-lg w-full object-cover h-48" />
     </div>
   </section>
-  <!-- Promo strip carousel -->
-  <section class="mt-6">
-    <div class="overflow-x-auto snap-x snap-mandatory scroll-smooth px-1 py-2">
-      <div class="flex gap-3 w-max" id="promoInner">
-        <img src="https://i.imgur.com/MH2a8rD.jpg" class="h-[140px] w-[420px] rounded-lg flex-shrink-0 object-cover" />
-        <img src="https://i.imgur.com/q8Aaw0m.jpg" class="h-[140px] w-[420px] rounded-lg flex-shrink-0 object-cover" />
-        <img src="https://i.postimg.cc/1tyQKPD9/promo.jpg" class="h-[140px] w-[420px] rounded-lg flex-shrink-0 object-cover" />
-        <img src="https://i.imgur.com/0y8Ftya.jpg" class="h-[140px] w-[420px] rounded-lg flex-shrink-0 object-cover" />
-      </div>
+
+
+
+<!-- Promo strip carousel -->
+<section class="mt-6 relative">
+  <div class="overflow-x-auto snap-x snap-mandatory scroll-smooth px-2 py-2" id="promoCarousel">
+    <div class="flex gap-3 w-max" id="promoInner">
+      <img src="https://i.postimg.cc/rpjTgVCD/Save-50-on-Delicious-Meals.png" class="promo-slide" />
+      <img src="https://i.postimg.cc/ryBpDphK/Promotional-Sale-Carousel-Showcase-1.png" class="promo-slide" />
+      <img src="https://i.postimg.cc/1tyQKPD9/promo.jpg" class="promo-slide" />
+      <img src="https://i.postimg.cc/j5GRn84X/Delicious-Dishes-from-Food-Express.png" class="promo-slide" />
     </div>
-  </section>
+  </div>
+
+  <!-- Dots -->
+  <div class="flex justify-center mt-2 gap-2" id="promoDots"></div>
+</section>
+
+<style>
+  .promo-slide {
+    height: 140px;
+    flex-shrink: 0;
+    border-radius: 0.75rem;
+    object-fit: cover;
+    scroll-snap-align: start;
+    transition: transform 0.3s ease;
+  }
+
+  @media(min-width:1025px) { .promo-slide { width: 420px; } }
+  @media(max-width:1024px) { .promo-slide { width: 320px; } }
+  @media(max-width:640px) { 
+    .promo-slide { width: 260px; }
+    #promoInner { padding-left: 16px; padding-right: 16px; }
+  }
+</style>
+
+<script>
+const carousel = document.getElementById("promoCarousel");
+const promoInner = document.getElementById("promoInner");
+let slides = Array.from(promoInner.querySelectorAll(".promo-slide"));
+const originalCount = slides.length;
+
+// Clone slides for seamless infinite loop
+slides.forEach(slide => promoInner.appendChild(slide.cloneNode(true)));
+slides = Array.from(promoInner.querySelectorAll(".promo-slide"));
+
+// Setup dots for original slides
+const dotsContainer = document.getElementById("promoDots");
+for(let i=0;i<originalCount;i++){
+  const dot = document.createElement("span");
+  dot.className = "w-2 h-2 rounded-full bg-gray-400/50 transition-all";
+  if(i===0) dot.classList.add("bg-orange-500","w-3","h-3");
+  dot.addEventListener("click", ()=>{ index=i; scrollToIndex(); });
+  dotsContainer.appendChild(dot);
+}
+const dots = dotsContainer.querySelectorAll("span");
+
+let index = 0;
+let autoScroll;
+
+// Calculate slide width dynamically
+function getSlideWidth(idx) {
+  const s = slides[idx];
+  return s.offsetWidth + parseInt(getComputedStyle(s).marginRight);
+}
+
+// Scroll to slide by index
+function scrollToIndex(instant=false) {
+  let offset = 0;
+  for(let i=0;i<index;i++) offset += getSlideWidth(i);
+  carousel.scrollTo({ left: offset, behavior: instant ? "auto" : "smooth" });
+  updateDots();
+}
+
+function updateDots() {
+  dots.forEach((d,i)=>{
+    d.className = "w-2 h-2 rounded-full bg-gray-400/50 transition-all";
+    if(i===index) d.classList.add("bg-orange-500","w-3","h-3");
+  });
+}
+
+// Slide next automatically
+function slideNext() {
+  index++;
+  if(index >= originalCount) index = 0;
+  scrollToIndex();
+}
+
+// Auto-scroll with seamless infinite loop
+function startAutoScroll() {
+  autoScroll = setInterval(slideNext, 3000);
+}
+function stopAutoScroll() { clearInterval(autoScroll); }
+carousel.addEventListener("mouseenter", stopAutoScroll);
+carousel.addEventListener("mouseleave", startAutoScroll);
+
+// Initial scroll
+scrollToIndex(true);
+startAutoScroll();
+
+// --- Momentum swipe ---
+let isDown=false, startX, scrollLeft, velocity=0, lastX=0, lastTime=0, momentumID;
+
+function stopMomentum() { cancelAnimationFrame(momentumID); velocity=0; }
+
+function momentum() {
+  carousel.scrollLeft += velocity;
+  velocity *= 0.95;
+  if(Math.abs(velocity) > 0.5) momentumID = requestAnimationFrame(momentum);
+  else snapToNearest();
+}
+
+// Mouse events
+carousel.addEventListener('mousedown', e=>{
+  isDown=true;
+  stopMomentum();
+  startX = e.pageX - carousel.offsetLeft;
+  scrollLeft = carousel.scrollLeft;
+  lastX = e.pageX; lastTime = Date.now();
+});
+carousel.addEventListener('mouseup', e=>{
+  isDown=false;
+  const dt = Date.now() - lastTime;
+  velocity = (lastX - e.pageX)/dt*20;
+  momentum();
+});
+carousel.addEventListener('mouseleave', ()=>{ if(isDown){ isDown=false; momentum(); } });
+carousel.addEventListener('mousemove', e=>{
+  if(!isDown) return;
+  const x = e.pageX - carousel.offsetLeft;
+  carousel.scrollLeft = scrollLeft + (startX - x);
+  const now = Date.now();
+  velocity = (lastX - e.pageX)/(now-lastTime)*20;
+  lastX = e.pageX; lastTime = now;
+});
+
+// Touch events
+carousel.addEventListener('touchstart', e=>{
+  isDown=true;
+  stopMomentum();
+  startX = e.touches[0].pageX - carousel.offsetLeft;
+  scrollLeft = carousel.scrollLeft;
+  lastX = e.touches[0].pageX; lastTime = Date.now();
+});
+carousel.addEventListener('touchmove', e=>{
+  if(!isDown) return;
+  const x = e.touches[0].pageX - carousel.offsetLeft;
+  carousel.scrollLeft = scrollLeft + (startX - x);
+  const now = Date.now();
+  velocity = (lastX - e.touches[0].pageX)/(now-lastTime)*20;
+  lastX = e.touches[0].pageX; lastTime = now;
+});
+carousel.addEventListener('touchend', e=>{
+  isDown=false;
+  momentum();
+});
+
+// Snap to nearest
+function snapToNearest(){
+  const scrollLeft = carousel.scrollLeft;
+  let acc=0, nearest=0;
+  for(let i=0;i<originalCount;i++){
+    acc += getSlideWidth(i);
+    if(scrollLeft < acc){ nearest=i; break; }
+  }
+  index = nearest;
+  scrollToIndex();
+}
+
+window.addEventListener("resize", ()=>scrollToIndex(true));
+</script>
+
+
+
+
+
+
 
   <!-- Categories -->
   <section class="mt-6">
@@ -1021,14 +1187,15 @@ resultsContainer.className = "p-4 space-y-2 overflow-y-auto max-h-[80vh]";
 
 // 🍴 Mock dataset (replace with Firestore later)
 const data = [
-  { name: "Chicken Biryani", category: "Dish", img: "https://source.unsplash.com/80x80/?chicken-biryani" },
-  { name: "Paneer Butter Masala", category: "Dish", img: "https://source.unsplash.com/80x80/?paneer-butter-masala" },
-  { name: "Margherita Pizza", category: "Dish", img: "https://source.unsplash.com/80x80/?pizza" },
-  { name: "Domino’s Pizza", category: "Restaurant", img: "https://source.unsplash.com/80x80/?dominos" },
-  { name: "Starbucks", category: "Restaurant", img: "https://source.unsplash.com/80x80/?coffee-shop" },
-  { name: "Burger King", category: "Restaurant", img: "https://source.unsplash.com/80x80/?burger" },
-  { name: "Idli & Dosa Corner", category: "Restaurant", img: "https://source.unsplash.com/80x80/?idli-dosa" },
+  { name: "Chicken Biryani", category: "Dish", price: 180, img: "https://source.unsplash.com/80x80/?chicken-biryani" },
+  { name: "Paneer Butter Masala", category: "Dish", price: 160, img: "https://source.unsplash.com/80x80/?paneer-butter-masala" },
+  { name: "Margherita Pizza", category: "Dish", price: 220, img: "https://source.unsplash.com/80x80/?pizza" },
+  { name: "Domino’s Pizza", category: "Restaurant", price: 250, img: "https://source.unsplash.com/80x80/?dominos" },
+  { name: "Starbucks", category: "Restaurant", price: 150, img: "https://source.unsplash.com/80x80/?coffee-shop" },
+  { name: "Burger King", category: "Restaurant", price: 180, img: "https://source.unsplash.com/80x80/?burger" },
+  { name: "Idli & Dosa Corner", category: "Restaurant", price: 120, img: "https://source.unsplash.com/80x80/?idli-dosa" },
 ];
+
 
 // 🟠 Open overlay
 searchBox.addEventListener("focus", openSearchOverlay);
@@ -1099,11 +1266,14 @@ function renderResults(results, term) {
               <div class="flex-1">
                 <p class="font-medium text-gray-800">${r.name}</p>
                 <p class="text-xs text-gray-500">${r.category}</p>
-                <p class="text-orange-500 text-sm font-semibold mt-1">₹${(Math.random() * 200 + 100).toFixed(0)}</p>
+                <p class="text-orange-500 text-sm font-semibold mt-1">₹${r.price}</p>
               </div>
-              <button class="bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-medium hover:bg-orange-600 transition">
-                Add
+              <button 
+                class="bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-medium hover:bg-orange-600 transition"
+                onclick='openFoodSheet(${JSON.stringify(r)})'>
+                 Add
               </button>
+
             </div>
           `
           )
@@ -1130,7 +1300,7 @@ window.selectResult = (term) => {
 // 🟠 Open food bottom sheet
 function openFoodSheet(item) {
   activeItem = item;
-  const randomPrice = (Math.random() * 200 + 100).toFixed(0);
+  const fixedPrice = item.price;
   const rating = (Math.random() * 1.2 + 3.8).toFixed(1);
   const reviews = Math.floor(Math.random() * 600 + 100);
 
@@ -1144,7 +1314,7 @@ function openFoodSheet(item) {
         <span class="text-gray-700 font-medium">${rating}</span>
         <span class="text-gray-400 text-sm">(${reviews})</span>
       </div>
-      <p class="text-orange-500 font-bold text-lg mt-1">₹${randomPrice}</p>
+        <p class="text-orange-500 font-bold text-lg mt-1">₹${fixedPrice}</p>
     </div>
 
     <div class="flex items-center justify-center gap-4 mt-4">
@@ -1168,20 +1338,23 @@ function openFoodSheet(item) {
     if (qty > 1) qtyDisplay.textContent = --qty;
   };
 
-  // ✅ Add to cart with animation + global cart update
-  document.getElementById("addToCart").onclick = () => {
-    const price = parseFloat(randomPrice);
-    flyToCart(foodSheetContent.querySelector("img"));
-    for (let i = 0; i < qty; i++) {
-      handleAddToCart(
-        document.getElementById("addToCart"),
-        item.name,
-        price,
-        item.img
-      );
-    }
-    showToast(`${qty} × ${item.name} added to cart 🛒`);
-  }; 
+// ✅ Add to cart with animation + global cart update
+document.getElementById("addToCart").onclick = () => {
+  const price = item.price; // use fixed price
+  flyToCart(foodSheetContent.querySelector("img"));
+  for (let i = 0; i < qty; i++) {
+    handleAddToCart(
+      document.getElementById("addToCart"),
+      item.name,
+      price,
+      item.img
+    );
+  }
+  showToast(`${qty} × ${item.name} added to cart 🛒`);
+  closeFoodSheet(); // optional: auto-close after adding
+};
+
+
 
   // View details
   document.getElementById("viewDetails").onclick = () => {
@@ -1309,13 +1482,6 @@ function fadeIn(element) {
 
 
 </script>
-
-
-
-
-
-
-
 
 
 </body>
