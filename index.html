@@ -172,67 +172,6 @@
 <body class="bg-amber-50 font-sans text-gray-800">
   
 
-<!-- Firebase SDKs (v11) kept as before -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-  import { 
-  getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged,
-  createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut 
-} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
-
-  import { 
-    getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, collection, addDoc, serverTimestamp 
-  } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyCAGirQsFfQNInhUc9yuMD-QElaDnmRbKE",
-    authDomain: "foodexpress-9b0ff.firebaseapp.com",
-    projectId: "foodexpress-9b0ff",
-    storageBucket: "foodexpress-9b0ff.appspot.com",
-    messagingSenderId: "818281594225",
-    appId: "1:818281594225:web:205774c2914ae2b9b08ad0"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
-
-const provider = new GoogleAuthProvider();
-window.__fe = { 
-  auth, db, provider,
-  onAuthStateChanged, createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword, signOut, signInWithPopup,
-  doc, getDoc, setDoc, updateDoc, onSnapshot, 
-  collection, addDoc, serverTimestamp 
-};
-
-
-// Trigger when user clicks Google Login
-window.googleLogin = async function() {
-  try {
-    const result = await signInWithPopup(auth, provider);
-    const user = result.user;
-
-      // Optional: Log auth state
-  onAuthStateChanged(auth, user => {
-    console.log(user ? `Logged in: ${user.email}` : "User logged out");
-  });
-
-    // Save user data to Firestore
-    const userRef = doc(db, "users", user.uid);
-    await setDoc(userRef, {
-      name: user.displayName,
-      email: user.email,
-      photo: user.photoURL,
-      createdAt: serverTimestamp()
-    }, { merge: true });
-
-    alert("Welcome " + user.displayName + "!");
-  } catch (error) {
-    console.error("Google Sign-In Error:", error);
-    alert("Login failed: " + error.message);
-  }
-};
 
 </script>
 <!-- Top bar -->
@@ -773,42 +712,88 @@ window.addEventListener("load", ()=>{
         <path d="M4 20a8 8 0 0 1 16 0" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
       </svg>
       <div class="text-xs">Account</div>
+
     </div>
+
 
   </div>
 </nav>
 
 
-<!-- Login/Signup Popup (kept) -->
-<div id="loginPopup" class="overlay">
-  <div class="bg-white p-6 rounded-lg w-80">
-    <h2 class="text-lg font-bold mb-4" id="popupTitle">Login</h2>
-    <input type="text" id="nameField" placeholder="Name" class="border p-2 w-full mb-2 hidden" />
-    <input type="email" id="emailField" placeholder="Email" class="border p-2 w-full mb-2" />
-    <div class="relative mb-2">
-      <input type="password" id="passwordField" placeholder="Password" class="border p-2 w-full" />
-      <button type="button" onclick="togglePassword('passwordField', this)" class="absolute right-2 top-2 text-gray-500">Show</button>
+<!-- Login Popup -->
+<div id="loginPopup" class="hidden fixed inset-0 bg-black/60 items-center justify-center z-50 backdrop-blur-sm transition-all">
+  <div class="bg-white rounded-2xl w-80 p-6 shadow-lg animate-slideUp">
+    <h2 id="popupTitle" class="text-lg font-semibold mb-3 text-center">Login</h2>
+    <div class="space-y-3">
+      <input id="emailField" type="email" placeholder="Email" class="w-full border rounded-lg px-3 py-2" />
+      <input id="passwordField" type="password" placeholder="Password" class="w-full border rounded-lg px-3 py-2" />
+      <p id="errorText" class="hidden text-red-500 text-sm"></p>
+      <button onclick="submitAuth()" class="w-full bg-orange-500 text-white py-2 rounded-lg">Continue</button>
+      <button onclick="googleLogin()" class="w-full border py-2 rounded-lg">Continue with Google</button>
     </div>
-    <div class="relative mb-4 hidden" id="confirmPasswordContainer">
-      <input type="password" id="confirmPasswordField" placeholder="Confirm Password" class="border p-2 w-full" />
-    </div>
-
-    <p id="errorText" class="text-red-500 text-sm mb-2 hidden"></p>
-
-    <!-- Submit Button -->
-    <button onclick="submitAuth()" class="bg-orange-500 text-white py-2 px-4 w-full rounded">Submit</button>
-        <!-- 👇 Add Google Sign-in Button Here -->
-    <div class="mt-5 border-t pt-4">
-      <button onclick="googleLogin()" class="flex items-center justify-center w-full gap-2 border rounded-lg py-2 hover:bg-gray-50 transition">
-        <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5" alt="Google icon">
-        <span class="text-gray-700 font-medium">Sign in with Google</span>
-      </button>
-    </div>
-
-    <p class="text-center text-sm mt-3 cursor-pointer text-blue-500" onclick="toggleAuthMode()" id="toggleText">Create account</p>
-    <p class="text-center text-sm mt-3 cursor-pointer text-gray-500" onclick="closeLoginPopup()">Cancel</p>
-  </div>  
+    <p id="toggleText" onclick="toggleAuthMode()" class="text-center text-sm text-orange-500 mt-3 cursor-pointer">
+      Create account
+    </p>
+    <button onclick="closeLoginPopup()" class="absolute top-2 right-3 text-gray-400 text-xl">✕</button>
+  </div>
 </div>
+
+<style>
+@keyframes slideUp {
+  from { transform: translateY(40px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.animate-slideUp { animation: slideUp 0.3s ease-out; }
+</style><script>
+/* -------------------------------------------
+   Bottom Nav Active State + Account Popup
+--------------------------------------------*/
+
+// Track active tab visually
+function setActiveTab(tab) {
+  document.querySelectorAll(".nav-item").forEach(el => {
+    el.classList.remove("text-orange-500");
+    el.classList.add("text-gray-500");
+  });
+
+  const activeEl = document.getElementById("nav" + tab.charAt(0).toUpperCase() + tab.slice(1));
+  if (activeEl) {
+    activeEl.classList.add("text-orange-500");
+    activeEl.classList.remove("text-gray-500");
+  }
+}
+
+// Dummy navigation functions (replace with your real logic)
+function goToCart() {
+  console.log("🛒 Open Cart Page");
+  // Example: window.location.href = '/cart.html';
+}
+function goToOrders() {
+  console.log("📦 Open Orders Page");
+  // Example: window.location.href = '/orders.html';
+}
+
+/* -------------------------------------------
+   Popup Logic
+--------------------------------------------*/
+window.openLoginPopup = function() {
+  const popup = document.getElementById("loginPopup");
+  if (popup) popup.classList.add("flex");
+  if (popup) popup.classList.remove("hidden");
+};
+
+window.closeLoginPopup = function() {
+  const popup = document.getElementById("loginPopup");
+  if (popup) popup.classList.remove("flex");
+  if (popup) popup.classList.add("hidden");
+};
+</script>
+
+
+
+
+
+
 
 
 <!-- Toast -->
@@ -872,6 +857,7 @@ function showToast(msg){
   };
   next();
 }
+
 
 /* -----------------------
   Fly-to-cart animation (curved motion)
@@ -947,53 +933,6 @@ async function saveUserCart(){
     await setDoc(userRef,{cart},{merge:true});
   }catch(err){ console.error("saveUserCart error:",err); }
 }
-
-/* -----------------------
-  Auth helpers
-------------------------*/
-let authMode="login";
-function openLoginPopup(){ const { auth } = window.__fe; if(auth.currentUser){ window.location.href="account.html"; return; } document.getElementById("loginPopup").style.display="flex"; }
-function closeLoginPopup(){ document.getElementById("loginPopup").style.display="none"; }
-function toggleAuthMode(){ authMode = authMode==="login"?"signup":"login"; document.getElementById("popupTitle").innerText = authMode==="login"?"Login":"Sign Up"; document.getElementById("toggleText").innerText = authMode==="login"?"Create account":"Already have account?"; document.getElementById("nameField").classList.toggle("hidden"); document.getElementById("confirmPasswordContainer").classList.toggle("hidden"); }
-function togglePassword(id,btn){ const f = document.getElementById(id); f.type = f.type==="password"?"text":"password"; }
-
-/* -----------------------
-  Submit auth
-------------------------*/
-async function submitAuth(){
-  const { auth, createUserWithEmailAndPassword, signInWithEmailAndPassword } = window.__fe;
-  const email = document.getElementById("emailField").value;
-  const password = document.getElementById("passwordField").value;
-  const name = document.getElementById("nameField").value;
-  const errorEl = document.getElementById("errorText");
-  errorEl.classList.add("hidden");
-
-  if(authMode==="signup"){
-    try{
-      await createUserWithEmailAndPassword(auth,email,password);
-      closeLoginPopup();
-      showToast("Account created 🎉");
-    }catch(err){ errorEl.innerText=err.message; errorEl.classList.remove("hidden"); }
-  }else{
-    try{
-      await signInWithEmailAndPassword(auth,email,password);
-      closeLoginPopup();
-      showToast("Logged in ✅");
-    }catch(err){ errorEl.innerText=err.message; errorEl.classList.remove("hidden"); }
-  }
-}
-
-/* -----------------------
-  On auth change
-------------------------*/
-const { auth } = window.__fe;
-onAuthStateChanged(auth, (user) => {
-  if(user){
-    document.getElementById("accountLabel").innerHTML = `<img src="${user.photoURL}" class="w-6 h-6 rounded-full inline mr-1"/> ${user.displayName || user.email}`;
-  } else {
-    document.getElementById("accountLabel").innerText = "Account";
-  }
-});
 
 
 /* -----------------------
@@ -1116,27 +1055,8 @@ updateLocation();
 
 
 </script>
-<script>
-  // Detect user login state
-  firebase.auth().onAuthStateChanged((user) => {
-    if (user) {
-      // If logged in, save details in Firestore (optional)
-      const db = firebase.firestore();
-      db.collection("users").doc(user.uid).set({
-        name: user.displayName || "User",
-        email: user.email || "",
-        phone: user.phoneNumber || "",
-        uid: user.uid,
-        lastLogin: new Date().toISOString(),
-      }, { merge: true });
 
-      // ✅ Redirect after login
-      window.location.href = "/home.html"; // Change this to your destination page
-    } else {
-      console.log("No user logged in");
-    }
-  });
-</script>
+
 <script>
 document.addEventListener("DOMContentLoaded", async () => {
   const locationText = document.getElementById("locationText");
@@ -1486,6 +1406,132 @@ function fadeIn(element) {
 
 
 </script>
+
+<!-- Firebase SDK (v11) -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+  import { 
+    getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged,
+    createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut 
+  } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+  import { 
+    getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, collection, addDoc, serverTimestamp 
+  } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+  // Firebase config
+  const firebaseConfig = {
+    apiKey: "AIzaSyCAGirQsFfQNInhUc9yuMD-QElaDnmRbKE",
+    authDomain: "foodexpress-9b0ff.firebaseapp.com",
+    projectId: "foodexpress-9b0ff",
+    storageBucket: "foodexpress-9b0ff.appspot.com",
+    messagingSenderId: "818281594225",
+    appId: "1:818281594225:web:205774c2914ae2b9b08ad0"
+  };
+
+  // Initialize
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  const provider = new GoogleAuthProvider();
+
+  // Expose Firebase globally
+  window.__fe = { auth, db, provider, 
+    onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+    signOut, signInWithPopup, doc, getDoc, setDoc, updateDoc, onSnapshot,
+    collection, addDoc, serverTimestamp 
+  };
+
+  /* ============================
+     UI Functions for Popup
+  ============================ */
+
+  window.openLoginPopup = function() {
+    const overlay = document.getElementById("loginPopup");
+    if (overlay) overlay.style.display = "flex";
+  };
+
+  window.closeLoginPopup = function() {
+    const overlay = document.getElementById("loginPopup");
+    if (overlay) overlay.style.display = "none";
+  };
+
+  let authMode = "login";
+  window.toggleAuthMode = function() {
+    authMode = authMode === "login" ? "signup" : "login";
+    document.getElementById("popupTitle").innerText = 
+      authMode === "login" ? "Login" : "Sign Up";
+    document.getElementById("toggleText").innerText = 
+      authMode === "login" ? "Create account" : "Already have account?";
+    document.getElementById("nameField").classList.toggle("hidden");
+    document.getElementById("confirmPasswordContainer").classList.toggle("hidden");
+  };
+
+  window.togglePassword = function(id) {
+    const f = document.getElementById(id);
+    f.type = f.type === "password" ? "text" : "password";
+  };
+
+  /* ============================
+     Submit Login / Signup
+  ============================ */
+  window.submitAuth = async function() {
+    const email = document.getElementById("emailField").value;
+    const password = document.getElementById("passwordField").value;
+    const name = document.getElementById("nameField").value;
+    const errorEl = document.getElementById("errorText");
+    errorEl.classList.add("hidden");
+
+    try {
+      if (authMode === "signup") {
+        await createUserWithEmailAndPassword(auth, email, password);
+        closeLoginPopup();
+        alert("Account created 🎉");
+      } else {
+        await signInWithEmailAndPassword(auth, email, password);
+        closeLoginPopup();
+        alert("Logged in ✅");
+      }
+    } catch (err) {
+      errorEl.innerText = err.message;
+      errorEl.classList.remove("hidden");
+    }
+  };
+
+  /* ============================
+     Google Login
+  ============================ */
+  window.googleLogin = async function() {
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      const userRef = doc(db, "users", user.uid);
+      await setDoc(userRef, {
+        name: user.displayName,
+        email: user.email,
+        photo: user.photoURL,
+        createdAt: serverTimestamp()
+      }, { merge: true });
+      alert("Welcome " + user.displayName + "!");
+    } catch (error) {
+      alert("Login failed: " + error.message);
+    }
+  };
+
+  /* ============================
+     Update Account Label
+  ============================ */
+  onAuthStateChanged(auth, (user) => {
+    const label = document.getElementById("accountLabel");
+    if (!label) return;
+    if (user) {
+      label.innerHTML = `<img src="${user.photoURL || 'https://cdn-icons-png.flaticon.com/512/847/847969.png'}" 
+        class="w-6 h-6 rounded-full inline mr-1"/> ${user.displayName || user.email}`;
+    } else {
+      label.innerText = "Account";
+    }
+  });
+</script>
+
 
 
 </body>
