@@ -751,10 +751,23 @@ window.addEventListener("load", ()=>{
 
   // Track current user correctly
   let currentUser = null;
-  onAuthStateChanged(auth, (user) => {
-    currentUser = user;
-    window.__fe.currentUser = user; // keep globally accessible
-  });
+// Track auth state properly
+onAuthStateChanged(auth, (user) => {
+  currentUser = user;
+  window.__fe.currentUser = user;
+
+  const label = document.querySelector("#navAccount .text-xs");
+  if (label) {
+    if (user) {
+      label.innerHTML = `<img src="${
+        user.photoURL || 'https://cdn-icons-png.flaticon.com/512/847/847969.png'
+      }" class="w-6 h-6 rounded-full mb-1" alt="profile"/>`;
+    } else {
+      label.textContent = "Account";
+    }
+  }
+});
+
 </script>
 
 
@@ -762,28 +775,43 @@ window.addEventListener("load", ()=>{
 /* -------------------------
    Account Button Behavior
 -------------------------- */
-function handleAccountClick() {
-  const user = window.__fe.currentUser || window.__fe.auth.currentUser;
+async function handleAccountClick() {
+  const auth = window.__fe.auth;
+  const user = auth.currentUser || window.__fe.currentUser;
+
+  // Wait a moment if Firebase is still initializing
+  if (auth._initializationPromise) {
+    await auth._initializationPromise.catch(() => {});
+  }
+
   if (user) {
+    // ✅ Already logged in → Go to account page
     setActiveTab("account");
     window.location.href = "account.html";
   } else {
+    // ❌ Not logged in → Show popup
     openLoginPopup();
   }
 }
+
 
 
 /* -------------------------
    Update Avatar on Login
 -------------------------- */
 window.__fe.onAuthStateChanged(window.__fe.auth, (user) => {
-  const label = document.querySelector("#navAccount .text-xs");
-  if (user && label) {
-    label.innerHTML = `<img src="${user.photoURL || 'https://cdn-icons-png.flaticon.com/512/847/847969.png'}" class="w-6 h-6 rounded-full mb-1" alt="profile"/>`;
-  } else if (label) {
-    label.textContent = "Account";
+  const acc = document.getElementById("navAccount");
+  if (acc) {
+    if (user) {
+      acc.classList.remove("text-gray-500");
+      acc.classList.add("text-orange-500");
+    } else {
+      acc.classList.add("text-gray-500");
+      acc.classList.remove("text-orange-500");
+    }
   }
 });
+
 </script>
 
 <!-- Login Popup -->
