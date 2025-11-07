@@ -166,6 +166,13 @@
   padding: 0.5rem 1.2rem;
 }
 
+nav.fixed.bottom-0 {
+  transition: all 0.3s ease-in-out;
+}
+
+
+
+
 
   </style>
 </head>
@@ -200,7 +207,6 @@
       </svg>
     </div>
   </div>
-  <span id="accountLabel" class="font-semibold text-gray-700"></span>
 </header>
 
 <!-- 🔍 Full-Screen Search Overlay -->
@@ -673,11 +679,11 @@ window.addEventListener("load", ()=>{
 </main>
 
 <!-- Bottom Navigation (mobile) -->
-<nav class="fixed bottom-4 left-0 right-0 flex justify-center z-50">
+<nav class="fixed bottom-0 left-0 right-0 pb-[env(safe-area-inset-bottom)] flex justify-center z-50">
   <div class="w-11/12 bg-white rounded-2xl shadow-lg p-2 flex justify-around items-center">
 
     <!-- Home -->
-    <div class="nav-item flex flex-col items-center cursor-pointer text-orange-500" id="navHome" onclick="setActiveTab('home')">
+    <div class="nav-item flex flex-col items-center cursor-pointer text-orange-500" id="navHome" onclick="setActiveTab('home'); window.location.href='index.html';">
       <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
         <path d="M3 9l9-6 9 6v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
       </svg>
@@ -685,7 +691,7 @@ window.addEventListener("load", ()=>{
     </div>
 
     <!-- Orders -->
-    <div class="nav-item flex flex-col items-center cursor-pointer text-gray-500" id="navOrders" onclick="setActiveTab('orders'); goToOrders()">
+    <div class="nav-item flex flex-col items-center cursor-pointer text-gray-500" id="navOrders" onclick="setActiveTab('orders'); goToOrders();">
       <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
         <path d="M3 3h18v4H3zM5 7v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
       </svg>
@@ -693,7 +699,7 @@ window.addEventListener("load", ()=>{
     </div>
 
     <!-- Cart -->
-    <div class="nav-item flex flex-col items-center cursor-pointer text-gray-500" id="navCart" onclick="setActiveTab('cart'); goToCart()">
+    <div class="nav-item flex flex-col items-center cursor-pointer text-gray-500" id="navCart" onclick="setActiveTab('cart'); goToCart();">
       <div id="cartIcon" class="relative">
         <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <path d="M6 6h15l-1.5 9h-12z" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
@@ -706,31 +712,116 @@ window.addEventListener("load", ()=>{
     </div>
 
     <!-- Account -->
-    <div class="nav-item flex flex-col items-center cursor-pointer text-gray-500" id="navAccount" onclick="setActiveTab('account'); openLoginPopup()">
+    <div class="nav-item flex flex-col items-center cursor-pointer text-gray-500" id="navAccount" onclick="handleAccountClick()">
       <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
         <path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10z" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
         <path d="M4 20a8 8 0 0 1 16 0" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
       </svg>
       <div class="text-xs">Account</div>
-
     </div>
-
 
   </div>
 </nav>
 
+<!-- Firebase + Auth Logic -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+  import { 
+    getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged,
+    createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut 
+  } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+  import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCAGirQsFfQNInhUc9yuMD-QElaDnmRbKE",
+    authDomain: "foodexpress-9b0ff.firebaseapp.com",
+    projectId: "foodexpress-9b0ff",
+    storageBucket: "foodexpress-9b0ff.appspot.com",
+    messagingSenderId: "818281594225",
+    appId: "1:818281594225:web:205774c2914ae2b9b08ad0"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  const provider = new GoogleAuthProvider();
+
+  // Create global reference
+  window.__fe = { auth, db, provider, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, signInWithPopup, doc, setDoc, serverTimestamp };
+
+  // Track current user correctly
+  let currentUser = null;
+  onAuthStateChanged(auth, (user) => {
+    currentUser = user;
+    window.__fe.currentUser = user; // keep globally accessible
+  });
+</script>
+
+
+<script>
+/* -------------------------
+   Account Button Behavior
+-------------------------- */
+function handleAccountClick() {
+  const user = window.__fe.currentUser || window.__fe.auth.currentUser;
+  if (user) {
+    setActiveTab("account");
+    window.location.href = "account.html";
+  } else {
+    openLoginPopup();
+  }
+}
+
+
+/* -------------------------
+   Update Avatar on Login
+-------------------------- */
+window.__fe.onAuthStateChanged(window.__fe.auth, (user) => {
+  const label = document.querySelector("#navAccount .text-xs");
+  if (user && label) {
+    label.innerHTML = `<img src="${user.photoURL || 'https://cdn-icons-png.flaticon.com/512/847/847969.png'}" class="w-6 h-6 rounded-full mb-1" alt="profile"/>`;
+  } else if (label) {
+    label.textContent = "Account";
+  }
+});
+</script>
 
 <!-- Login Popup -->
 <div id="loginPopup" class="hidden fixed inset-0 bg-black/60 items-center justify-center z-50 backdrop-blur-sm transition-all">
-  <div class="bg-white rounded-2xl w-80 p-6 shadow-lg animate-slideUp">
-    <h2 id="popupTitle" class="text-lg font-semibold mb-3 text-center">Login</h2>
-    <div class="space-y-3">
+  <div class="bg-white rounded-2xl w-80 p-6 shadow-lg animate-slideUp relative">
+<div class="rounded-t-2xl bg-gradient-to-r from-orange-500 to-orange-400 text-white -m-6 mb-4 p-6 pb-4 flex flex-col items-center shadow-md">
+  <img src="assets/logo.png" alt="Food Express" class="w-16 h-16 mb-2 animate-fadeIn drop-shadow-lg" />
+  <h2 id="popupTitle" class="text-lg font-semibold">Login</h2>
+</div>
+
+
+    <!-- Login -->
+    <div id="loginForm" class="space-y-3">
       <input id="emailField" type="email" placeholder="Email" class="w-full border rounded-lg px-3 py-2" />
-      <input id="passwordField" type="password" placeholder="Password" class="w-full border rounded-lg px-3 py-2" />
+      <input id="passwordField" type="password" placeholder="Password (min 8 chars)" class="w-full border rounded-lg px-3 py-2" />
       <p id="errorText" class="hidden text-red-500 text-sm"></p>
-      <button onclick="submitAuth()" class="w-full bg-orange-500 text-white py-2 rounded-lg">Continue</button>
-      <button onclick="googleLogin()" class="w-full border py-2 rounded-lg">Continue with Google</button>
+      <!-- Food Express Primary Button -->
+<button onclick="submitAuth()" class="fe-btn w-full py-2 rounded-lg text-white font-medium">Continue</button>
+
+<!-- Food Express Google Button -->
+<button onclick="googleLogin()" class="fe-google w-full py-2 rounded-lg font-medium flex items-center justify-center gap-2">
+  <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5" alt="Google" />
+  Continue with Google
+</button>
+
     </div>
+
+    <!-- Signup -->
+    <div id="signupForm" class="hidden space-y-3">
+      <input id="firstName" type="text" placeholder="First Name" class="w-full border rounded-lg px-3 py-2" />
+      <input id="lastName" type="text" placeholder="Last Name" class="w-full border rounded-lg px-3 py-2" />
+      <input id="signupEmail" type="email" placeholder="Email" class="w-full border rounded-lg px-3 py-2" />
+      <input id="signupPassword" type="password" placeholder="Password (min 8 chars)" class="w-full border rounded-lg px-3 py-2" />
+      <input id="confirmPassword" type="password" placeholder="Confirm Password" class="w-full border rounded-lg px-3 py-2" />
+      <p id="signupErrorText" class="hidden text-red-500 text-sm"></p>
+      <button onclick="createAccount()" class="fe-btn w-full py-2 rounded-lg text-white font-medium">Create Account</button>
+    </div>
+
     <p id="toggleText" onclick="toggleAuthMode()" class="text-center text-sm text-orange-500 mt-3 cursor-pointer">
       Create account
     </p>
@@ -739,55 +830,301 @@ window.addEventListener("load", ()=>{
 </div>
 
 <style>
-@keyframes slideUp {
-  from { transform: translateY(40px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
+@keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 .animate-slideUp { animation: slideUp 0.3s ease-out; }
-</style><script>
-/* -------------------------------------------
-   Bottom Nav Active State + Account Popup
---------------------------------------------*/
+#loginPopup {
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  backdrop-filter: blur(10px);
+  background: rgba(0, 0, 0, 0.65);
+}
+#loginPopup.flex {
+  opacity: 1;
+  transform: scale(1);
+}
+#loginPopup.hidden {
+  opacity: 0;
+  transform: scale(0.97);
+}
 
-// Track active tab visually
+#loginPopup.flex .bg-white {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+#loginPopup img {
+  filter: drop-shadow(0 0 6px rgba(255, 122, 0, 0.3));
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+.animate-fadeIn {
+  animation: fadeIn 0.6s ease-in-out;
+}
+
+.drop-shadow-lg {
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.25));
+}
+#loginPopup .bg-gradient-to-r {
+  border-bottom: 3px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Food Express Orange Button */
+.fe-btn {
+  background: linear-gradient(to right, #ff7300, #ff5e00);
+  box-shadow: 0 4px 10px rgba(255, 94, 0, 0.4);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.fe-btn:active {
+  transform: scale(0.96);
+  box-shadow: 0 2px 6px rgba(255, 94, 0, 0.3);
+}
+
+/* Google Button */
+.fe-google {
+  border: 1.5px solid #e5e7eb;
+  background-color: #fff;
+  color: #333;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+.fe-google:hover {
+  background-color: #fafafa;
+}
+.fe-google:active {
+  transform: scale(0.97);
+}
+
+/* Simple ripple animation */
+.fe-btn, .fe-google {
+  position: relative;
+  overflow: hidden;
+}
+.fe-btn::after, .fe-google::after {
+  content: "";
+  position: absolute;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  transform: scale(0);
+  animation: ripple 0.6s linear;
+}
+@keyframes ripple {
+  to { transform: scale(4); opacity: 0; }
+}
+
+
+
+/* Food Express Popup Theme */
+#loginPopup .bg-white {
+  border-radius: 1.25rem; /* extra round */
+  box-shadow: 0 10px 30px rgba(255, 94, 31, 0.2);
+  border-top: 3px solid #ff7a00; /* orange accent */
+}
+
+/* Buttons */
+#loginPopup button.bg-orange-500 {
+  background: linear-gradient(90deg, #ff7a00, #ff5200);
+  box-shadow: 0 3px 10px rgba(255, 94, 31, 0.4);
+  transition: all 0.25s ease;
+}
+#loginPopup button.bg-orange-500:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(255, 94, 31, 0.5);
+}
+
+/* Google button */
+#loginPopup button.border {
+  border-color: #ddd;
+  color: #444;
+  background-color: #fff;
+  transition: all 0.25s ease;
+}
+#loginPopup button.border:hover {
+  background-color: #f9f9f9;
+  transform: translateY(-2px);
+}
+
+/* Inputs */
+#loginPopup input {
+  border: 1px solid #ddd;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+#loginPopup input:focus {
+  border-color: #ff7a00;
+  box-shadow: 0 0 0 3px rgba(255, 122, 0, 0.2);
+  outline: none;
+}
+
+
+ 
+</style>
+
+<script>
+/* -------------------------
+   Login Popup
+-------------------------- */
+window.openLoginPopup = function() {
+  const popup = document.getElementById("loginPopup");
+  const bottomNav = document.querySelector("nav.fixed.bottom-0");
+
+  // Hide nav with animation
+  if (bottomNav) {
+    bottomNav.classList.add("opacity-0", "translate-y-4", "pointer-events-none");
+    setTimeout(() => bottomNav.classList.add("hidden"), 250);
+  }
+
+  // Show popup
+  popup?.classList.remove("hidden");
+  setTimeout(() => popup?.classList.add("flex"), 10);
+};
+
+window.closeLoginPopup = function() {
+  const popup = document.getElementById("loginPopup");
+  const bottomNav = document.querySelector("nav.fixed.bottom-0");
+
+  // Close popup
+  popup?.classList.remove("flex");
+  setTimeout(() => popup?.classList.add("hidden"), 200);
+
+  // Show nav again with smooth fade/slide
+  if (bottomNav) {
+    bottomNav.classList.remove("hidden");
+    setTimeout(() => {
+      bottomNav.classList.remove("opacity-0", "translate-y-4", "pointer-events-none");
+    }, 20);
+  }
+};
+
+
+
+/* Close popup when clicking outside */
+document.addEventListener("click", (e) => {
+  const popup = document.getElementById("loginPopup");
+  if (popup && popup.classList.contains("flex") && !popup.querySelector(".bg-white").contains(e.target) && !e.target.closest("#navAccount")) {
+    closeLoginPopup();
+  }
+});
+
+/* -------------------------
+   Toggle Login / Signup
+-------------------------- */
+window.toggleAuthMode = function() {
+  const login = document.getElementById("loginForm");
+  const signup = document.getElementById("signupForm");
+  const title = document.getElementById("popupTitle");
+  const toggle = document.getElementById("toggleText");
+
+  const isLogin = !login.classList.contains("hidden");
+  login.classList.toggle("hidden", isLogin);
+  signup.classList.toggle("hidden", !isLogin);
+  title.innerText = isLogin ? "Create Account" : "Login";
+  toggle.innerText = isLogin ? "Already have an account? Login" : "Create account";
+};
+
+/* -------------------------
+   Email Login
+-------------------------- */
+async function submitAuth() {
+  const email = emailField.value.trim();
+  const password = passwordField.value.trim();
+  const errorText = document.getElementById("errorText");
+
+  if (password.length < 8) {
+    errorText.textContent = "Password must be at least 8 characters.";
+    errorText.classList.remove("hidden");
+    return;
+  }
+
+  try {
+    await window.__fe.signInWithEmailAndPassword(window.__fe.auth, email, password);
+    closeLoginPopup();
+    window.location.href = "account.html";
+  } catch (err) {
+    errorText.textContent = err.message;
+    errorText.classList.remove("hidden");
+  }
+}
+
+/* -------------------------
+   Signup
+-------------------------- */
+async function createAccount() {
+  const first = firstName.value.trim(), last = lastName.value.trim();
+  const email = signupEmail.value.trim(), pass = signupPassword.value.trim(), confirm = confirmPassword.value.trim();
+  const err = document.getElementById("signupErrorText");
+
+  if (!first || !last || !email || !pass || !confirm) return errMsg("All fields required");
+  if (pass.length < 8) return errMsg("Password must be at least 8 characters");
+  if (pass !== confirm) return errMsg("Passwords do not match");
+
+  try {
+    const { user } = await window.__fe.createUserWithEmailAndPassword(window.__fe.auth, email, pass);
+    await window.__fe.setDoc(window.__fe.doc(window.__fe.db, "users", user.uid), {
+      firstName: first, lastName: last, email, createdAt: window.__fe.serverTimestamp(),
+    });
+    closeLoginPopup();
+    window.location.href = "account.html";
+  } catch (e) { errMsg(e.message); }
+
+  function errMsg(t) { err.textContent = t; err.classList.remove("hidden"); }
+}
+
+/* -------------------------
+   Google Login
+-------------------------- */
+async function googleLogin() {
+  try {
+    const { user } = await window.__fe.signInWithPopup(window.__fe.auth, window.__fe.provider);
+    await window.__fe.setDoc(window.__fe.doc(window.__fe.db, "users", user.uid), {
+      name: user.displayName || "Guest", email: user.email, photo: user.photoURL || null,
+      createdAt: window.__fe.serverTimestamp(),
+    }, { merge: true });
+    closeLoginPopup();
+    setTimeout(() => window.location.href = "account.html", 300);
+  } catch (e) {
+    alert("⚠️ Google login failed: " + e.message);
+  }
+}
+
+/* -------------------------
+   Navigation State
+-------------------------- */
 function setActiveTab(tab) {
   document.querySelectorAll(".nav-item").forEach(el => {
     el.classList.remove("text-orange-500");
     el.classList.add("text-gray-500");
   });
-
-  const activeEl = document.getElementById("nav" + tab.charAt(0).toUpperCase() + tab.slice(1));
-  if (activeEl) {
-    activeEl.classList.add("text-orange-500");
-    activeEl.classList.remove("text-gray-500");
-  }
+  const active = document.getElementById(`nav${tab.charAt(0).toUpperCase() + tab.slice(1)}`);
+  active?.classList.add("text-orange-500");
+  localStorage.setItem("activeTab", tab);
 }
 
-// Dummy navigation functions (replace with your real logic)
-function goToCart() {
-  console.log("🛒 Open Cart Page");
-  // Example: window.location.href = '/cart.html';
-}
-function goToOrders() {
-  console.log("📦 Open Orders Page");
-  // Example: window.location.href = '/orders.html';
-}
+document.addEventListener("DOMContentLoaded", () => {
+  const saved = localStorage.getItem("activeTab") || "home";
+  setActiveTab(saved);
+});
 
-/* -------------------------------------------
-   Popup Logic
---------------------------------------------*/
-window.openLoginPopup = function() {
-  const popup = document.getElementById("loginPopup");
-  if (popup) popup.classList.add("flex");
-  if (popup) popup.classList.remove("hidden");
-};
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest(".fe-btn, .fe-google");
+  if (!btn) return;
+  const ripple = document.createElement("span");
+  ripple.classList.add("ripple");
+  const rect = btn.getBoundingClientRect();
+  ripple.style.left = `${e.clientX - rect.left}px`;
+  ripple.style.top = `${e.clientY - rect.top}px`;
+  btn.appendChild(ripple);
+  setTimeout(() => ripple.remove(), 600);
+});
 
-window.closeLoginPopup = function() {
-  const popup = document.getElementById("loginPopup");
-  if (popup) popup.classList.remove("flex");
-  if (popup) popup.classList.add("hidden");
-};
+
+function goToOrders() { window.location.href = "orders.html"; }
+function goToCart() { window.location.href = "cart.html"; }
 </script>
+
+
+
+
+
 
 
 
@@ -1407,131 +1744,8 @@ function fadeIn(element) {
 
 </script>
 
-<!-- Firebase SDK (v11) -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-  import { 
-    getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged,
-    createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut 
-  } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
-  import { 
-    getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, collection, addDoc, serverTimestamp 
-  } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-  // Firebase config
-  const firebaseConfig = {
-    apiKey: "AIzaSyCAGirQsFfQNInhUc9yuMD-QElaDnmRbKE",
-    authDomain: "foodexpress-9b0ff.firebaseapp.com",
-    projectId: "foodexpress-9b0ff",
-    storageBucket: "foodexpress-9b0ff.appspot.com",
-    messagingSenderId: "818281594225",
-    appId: "1:818281594225:web:205774c2914ae2b9b08ad0"
-  };
-
-  // Initialize
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
-  const provider = new GoogleAuthProvider();
-
-  // Expose Firebase globally
-  window.__fe = { auth, db, provider, 
-    onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword,
-    signOut, signInWithPopup, doc, getDoc, setDoc, updateDoc, onSnapshot,
-    collection, addDoc, serverTimestamp 
-  };
-
-  /* ============================
-     UI Functions for Popup
-  ============================ */
-
-  window.openLoginPopup = function() {
-    const overlay = document.getElementById("loginPopup");
-    if (overlay) overlay.style.display = "flex";
-  };
-
-  window.closeLoginPopup = function() {
-    const overlay = document.getElementById("loginPopup");
-    if (overlay) overlay.style.display = "none";
-  };
-
-  let authMode = "login";
-  window.toggleAuthMode = function() {
-    authMode = authMode === "login" ? "signup" : "login";
-    document.getElementById("popupTitle").innerText = 
-      authMode === "login" ? "Login" : "Sign Up";
-    document.getElementById("toggleText").innerText = 
-      authMode === "login" ? "Create account" : "Already have account?";
-    document.getElementById("nameField").classList.toggle("hidden");
-    document.getElementById("confirmPasswordContainer").classList.toggle("hidden");
-  };
-
-  window.togglePassword = function(id) {
-    const f = document.getElementById(id);
-    f.type = f.type === "password" ? "text" : "password";
-  };
-
-  /* ============================
-     Submit Login / Signup
-  ============================ */
-  window.submitAuth = async function() {
-    const email = document.getElementById("emailField").value;
-    const password = document.getElementById("passwordField").value;
-    const name = document.getElementById("nameField").value;
-    const errorEl = document.getElementById("errorText");
-    errorEl.classList.add("hidden");
-
-    try {
-      if (authMode === "signup") {
-        await createUserWithEmailAndPassword(auth, email, password);
-        closeLoginPopup();
-        alert("Account created 🎉");
-      } else {
-        await signInWithEmailAndPassword(auth, email, password);
-        closeLoginPopup();
-        alert("Logged in ✅");
-      }
-    } catch (err) {
-      errorEl.innerText = err.message;
-      errorEl.classList.remove("hidden");
-    }
-  };
-
-  /* ============================
-     Google Login
-  ============================ */
-  window.googleLogin = async function() {
-    try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-      const userRef = doc(db, "users", user.uid);
-      await setDoc(userRef, {
-        name: user.displayName,
-        email: user.email,
-        photo: user.photoURL,
-        createdAt: serverTimestamp()
-      }, { merge: true });
-      alert("Welcome " + user.displayName + "!");
-    } catch (error) {
-      alert("Login failed: " + error.message);
-    }
-  };
-
-  /* ============================
-     Update Account Label
-  ============================ */
-  onAuthStateChanged(auth, (user) => {
-    const label = document.getElementById("accountLabel");
-    if (!label) return;
-    if (user) {
-      label.innerHTML = `<img src="${user.photoURL || 'https://cdn-icons-png.flaticon.com/512/847/847969.png'}" 
-        class="w-6 h-6 rounded-full inline mr-1"/> ${user.displayName || user.email}`;
-    } else {
-      label.innerText = "Account";
-    }
-  });
-</script>
-
+  
 
 
 </body>
