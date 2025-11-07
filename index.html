@@ -746,6 +746,17 @@ window.addEventListener("load", ()=>{
   const db = getFirestore(app);
   const provider = new GoogleAuthProvider();
 
+  // 🟠 Wait for Firebase to finish restoring session before use
+window.__fe = { auth, db };
+window.__fe.authReady = new Promise((resolve) => {
+  const unsub = onAuthStateChanged(auth, (user) => {
+    window.__fe.currentUser = user;
+    unsub(); // stop listening after first result
+    resolve(user);
+  });
+});
+
+
   // Create global reference
   window.__fe = { auth, db, provider, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, signInWithPopup, doc, setDoc, serverTimestamp };
 
@@ -779,17 +790,41 @@ async function handleAccountClick() {
   const auth = window.__fe.auth;
   const user = auth.currentUser || window.__fe.currentUser;
 
-  // Wait a moment if Firebase is still initializing
-  if (auth._initializationPromise) {
-    await auth._initializationPromise.catch(() => {});
+  // Wait for Firebase Auth to finish initializing
+  if (!window.__fe.authReady) {
+    // Show a temporary loading spinner or toast
+    const accountBtn = document.getElementById("navAccount");
+    if (accountBtn) {
+      accountBtn.classList.add("opacity-50");
+    }
+
+    // Wait up to 2 seconds for Firebase to be ready
+    await new Promise((resolve) => {
+      const check = setInterval(() => {
+        if (window.__fe.authReady) {
+          clearInterval(check);
+          resolve();
+        }
+      }, 100);
+      setTimeout(() => {
+        clearInterval(check);
+        resolve();
+      }, 2000);
+    });
+
+    if (accountBtn) {
+      accountBtn.classList.remove("opacity-50");
+    }
   }
 
-  if (user) {
-    // ✅ Already logged in → Go to account page
+  const finalUser = auth.currentUser || window.__fe.currentUser;
+
+  if (finalUser) {
+    // ✅ Logged in → Go to account page
     setActiveTab("account");
     window.location.href = "account.html";
   } else {
-    // ❌ Not logged in → Show popup
+    // ❌ Not logged in → Show login popup
     openLoginPopup();
   }
 }
