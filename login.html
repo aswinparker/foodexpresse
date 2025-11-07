@@ -1,44 +1,1752 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login - Food Express</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Food Express</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Hide scrollbar for horizontal sections */
+    .snap-x::-webkit-scrollbar { display: none; }
+    .snap-x {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* Overlay for modals/popups */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.6);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .overlay.active {
+      display: flex;
+      opacity: 1;
+    }
+
+    /* Cart bump animation */
+    .animate-bump {
+      transform: scale(1.08);
+      transition: transform 0.18s;
+    }
+    .animate-bump-reset { transform: scale(1); }
+
+    /* Fly-to-cart image animation */
+    .fly-img {
+      position: fixed;
+      width: 64px;
+      height: 64px;
+      object-fit: cover;
+      border-radius: 8px;
+      pointer-events: none;
+      z-index: 9999;
+      will-change: transform, opacity;
+      transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease;
+    }
+
+    /* Toast notifications */
+    .toast-hidden { opacity: 0; transform: translateY(24px); }
+    .toast-show {
+      opacity: 1;
+      transform: translateY(0);
+      transition: all 400ms ease;
+      will-change: transform, opacity;
+    }
+
+    /* Hero gradient background */
+    .hero-gradient {
+      background: linear-gradient(90deg, #FFEDD5 0%, #FFEDD5 40%, #FFF7ED 100%);
+    }
+
+    /* Small card hover effect */
+    .ad-card {
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+    .ad-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    }
+
+   /* Slide animation helper */
+.search-open #searchSheet {
+  transform: translateY(0);
+}
+
+/* Slide-up animation */
+#searchOverlay {
+  transition: opacity 0.3s ease;
+}
+#searchSheet {
+  transform: translateY(100%);
+  transition: transform 0.35s ease;
+}
+#searchOverlay.active {
+  display: flex !important;
+  opacity: 1;
+}
+#searchOverlay.active #searchSheet {
+  transform: translateY(0);
+}
+/* Overlay + animation enhancements */
+.fly-img { pointer-events: none; border-radius: 9999px; }
+.animate-bump { transform: scale(1.1); transition: transform 0.25s ease; }
+
+/* 🔶 Orange shimmer animation */
+@keyframes shimmerMove {
+  0% { background-position: -200px 0; }
+  100% { background-position: calc(200px + 100%) 0; }
+}
+
+.shimmer-box {
+  background: linear-gradient(
+    100deg,
+    #fef3c7 20%,
+    #fcd34d 40%,
+    #fef3c7 60%
+  );
+  background-size: 200% 100%;
+  animation: shimmerMove 1.2s infinite linear;
+}
+
+/* --- Modern Trending Cards --- */
+.trending-card {
+  background: white;
+  border-radius: 1rem;
+  transition: all 0.25s ease;
+}
+.trending-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(255, 102, 0, 0.15);
+}
+
+/* --- Add Button Gradient --- */
+.add-btn {
+  background: linear-gradient(90deg, #ff7e00, #ff4d00);
+  color: #fff;
+  font-weight: 600;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  padding: 0.4rem 0.9rem;
+  transition: 0.25s;
+}
+.add-btn:hover {
+  filter: brightness(1.1);
+}
+
+/* --- Sticky Bottom Cart Bar --- */
+#miniCartBar {
+  position: fixed;
+  bottom: -100px;
+  left: 0;
+  right: 0;
+  background: #ff7e00;
+  color: #fff;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.4rem;
+  transition: all 0.3s ease;
+  z-index: 80;
+}
+#miniCartBar.show {
+  bottom: 0;
+}
+#miniCartBar button {
+  background: white;
+  color: #ff7e00;
+  font-weight: 600;
+  border-radius: 9999px;
+  padding: 0.5rem 1.2rem;
+}
+
+nav.fixed.bottom-0 {
+  transition: all 0.3s ease-in-out;
+}
+
+
+
+
+
+  </style>
 </head>
-<body class="bg-white font-sans flex flex-col items-center justify-center min-h-screen pb-20">
+<body class="bg-amber-50 font-sans text-gray-800">
+  
 
-  <div class="w-80 bg-white p-6 rounded-lg shadow">
-    <h2 class="text-lg font-bold mb-4">Login</h2>
-    <input type="email" id="email" placeholder="Email" class="border p-2 w-full mb-2" />
-    <input type="password" id="password" placeholder="Password" class="border p-2 w-full mb-4" />
-    <button onclick="login()" class="bg-orange-500 text-white py-2 px-4 w-full rounded">Login</button>
-    <p class="text-center text-sm mt-3">Don't have an account? <a href="signup.html" class="text-blue-500">Sign Up</a></p>
+
+</script>
+<!-- Top bar -->
+<!-- Header -->
+<header class="p-4 bg-white shadow-sm sticky top-0 z-50">
+  <div class="max-w-7xl mx-auto flex justify-center">
+    <div class="relative w-full max-w-xl">
+      <input
+        type="text"
+        placeholder="Search for food or restaurants..."
+        class="w-full border border-gray-300 rounded-full px-4 py-2 pl-10 focus:outline-none focus:ring-2 focus:ring-orange-500"
+        id="searchBox"
+      />
+      <svg
+        class="w-5 h-5 absolute left-3 top-2.5 text-gray-400"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1110.5 3a7.5 7.5 0 016.15 13.65z"
+        />
+      </svg>
+    </div>
+  </div>
+</header>
+
+<!-- 🔍 Full-Screen Search Overlay -->
+<div id="searchOverlay"
+  class="hidden fixed inset-0 bg-white z-50 flex flex-col translate-y-full transition-transform duration-300 ease-out">
+
+  <!-- Top bar -->
+  <div class="flex items-center justify-between px-4 py-3 border-b">
+    <input id="searchInput" type="text" placeholder="Search for dishes or restaurants"
+      class="flex-1 bg-gray-100 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-orange-500 text-gray-700" />
+    <button id="closeSearch" class="ml-3 text-gray-500 hover:text-black text-xl">✕</button>
   </div>
 
-  <!-- Bottom Navigation -->
-  <div class="fixed bottom-0 left-0 right-0 bg-white shadow-t p-2 flex justify-around items-center border-t">
-    <a href="index.html" class="text-center">🏠<br><span class="text-xs">Home</span></a>
-    <a href="orders.html" class="text-center">📦<br><span class="text-xs">Orders</span></a>
-    <a href="cart.html" class="text-center relative">🛒<br><span class="text-xs">Cart</span></a>
-    <a href="account.html" class="text-center text-orange-500">👤<br><span class="text-xs">Account</span></a>
+  <!-- Results container (live search results appear here) -->
+  <div id="resultsContainer" class="p-4 flex-1 overflow-y-auto"></div>
+</div>
+
+<!-- 🧁 Bottom Sheet Food Preview -->
+<div id="foodSheet" class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-[90] flex items-end">
+  <div class="bg-white w-full rounded-t-3xl shadow-xl p-5 translate-y-full transition-transform duration-300 ease-out" id="foodSheetInner">
+    <div class="w-16 h-1 bg-gray-300 rounded-full mx-auto mb-4"></div>
+    <div id="foodSheetContent" class="space-y-4 text-center"></div>
+  </div>
+</div>
+
+
+
+
+
+
+<!-- Hero + Main promos -->
+<main class="max-w-5xl mx-auto px-4 py-6">
+  <section class="hero-gradient rounded-xl p-5 flex flex-col md:flex-row gap-4 items-center">
+    <div class="flex-1">
+      <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Hot Deals Today — Up to <span class="text-orange-600">50% OFF</span></h1>
+      <p class="text-sm text-gray-600 mt-2">Free delivery on orders above ₹199. Exclusive combos & limited-time coupons. Use code <span class="font-semibold">FE50</span></p>
+
+      <div class="mt-4 flex gap-3">
+        <button onclick="scrollToSection('top-picks')" class="bg-orange-500 text-white px-4 py-2 rounded-full shadow">Order Now</button>
+        <button onclick="scrollToSection('offers')" class="bg-white border border-gray-200 px-4 py-2 rounded-full">View Offers</button>
+      </div>
+
+      <div class="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="bg-white p-3 rounded-lg flex items-center gap-3 shadow-sm ad-card">
+          <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 3h18v4H3zM5 7v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div>
+            <div class="text-sm font-semibold">Free Delivery</div>
+            <div class="text-xs text-gray-500">On orders ₹199+</div>
+          </div>
+        </div>
+
+        <div class="bg-white p-3 rounded-lg flex items-center gap-3 shadow-sm ad-card">
+          <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2v6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 11h14" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 22v-6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div>
+            <div class="text-sm font-semibold">Combo Offers</div>
+            <div class="text-xs text-gray-500">Save up to 30%</div>
+          </div>
+        </div>
+
+        <div class="bg-white p-3 rounded-lg flex items-center gap-3 shadow-sm ad-card">
+          <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2a10 10 0 1 0 0 20" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 6v6l4 2" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div>
+            <div class="text-sm font-semibold">Quick Delivery</div>
+            <div class="text-xs text-gray-500">Average 30–40 min</div>
+          </div>
+        </div>
+
+        <div class="bg-white p-3 rounded-lg flex items-center gap-3 shadow-sm ad-card">
+          <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2l2 6h6l-5 4 2 6-5-4-5 4 2-6L4 8h6z" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div>
+            <div class="text-sm font-semibold">Earn Points</div>
+            <div class="text-xs text-gray-500">Rewards & cashback</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="w-full md:w-80">
+      <img src="https://i.postimg.cc/1tyQKPD9/promo.jpg" alt="promo" class="rounded-xl shadow-lg w-full object-cover h-48" />
+    </div>
+  </section>
+
+
+
+<!-- Promo strip carousel -->
+<section class="mt-6 relative">
+  <div class="overflow-x-auto snap-x snap-mandatory scroll-smooth px-2 py-2" id="promoCarousel">
+    <div class="flex gap-3 w-max" id="promoInner">
+      <img src="https://i.postimg.cc/rpjTgVCD/Save-50-on-Delicious-Meals.png" class="promo-slide" />
+      <img src="https://i.postimg.cc/ryBpDphK/Promotional-Sale-Carousel-Showcase-1.png" class="promo-slide" />
+      <img src="https://i.postimg.cc/1tyQKPD9/promo.jpg" class="promo-slide" />
+      <img src="https://i.postimg.cc/j5GRn84X/Delicious-Dishes-from-Food-Express.png" class="promo-slide" />
+    </div>
   </div>
 
-  <script>
-    function login() {
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value;
+  <!-- Dots -->
+  <div class="flex justify-center mt-2 gap-2" id="promoDots"></div>
+</section>
 
-      let users = JSON.parse(localStorage.getItem("users") || "[]");
-      let user = users.find(u => u.email === email && u.password === password);
+<style>
+  .promo-slide {
+    height: 140px;
+    flex-shrink: 0;
+    border-radius: 0.75rem;
+    object-fit: cover;
+    scroll-snap-align: start;
+    transition: transform 0.3s ease;
+  }
 
-      if (!user) {
-        return alert("Invalid email or password");
+  @media(min-width:1025px) { .promo-slide { width: 420px; } }
+  @media(max-width:1024px) { .promo-slide { width: 320px; } }
+  @media(max-width:640px) { 
+    .promo-slide { width: 260px; }
+    #promoInner { padding-left: 16px; padding-right: 16px; }
+  }
+
+  #promoCarousel {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+  }
+</style>
+
+<script>
+const carousel = document.getElementById("promoCarousel");
+const promoInner = document.getElementById("promoInner");
+let slides = Array.from(promoInner.querySelectorAll(".promo-slide"));
+const originalCount = slides.length;
+
+// --- Clone slides for seamless infinite loop ---
+slides.forEach(slide => {
+  promoInner.appendChild(slide.cloneNode(true)); // clone at end
+  promoInner.insertBefore(slide.cloneNode(true), promoInner.firstChild); // clone at start
+});
+slides = Array.from(promoInner.querySelectorAll(".promo-slide"));
+
+let index = originalCount; // start at the first real slide
+let autoScroll;
+
+// --- Dots setup ---
+const dotsContainer = document.getElementById("promoDots");
+for(let i=0;i<originalCount;i++){
+  const dot = document.createElement("span");
+  dot.className = "w-2 h-2 rounded-full bg-gray-400/50 transition-all";
+  if(i===0) dot.classList.add("bg-orange-500","w-3","h-3");
+  dot.addEventListener("click", ()=>{ goToSlide(i); });
+  dotsContainer.appendChild(dot);
+}
+const dots = dotsContainer.querySelectorAll("span");
+
+function getSlideWidth(idx) {
+  const s = slides[idx];
+  return s.offsetWidth + parseInt(getComputedStyle(s).marginRight);
+}
+
+// Scroll to slide
+function scrollToIndex(instant=false){
+  let offset = 0;
+  for(let i=0;i<index;i++) offset += getSlideWidth(i);
+  carousel.scrollTo({ left: offset, behavior: instant ? "auto" : "smooth" });
+  updateDots();
+}
+
+// Update dots
+function updateDots(){
+  const realIndex = (index - originalCount + originalCount) % originalCount;
+  dots.forEach((d,i)=>{
+    d.className = "w-2 h-2 rounded-full bg-gray-400/50 transition-all";
+    if(i===realIndex) d.classList.add("bg-orange-500","w-3","h-3");
+  });
+}
+
+// Go to a specific real slide
+function goToSlide(i){
+  index = i + originalCount;
+  scrollToIndex();
+}
+
+// Auto-slide
+function slideNext(){
+  index++;
+  scrollToIndex();
+  adjustInfinite();
+}
+
+function startAutoScroll(){ autoScroll = setInterval(slideNext, 3000); }
+function stopAutoScroll(){ clearInterval(autoScroll); }
+
+carousel.addEventListener("mouseenter", stopAutoScroll);
+carousel.addEventListener("mouseleave", startAutoScroll);
+
+scrollToIndex(true);
+startAutoScroll();
+
+// --- Swipe by one slide ---
+let startX = 0;
+let isDragging = false;
+let dragDiff = 0;
+
+function onDragStart(x){
+  isDragging = true;
+  startX = x;
+  dragDiff = 0;
+  stopAutoScroll();
+}
+
+function onDragMove(x){
+  if(!isDragging) return;
+  dragDiff = x - startX;
+}
+
+function onDragEnd(){
+  if(!isDragging) return;
+  isDragging = false;
+  if(Math.abs(dragDiff) > 30){ // swipe threshold
+    if(dragDiff < 0) index++; // next slide
+    else index--; // prev slide
+  }
+  scrollToIndex();
+  adjustInfinite();
+  startAutoScroll();
+}
+
+// Mouse events
+carousel.addEventListener('mousedown', e => onDragStart(e.pageX));
+carousel.addEventListener('mousemove', e => onDragMove(e.pageX));
+carousel.addEventListener('mouseup', onDragEnd);
+carousel.addEventListener('mouseleave', onDragEnd);
+
+// Touch events
+carousel.addEventListener('touchstart', e => onDragStart(e.touches[0].pageX));
+carousel.addEventListener('touchmove', e => onDragMove(e.touches[0].pageX));
+carousel.addEventListener('touchend', onDragEnd);
+
+// --- Seamless infinite loop adjustment ---
+function adjustInfinite(){
+  // Jump to the real slide without animation
+  if(index >= slides.length - originalCount){
+    index = index - originalCount;
+    scrollToIndex(true);
+  }
+  if(index < originalCount){
+    index = index + originalCount;
+    scrollToIndex(true);
+  }
+}
+
+// Handle resize
+window.addEventListener("resize", ()=>scrollToIndex(true));
+</script>
+
+
+
+<!-- Categories (auto-select nearest on swipe) -->
+<section class="mt-6">
+  <h2 class="text-lg font-bold mb-3 px-2">Categories</h2>
+  <div id="categoryStrip" class="flex overflow-x-auto space-x-4 px-2 py-1 -mx-2 snap-x snap-mandatory scroll-smooth">
+    
+    <!-- Category Cards -->
+    <div class="category-card flex flex-col items-center min-w-[80px] snap-start cursor-pointer transition-transform duration-200">
+      <div class="w-14 h-14 rounded-full bg-red-100 flex items-center justify-center text-2xl shadow-sm">🍔</div>
+      <div class="text-sm font-medium mt-2 text-center">Burger</div>
+    </div>
+
+    <div class="category-card flex flex-col items-center min-w-[80px] snap-start cursor-pointer transition-transform duration-200">
+      <div class="w-14 h-14 rounded-full bg-yellow-100 flex items-center justify-center text-2xl shadow-sm">🍕</div>
+      <div class="text-sm font-medium mt-2 text-center">Pizza</div>
+    </div>
+
+    <div class="category-card flex flex-col items-center min-w-[80px] snap-start cursor-pointer transition-transform duration-200">
+      <div class="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center text-2xl shadow-sm">🥗</div>
+      <div class="text-sm font-medium mt-2 text-center">Salads</div>
+    </div>
+
+    <div class="category-card flex flex-col items-center min-w-[80px] snap-start cursor-pointer transition-transform duration-200">
+      <div class="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center text-2xl shadow-sm">🍣</div>
+      <div class="text-sm font-medium mt-2 text-center">Sushi</div>
+    </div>
+
+    <div class="category-card flex flex-col items-center min-w-[80px] snap-start cursor-pointer transition-transform duration-200">
+      <div class="w-14 h-14 rounded-full bg-pink-100 flex items-center justify-center text-2xl shadow-sm">🌮</div>
+      <div class="text-sm font-medium mt-2 text-center">Tacos</div>
+    </div>
+
+    <div class="category-card flex flex-col items-center min-w-[80px] snap-start cursor-pointer transition-transform duration-200">
+      <div class="w-14 h-14 rounded-full bg-indigo-100 flex items-center justify-center text-2xl shadow-sm">🍛</div>
+      <div class="text-sm font-medium mt-2 text-center">Biryani</div>
+    </div>
+
+  </div>
+</section>
+
+<style>
+#categoryStrip::-webkit-scrollbar { display: none; }
+#categoryStrip { -ms-overflow-style: none; scrollbar-width: none; }
+
+.category-card.selected {
+  transform: scale(1.15);
+}
+</style>
+
+<script>
+const strip = document.getElementById("categoryStrip");
+const categories = Array.from(strip.querySelectorAll(".category-card"));
+let selectedIndex = 0;
+
+// Select & center a category
+function selectCategory(idx){
+  categories.forEach((c,i)=> c.classList.toggle("selected", i===idx));
+
+  const card = categories[idx];
+  const stripRect = strip.getBoundingClientRect();
+  const cardRect = card.getBoundingClientRect();
+  const scrollLeft = strip.scrollLeft + (cardRect.left + cardRect.width/2 - stripRect.left - stripRect.width/2);
+  
+  strip.scrollTo({ left: scrollLeft, behavior: "smooth" });
+  selectedIndex = idx;
+}
+
+// Click event
+categories.forEach((c,i)=> c.addEventListener("click", ()=> selectCategory(i)));
+
+// --- Auto-select nearest on scroll ---
+let isScrolling;
+strip.addEventListener("scroll", ()=>{
+  window.clearTimeout(isScrolling);
+
+  isScrolling = setTimeout(()=>{
+    // find nearest card to center
+    const stripRect = strip.getBoundingClientRect();
+    let minDiff = Infinity;
+    let nearestIdx = 0;
+
+    categories.forEach((c,i)=>{
+      const cardRect = c.getBoundingClientRect();
+      const cardCenter = cardRect.left + cardRect.width/2;
+      const diff = Math.abs(stripRect.left + stripRect.width/2 - cardCenter);
+      if(diff < minDiff){
+        minDiff = diff;
+        nearestIdx = i;
+      }
+    });
+
+    if(nearestIdx !== selectedIndex){
+      selectCategory(nearestIdx);
+    }
+
+  }, 100); // debounce to detect scroll end
+});
+
+// --- Auto-scroll on page load ---
+window.addEventListener("load", ()=>{
+  selectCategory(0);
+
+  // Slight auto-scroll to show multiple categories
+  setTimeout(()=> strip.scrollBy({ left: 50, behavior: "smooth" }), 300);
+});
+</script>
+
+
+
+
+
+
+ <section id="top-picks" class="mt-6">
+  <h2 class="text-lg font-bold mb-3 px-2">Top picks</h2>
+  <div id="topPicksStrip" class="flex overflow-x-auto space-x-4 pb-6 px-2 snap-x snap-mandatory scroll-smooth touch-pan-x">
+    
+    <!-- Card -->
+    <div class="w-64 bg-white shadow rounded-xl p-3 flex-shrink-0 card snap-start transition-transform duration-300 hover:scale-105 cursor-pointer relative">
+      <img src="https://i.postimg.cc/2y2h7T4B/pexels-valeriya-1639557.jpg" class="w-full h-36 object-cover rounded-lg product-image" />
+      <span class="absolute top-2 left-2 bg-orange-500 text-white text-xs px-2 py-1 rounded-full">POPULAR</span>
+      <h3 class="mt-2 font-bold">Cheese Burger</h3>
+      <p class="text-gray-500 text-sm">Burger Haven • 31 min • 4.8★</p>
+      <p class="text-orange-600 font-bold mt-1">₹89</p>
+      <div class="mt-2 flex gap-2">
+        <button onclick="handleAddToCart(this, 'Cheese Burger', 89, 'https://i.postimg.cc/2y2h7T4B/pexels-valeriya-1639557.jpg')" class="bg-orange-500 text-white rounded-full w-full py-1 hover:scale-105 transition-transform">Add</button>
+        <button class="bg-gray-100 rounded-full px-3">+Fav</button>
+      </div>
+    </div>
+
+    <div class="w-64 bg-white shadow rounded-xl p-3 flex-shrink-0 card snap-start transition-transform duration-300 hover:scale-105 cursor-pointer relative">
+      <img src="https://i.postimg.cc/9fCXcV3r/pexels-valeriya-580612.jpg" class="w-full h-36 object-cover rounded-lg product-image" />
+      <span class="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">HOT</span>
+      <h3 class="mt-2 font-bold">BBQ Bacon Burger</h3>
+      <p class="text-gray-500 text-sm">Burger Haven • 27 min • 4.6★</p>
+      <p class="text-orange-600 font-bold mt-1">₹99</p>
+      <div class="mt-2 flex gap-2">
+        <button onclick="handleAddToCart(this, 'BBQ Bacon Burger', 99, 'https://i.postimg.cc/9fCXcV3r/pexels-valeriya-580612.jpg')" class="bg-orange-500 text-white rounded-full w-full py-1 hover:scale-105 transition-transform">Add</button>
+        <button class="bg-gray-100 rounded-full px-3">+Fav</button>
+      </div>
+    </div>
+
+    <div class="w-64 bg-white shadow rounded-xl p-3 flex-shrink-0 card snap-start transition-transform duration-300 hover:scale-105 cursor-pointer relative">
+      <img src="https://i.postimg.cc/85sSCzZP/pexels-fedigioia-11230267.jpg" class="w-full h-36 object-cover rounded-lg product-image" />
+      <span class="absolute top-2 left-2 bg-orange-500 text-white text-xs px-2 py-1 rounded-full">NEW</span>
+      <h3 class="mt-2 font-bold">Margherita Pizza</h3>
+      <p class="text-gray-500 text-sm">Pizza Palace • 25 min • 4.7★</p>
+      <p class="text-orange-600 font-bold mt-1">₹249</p>
+      <div class="mt-2 flex gap-2">
+        <button onclick="handleAddToCart(this, 'Margherita Pizza', 249, 'https://i.postimg.cc/85sSCzZP/pexels-fedigioia-11230267.jpg')" class="bg-orange-500 text-white rounded-full w-full py-1 hover:scale-105 transition-transform">Add</button>
+        <button class="bg-gray-100 rounded-full px-3">+Fav</button>
+      </div>
+    </div>
+
+    <div class="w-64 bg-white shadow rounded-xl p-3 flex-shrink-0 card snap-start transition-transform duration-300 hover:scale-105 cursor-pointer relative">
+      <img src="https://i.postimg.cc/Y0HBzzp3/flat-lay-assortment-different-pakistan-goodies.png" class="w-full h-36 object-cover rounded-lg product-image" />
+      <span class="absolute top-2 left-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full">RECOMMENDED</span>
+      <h3 class="mt-2 font-bold">Veg Biryani</h3>
+      <p class="text-gray-500 text-sm">Biryani House • 35 min • 4.5★</p>
+      <p class="text-orange-600 font-bold mt-1">₹129</p>
+      <div class="mt-2 flex gap-2">
+        <button onclick="handleAddToCart(this, 'Veg Biryani', 129, 'https://i.postimg.cc/Y0HBzzp3/flat-lay-assortment-different-pakistan-goodies.png')" class="bg-orange-500 text-white rounded-full w-full py-1 hover:scale-105 transition-transform">Add</button>
+        <button class="bg-gray-100 rounded-full px-3">+Fav</button>
+      </div>
+    </div>
+
+  </div>
+</section>
+<section id="offers" class="mt-4 px-2 grid grid-cols-1 gap-4">
+  <div class="bg-white rounded-xl p-4 shadow-lg overflow-hidden relative">
+    <h3 class="font-bold mb-2">Limited Time Offers</h3>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+      <div class="relative rounded-xl overflow-hidden shadow-sm bg-gradient-to-r from-orange-50 to-white flex items-center gap-3 p-3 transition-transform duration-300 hover:scale-105 cursor-pointer">
+        <img src="https://i.postimg.cc/C1DRc0q9/tasty-burger-isolated-white-background-fresh-hamburger-fastfood-with-beef-cheese.jpg" class="w-20 h-16 object-cover rounded" />
+        <div>
+          <div class="font-semibold">Buy 1 Get 1 Free</div>
+          <div class="text-sm text-gray-600">Only at Burger Haven</div>
+        </div>
+        <span class="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full animate-pulse">HOT</span>
+      </div>
+
+      <div class="relative rounded-xl overflow-hidden shadow-sm bg-gradient-to-r from-yellow-50 to-white flex items-center gap-3 p-3 transition-transform duration-300 hover:scale-105 cursor-pointer">
+        <img src="https://i.postimg.cc/qRXktvn4/pizza-pizza-filled-with-tomatoes-salami-olives.jpg" class="w-20 h-16 object-cover rounded" />
+        <div>
+          <div class="font-semibold">Pizza Combo — Save ₹99</div>
+          <div class="text-sm text-gray-600">Use code PIZZA99</div>
+        </div>
+        <span class="absolute top-2 right-2 bg-orange-500 text-white text-xs px-2 py-1 rounded-full">NEW</span>
+      </div>
+
+      <div class="relative rounded-xl overflow-hidden shadow-sm bg-gradient-to-r from-green-50 to-white flex items-center gap-3 p-3 transition-transform duration-300 hover:scale-105 cursor-pointer">
+        <img src="https://i.postimg.cc/Qd8sP3R0/plate-biryani-with-bunch-food-it.jpg" class="w-20 h-16 object-cover rounded" />
+        <div>
+          <div class="font-semibold">Family Biryani Pack</div>
+          <div class="text-sm text-gray-600">Feeds 4+ — Free raita</div>
+        </div>
+      </div>
+
+      <div class="relative rounded-xl overflow-hidden shadow-sm bg-gradient-to-r from-blue-50 to-white flex items-center gap-3 p-3 transition-transform duration-300 hover:scale-105 cursor-pointer">
+        <img src="https://i.postimg.cc/D0PHdWyJ/delicious-street-food-still-life.jpg" class="w-20 h-16 object-cover rounded" />
+        <div>
+          <div class="font-semibold">BBQ Feast</div>
+          <div class="text-sm text-gray-600">Up to 25% off</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Sponsored -->
+  <div class="bg-white rounded-xl p-4 shadow-lg relative overflow-hidden cursor-pointer transition-transform duration-300 hover:scale-105">
+    <h3 class="font-bold mb-2">Sponsored</h3>
+    <img src="https://i.postimg.cc/HsGbbSfk/2004-i121-020-isometric-delivery-food-vertical-banners.jpg" class="w-full rounded-lg object-cover h-40" />
+    <span class="absolute top-2 right-2 bg-purple-500 text-white text-xs px-2 py-1 rounded-full">AD</span>
+  </div>
+</section>
+
+</main>
+
+<!-- Bottom Navigation (mobile) -->
+<nav class="fixed bottom-0 left-0 right-0 pb-[env(safe-area-inset-bottom)] flex justify-center z-50">
+  <div class="w-11/12 bg-white rounded-2xl shadow-lg p-2 flex justify-around items-center">
+
+    <!-- Home -->
+    <div class="nav-item flex flex-col items-center cursor-pointer text-orange-500" id="navHome" onclick="setActiveTab('home'); window.location.href='index.html';">
+      <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path d="M3 9l9-6 9 6v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+      <div class="text-xs">Home</div>
+    </div>
+
+    <!-- Orders -->
+    <div class="nav-item flex flex-col items-center cursor-pointer text-gray-500" id="navOrders" onclick="setActiveTab('orders'); goToOrders();">
+      <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path d="M3 3h18v4H3zM5 7v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+      <div class="text-xs">Orders</div>
+    </div>
+
+    <!-- Cart -->
+    <div class="nav-item flex flex-col items-center cursor-pointer text-gray-500" id="navCart" onclick="setActiveTab('cart'); goToCart();">
+      <div id="cartIcon" class="relative">
+        <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M6 6h15l-1.5 9h-12z" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+          <circle cx="9" cy="20" r="1" />
+          <circle cx="19" cy="20" r="1" />
+        </svg>
+        <span id="cartCount" class="absolute -top-1 -right-2 bg-orange-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">0</span>
+      </div>
+      <div class="text-xs">Cart</div>
+    </div>
+
+    <!-- Account -->
+    <div class="nav-item flex flex-col items-center cursor-pointer text-gray-500" id="navAccount" onclick="handleAccountClick()">
+      <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10z" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
+        <path d="M4 20a8 8 0 0 1 16 0" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+      <div class="text-xs">Account</div>
+    </div>
+
+  </div>
+</nav>
+
+<!-- Firebase + Auth Logic -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+  import { 
+    getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged,
+    createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut 
+  } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+  import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCAGirQsFfQNInhUc9yuMD-QElaDnmRbKE",
+    authDomain: "foodexpress-9b0ff.firebaseapp.com",
+    projectId: "foodexpress-9b0ff",
+    storageBucket: "foodexpress-9b0ff.appspot.com",
+    messagingSenderId: "818281594225",
+    appId: "1:818281594225:web:205774c2914ae2b9b08ad0"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  const provider = new GoogleAuthProvider();
+
+  // Create global reference
+  window.__fe = { auth, db, provider, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, signInWithPopup, doc, setDoc, serverTimestamp };
+
+  // Track current user correctly
+  let currentUser = null;
+  onAuthStateChanged(auth, (user) => {
+    currentUser = user;
+    window.__fe.currentUser = user; // keep globally accessible
+  });
+</script>
+
+
+<script>
+/* -------------------------
+   Account Button Behavior
+-------------------------- */
+function handleAccountClick() {
+  const user = window.__fe.currentUser || window.__fe.auth.currentUser;
+  if (user) {
+    setActiveTab("account");
+    window.location.href = "account.html";
+  } else {
+    openLoginPopup();
+  }
+}
+
+
+/* -------------------------
+   Update Avatar on Login
+-------------------------- */
+window.__fe.onAuthStateChanged(window.__fe.auth, (user) => {
+  const label = document.querySelector("#navAccount .text-xs");
+  if (user && label) {
+    label.innerHTML = `<img src="${user.photoURL || 'https://cdn-icons-png.flaticon.com/512/847/847969.png'}" class="w-6 h-6 rounded-full mb-1" alt="profile"/>`;
+  } else if (label) {
+    label.textContent = "Account";
+  }
+});
+</script>
+
+<!-- Login Popup -->
+<div id="loginPopup" class="hidden fixed inset-0 bg-black/60 items-center justify-center z-50 backdrop-blur-sm transition-all">
+  <div class="bg-white rounded-2xl w-80 p-6 shadow-lg animate-slideUp relative">
+<div class="rounded-t-2xl bg-gradient-to-r from-orange-500 to-orange-400 text-white -m-6 mb-4 p-6 pb-4 flex flex-col items-center shadow-md">
+  <img src="assets/logo.png" alt="Food Express" class="w-16 h-16 mb-2 animate-fadeIn drop-shadow-lg" />
+  <h2 id="popupTitle" class="text-lg font-semibold">Login</h2>
+</div>
+
+
+    <!-- Login -->
+    <div id="loginForm" class="space-y-3">
+      <input id="emailField" type="email" placeholder="Email" class="w-full border rounded-lg px-3 py-2" />
+      <input id="passwordField" type="password" placeholder="Password (min 8 chars)" class="w-full border rounded-lg px-3 py-2" />
+      <p id="errorText" class="hidden text-red-500 text-sm"></p>
+      <!-- Food Express Primary Button -->
+<button onclick="submitAuth()" class="fe-btn w-full py-2 rounded-lg text-white font-medium">Continue</button>
+
+<!-- Food Express Google Button -->
+<button onclick="googleLogin()" class="fe-google w-full py-2 rounded-lg font-medium flex items-center justify-center gap-2">
+  <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5" alt="Google" />
+  Continue with Google
+</button>
+
+    </div>
+
+    <!-- Signup -->
+    <div id="signupForm" class="hidden space-y-3">
+      <input id="firstName" type="text" placeholder="First Name" class="w-full border rounded-lg px-3 py-2" />
+      <input id="lastName" type="text" placeholder="Last Name" class="w-full border rounded-lg px-3 py-2" />
+      <input id="signupEmail" type="email" placeholder="Email" class="w-full border rounded-lg px-3 py-2" />
+      <input id="signupPassword" type="password" placeholder="Password (min 8 chars)" class="w-full border rounded-lg px-3 py-2" />
+      <input id="confirmPassword" type="password" placeholder="Confirm Password" class="w-full border rounded-lg px-3 py-2" />
+      <p id="signupErrorText" class="hidden text-red-500 text-sm"></p>
+      <button onclick="createAccount()" class="fe-btn w-full py-2 rounded-lg text-white font-medium">Create Account</button>
+    </div>
+
+    <p id="toggleText" onclick="toggleAuthMode()" class="text-center text-sm text-orange-500 mt-3 cursor-pointer">
+      Create account
+    </p>
+    <button onclick="closeLoginPopup()" class="absolute top-2 right-3 text-gray-400 text-xl">✕</button>
+  </div>
+</div>
+
+<style>
+@keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.animate-slideUp { animation: slideUp 0.3s ease-out; }
+#loginPopup {
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  backdrop-filter: blur(10px);
+  background: rgba(0, 0, 0, 0.65);
+}
+#loginPopup.flex {
+  opacity: 1;
+  transform: scale(1);
+}
+#loginPopup.hidden {
+  opacity: 0;
+  transform: scale(0.97);
+}
+
+#loginPopup.flex .bg-white {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+#loginPopup img {
+  filter: drop-shadow(0 0 6px rgba(255, 122, 0, 0.3));
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+.animate-fadeIn {
+  animation: fadeIn 0.6s ease-in-out;
+}
+
+.drop-shadow-lg {
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.25));
+}
+#loginPopup .bg-gradient-to-r {
+  border-bottom: 3px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Food Express Orange Button */
+.fe-btn {
+  background: linear-gradient(to right, #ff7300, #ff5e00);
+  box-shadow: 0 4px 10px rgba(255, 94, 0, 0.4);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.fe-btn:active {
+  transform: scale(0.96);
+  box-shadow: 0 2px 6px rgba(255, 94, 0, 0.3);
+}
+
+/* Google Button */
+.fe-google {
+  border: 1.5px solid #e5e7eb;
+  background-color: #fff;
+  color: #333;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+.fe-google:hover {
+  background-color: #fafafa;
+}
+.fe-google:active {
+  transform: scale(0.97);
+}
+
+/* Simple ripple animation */
+.fe-btn, .fe-google {
+  position: relative;
+  overflow: hidden;
+}
+.fe-btn::after, .fe-google::after {
+  content: "";
+  position: absolute;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  transform: scale(0);
+  animation: ripple 0.6s linear;
+}
+@keyframes ripple {
+  to { transform: scale(4); opacity: 0; }
+}
+
+
+
+/* Food Express Popup Theme */
+#loginPopup .bg-white {
+  border-radius: 1.25rem; /* extra round */
+  box-shadow: 0 10px 30px rgba(255, 94, 31, 0.2);
+  border-top: 3px solid #ff7a00; /* orange accent */
+}
+
+/* Buttons */
+#loginPopup button.bg-orange-500 {
+  background: linear-gradient(90deg, #ff7a00, #ff5200);
+  box-shadow: 0 3px 10px rgba(255, 94, 31, 0.4);
+  transition: all 0.25s ease;
+}
+#loginPopup button.bg-orange-500:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(255, 94, 31, 0.5);
+}
+
+/* Google button */
+#loginPopup button.border {
+  border-color: #ddd;
+  color: #444;
+  background-color: #fff;
+  transition: all 0.25s ease;
+}
+#loginPopup button.border:hover {
+  background-color: #f9f9f9;
+  transform: translateY(-2px);
+}
+
+/* Inputs */
+#loginPopup input {
+  border: 1px solid #ddd;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+#loginPopup input:focus {
+  border-color: #ff7a00;
+  box-shadow: 0 0 0 3px rgba(255, 122, 0, 0.2);
+  outline: none;
+}
+
+
+ 
+</style>
+
+<script>
+/* -------------------------
+   Login Popup
+-------------------------- */
+window.openLoginPopup = function() {
+  const popup = document.getElementById("loginPopup");
+  const bottomNav = document.querySelector("nav.fixed.bottom-0");
+
+  // Hide nav with animation
+  if (bottomNav) {
+    bottomNav.classList.add("opacity-0", "translate-y-4", "pointer-events-none");
+    setTimeout(() => bottomNav.classList.add("hidden"), 250);
+  }
+
+  // Show popup
+  popup?.classList.remove("hidden");
+  setTimeout(() => popup?.classList.add("flex"), 10);
+};
+
+window.closeLoginPopup = function() {
+  const popup = document.getElementById("loginPopup");
+  const bottomNav = document.querySelector("nav.fixed.bottom-0");
+
+  // Close popup
+  popup?.classList.remove("flex");
+  setTimeout(() => popup?.classList.add("hidden"), 200);
+
+  // Show nav again with smooth fade/slide
+  if (bottomNav) {
+    bottomNav.classList.remove("hidden");
+    setTimeout(() => {
+      bottomNav.classList.remove("opacity-0", "translate-y-4", "pointer-events-none");
+    }, 20);
+  }
+};
+
+
+
+/* Close popup when clicking outside */
+document.addEventListener("click", (e) => {
+  const popup = document.getElementById("loginPopup");
+  if (popup && popup.classList.contains("flex") && !popup.querySelector(".bg-white").contains(e.target) && !e.target.closest("#navAccount")) {
+    closeLoginPopup();
+  }
+});
+
+/* -------------------------
+   Toggle Login / Signup
+-------------------------- */
+window.toggleAuthMode = function() {
+  const login = document.getElementById("loginForm");
+  const signup = document.getElementById("signupForm");
+  const title = document.getElementById("popupTitle");
+  const toggle = document.getElementById("toggleText");
+
+  const isLogin = !login.classList.contains("hidden");
+  login.classList.toggle("hidden", isLogin);
+  signup.classList.toggle("hidden", !isLogin);
+  title.innerText = isLogin ? "Create Account" : "Login";
+  toggle.innerText = isLogin ? "Already have an account? Login" : "Create account";
+};
+
+/* -------------------------
+   Email Login
+-------------------------- */
+async function submitAuth() {
+  const email = emailField.value.trim();
+  const password = passwordField.value.trim();
+  const errorText = document.getElementById("errorText");
+
+  if (password.length < 8) {
+    errorText.textContent = "Password must be at least 8 characters.";
+    errorText.classList.remove("hidden");
+    return;
+  }
+
+  try {
+    await window.__fe.signInWithEmailAndPassword(window.__fe.auth, email, password);
+    closeLoginPopup();
+    window.location.href = "account.html";
+  } catch (err) {
+    errorText.textContent = err.message;
+    errorText.classList.remove("hidden");
+  }
+}
+
+/* -------------------------
+   Signup
+-------------------------- */
+async function createAccount() {
+  const first = firstName.value.trim(), last = lastName.value.trim();
+  const email = signupEmail.value.trim(), pass = signupPassword.value.trim(), confirm = confirmPassword.value.trim();
+  const err = document.getElementById("signupErrorText");
+
+  if (!first || !last || !email || !pass || !confirm) return errMsg("All fields required");
+  if (pass.length < 8) return errMsg("Password must be at least 8 characters");
+  if (pass !== confirm) return errMsg("Passwords do not match");
+
+  try {
+    const { user } = await window.__fe.createUserWithEmailAndPassword(window.__fe.auth, email, pass);
+    await window.__fe.setDoc(window.__fe.doc(window.__fe.db, "users", user.uid), {
+      firstName: first, lastName: last, email, createdAt: window.__fe.serverTimestamp(),
+    });
+    closeLoginPopup();
+    window.location.href = "account.html";
+  } catch (e) { errMsg(e.message); }
+
+  function errMsg(t) { err.textContent = t; err.classList.remove("hidden"); }
+}
+
+/* -------------------------
+   Google Login
+-------------------------- */
+async function googleLogin() {
+  try {
+    const { user } = await window.__fe.signInWithPopup(window.__fe.auth, window.__fe.provider);
+    await window.__fe.setDoc(window.__fe.doc(window.__fe.db, "users", user.uid), {
+      name: user.displayName || "Guest", email: user.email, photo: user.photoURL || null,
+      createdAt: window.__fe.serverTimestamp(),
+    }, { merge: true });
+    closeLoginPopup();
+    setTimeout(() => window.location.href = "account.html", 300);
+  } catch (e) {
+    alert("⚠️ Google login failed: " + e.message);
+  }
+}
+
+/* -------------------------
+   Navigation State
+-------------------------- */
+function setActiveTab(tab) {
+  document.querySelectorAll(".nav-item").forEach(el => {
+    el.classList.remove("text-orange-500");
+    el.classList.add("text-gray-500");
+  });
+  const active = document.getElementById(`nav${tab.charAt(0).toUpperCase() + tab.slice(1)}`);
+  active?.classList.add("text-orange-500");
+  localStorage.setItem("activeTab", tab);
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const saved = localStorage.getItem("activeTab") || "home";
+  setActiveTab(saved);
+});
+
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest(".fe-btn, .fe-google");
+  if (!btn) return;
+  const ripple = document.createElement("span");
+  ripple.classList.add("ripple");
+  const rect = btn.getBoundingClientRect();
+  ripple.style.left = `${e.clientX - rect.left}px`;
+  ripple.style.top = `${e.clientY - rect.top}px`;
+  btn.appendChild(ripple);
+  setTimeout(() => ripple.remove(), 600);
+});
+
+
+function goToOrders() { window.location.href = "orders.html"; }
+function goToCart() { window.location.href = "cart.html"; }
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- Toast -->
+<div id="toast" class="fixed bottom-20 left-1/2 transform -translate-x-1/2 bg-orange-500 text-white px-5 py-3 rounded-full shadow-lg toast-hidden z-50">Added to Cart ✅</div>
+
+<!-- fly target -->
+<div id="flyContainer"></div>
+
+<script>
+/* -----------------------
+  Cart helpers (kept, same behavior)
+------------------------*/
+const LOCAL_CART_KEY = "fe_cart_v1";
+let cart = JSON.parse(localStorage.getItem(LOCAL_CART_KEY) || "[]");
+function persistLocalCart(){ localStorage.setItem(LOCAL_CART_KEY, JSON.stringify(cart)); }
+function cartTotalQuantity(){ return cart.reduce((s,i) => s + (Number(i.quantity)||0), 0); }
+function cartTotalAmount(){ return cart.reduce((s,i) => s + (Number(i.price)||0) * (Number(i.quantity)||0), 0); }
+function updateCartBadge(){ document.getElementById("cartCount").innerText = cartTotalQuantity(); persistLocalCart(); }
+updateCartBadge();
+
+
+// Highlight active bottom nav tab
+function setActiveTab(tab) {
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.classList.remove('text-orange-500');
+    item.classList.add('text-gray-500');
+  });
+
+  const active = document.getElementById(`nav${tab.charAt(0).toUpperCase() + tab.slice(1)}`);
+  if (active) {
+    active.classList.add('text-orange-500');
+    active.classList.remove('text-gray-500');
+  }
+}
+
+
+document.addEventListener("DOMContentLoaded", () => {
+  if (window.location.pathname.includes("orders")) setActiveTab("orders");
+  else if (window.location.pathname.includes("cart")) setActiveTab("cart");
+  else if (window.location.pathname.includes("account")) setActiveTab("account");
+  else setActiveTab("home");
+});
+
+
+/* -----------------------
+  Toast
+------------------------*/
+let toastQueue = [], toastShowing = false;
+function showToast(msg){
+  const toast = document.getElementById("toast");
+  toastQueue.push(msg);
+  if(toastShowing) return;
+  toastShowing = true;
+  const next = () => {
+    if(!toastQueue.length){ toastShowing=false; return; }
+    const m = toastQueue.shift();
+    toast.innerText = m;
+    toast.classList.remove("toast-hidden");
+    toast.classList.add("toast-show");
+    setTimeout(()=>{ toast.classList.remove("toast-show"); toast.classList.add("toast-hidden"); setTimeout(next, 450); },1500);
+  };
+  next();
+}
+
+
+/* -----------------------
+  Fly-to-cart animation (curved motion)
+------------------------*/
+function flyToCart(imageEl){
+  if(!imageEl) return;
+  const imgRect = imageEl.getBoundingClientRect();
+  const cartIcon = document.getElementById("cartIcon");
+
+  const clone = imageEl.cloneNode(true);
+  clone.classList.add("fly-img");
+  clone.style.left = imgRect.left + "px";
+  clone.style.top = imgRect.top + "px";
+  clone.style.width = imgRect.width + "px";
+  clone.style.height = imgRect.height + "px";
+  clone.style.opacity = "1";
+  clone.style.zIndex = 10000 + Date.now();
+  document.body.appendChild(clone);
+
+  const startX = imgRect.left;
+  const startY = imgRect.top;
+  const endX = cartIcon.getBoundingClientRect().left;
+  const endY = cartIcon.getBoundingClientRect().top;
+  const dx = endX - startX;
+  const dy = endY - startY;
+  const peak = -Math.min(150, dy - 50);
+
+  let progress = 0, duration = 800, fps = 60, interval = 1000/fps;
+
+  function animate(){
+    progress += interval;
+    const t = Math.min(progress/duration,1);
+    const x = (1-t)*(1-t)*startX + 2*(1-t)*t*(startX+dx/2) + t*t*endX;
+    const y = (1-t)*(1-t)*startY + 2*(1-t)*t*(startY+peak) + t*t*endY;
+    clone.style.transform = `translate(${x-startX}px, ${y-startY}px) scale(${1-0.7*t})`;
+    clone.style.opacity = 1 - 0.5*t;
+    if(t<1) requestAnimationFrame(animate);
+    else {
+      const cartEl = cartIcon.querySelector("span:first-child") || cartIcon;
+      cartEl.animate([{transform:"scale(1)"},{transform:"scale(1.15)"},{transform:"scale(1)"}],{duration:260,easing:"ease-out"});
+      clone.remove();
+    }
+  }
+  animate();
+}
+
+/* -----------------------
+  Add to cart
+------------------------*/
+function handleAddToCart(button,name,price,imageUrl){
+  const card = button.closest(".card") || button.closest(".bg-white");
+  const imageEl = card ? card.querySelector(".product-image, img") : null;
+  if(imageEl) flyToCart(imageEl);
+  if(button) { button.classList.add("animate-bump"); setTimeout(()=>button.classList.remove("animate-bump"),260); }
+
+  const existingIndex = cart.findIndex(i => i.name===name && String(i.price)===String(price));
+  if(existingIndex>=0) cart[existingIndex].quantity=(Number(cart[existingIndex].quantity)||0)+1;
+  else cart.push({name,price:Number(price),quantity:1,image:imageUrl||""});
+  updateCartBadge();
+  showToast(`${name} added ✅`);
+  saveUserCart();
+}
+
+/* -----------------------
+  Save cart to Firestore if logged in
+------------------------*/
+async function saveUserCart(){
+  try{
+    const { auth, db, doc, setDoc } = window.__fe;
+    const user = auth.currentUser;
+    if(!user){ persistLocalCart(); return; }
+    const userRef = doc(db,"users",user.uid);
+    await setDoc(userRef,{cart},{merge:true});
+  }catch(err){ console.error("saveUserCart error:",err); }
+}
+
+
+/* -----------------------
+  Navigation helpers
+------------------------*/
+function goToCart(){ window.location.href = "cart.html"; }
+function goToOrders(){ window.location.href = "orders.html"; }
+function scrollToSection(id){ const el = document.getElementById(id); if(el) el.scrollIntoView({behavior:'smooth', block:'start'}); }
+
+/* -----------------------
+  Promo auto-scroll
+------------------------*/
+setInterval(()=>{
+  const container = document.getElementById("promoInner");
+  if(container) container.scrollBy({left:420,behavior:"smooth"});
+},3500);
+
+/* -----------------------
+  Update location dynamically
+------------------------*/
+async function updateLocation() {
+  const locationText = document.getElementById("locationText");
+
+  // Check if user has already allowed location
+  const storedLocation = localStorage.getItem("fe_user_location");
+  if (storedLocation) {
+    locationText.innerText = storedLocation;
+    return;
+  }
+
+  // Check if browser supports geolocation
+  if (!navigator.geolocation) {
+    locationText.innerText = "Location unavailable";
+    return;
+  }
+
+  // Ask for location
+  navigator.geolocation.getCurrentPosition(
+    async (position) => {
+      const { latitude, longitude } = position.coords;
+
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`);
+        const data = await res.json();
+
+        let displayLocation = "";
+        if (data.address.city) displayLocation = data.address.city;
+        else if (data.address.town) displayLocation = data.address.town;
+        else if (data.address.village) displayLocation = data.address.village;
+        else displayLocation = data.display_name.split(",")[0];
+
+        locationText.innerText = displayLocation;
+        // Save to localStorage so we don't ask again
+        localStorage.setItem("fe_user_location", displayLocation);
+      } catch (err) {
+        console.error(err);
+        locationText.innerText = "Location unavailable";
+      }
+    },
+    (err) => {
+      console.warn("User denied location or error:", err);
+      locationText.innerText = "Location unavailable";
+    }
+  );
+}
+
+// Run on page load
+updateLocation();
+
+    function startLiveLocation() {
+      const locationText = document.getElementById("locationText");
+
+      // Check if user has already allowed location (localStorage)
+      const storedLocation = localStorage.getItem("fe_user_location");
+      if (storedLocation) {
+        locationText.innerText = storedLocation;
+        return;
       }
 
-      localStorage.setItem("loggedInUser", email);
-      window.location.href = "account.html";
+      if (!navigator.geolocation) {
+        locationText.innerText = "Location unavailable";
+        return;
+      }
+
+      // Watch the user's location
+      const watchId = navigator.geolocation.watchPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+
+          try {
+            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`);
+            const data = await res.json();
+
+            let displayLocation = "";
+            if (data.address.city) displayLocation = data.address.city;
+            else if (data.address.town) displayLocation = data.address.town;
+            else if (data.address.village) displayLocation = data.address.village;
+            else displayLocation = data.display_name.split(",")[0];
+
+            locationText.innerText = displayLocation;
+
+            // Save to localStorage so we don't ask again
+            localStorage.setItem("fe_user_location", displayLocation);
+          } catch (err) {
+            console.error(err);
+            locationText.innerText = "Location unavailable";
+          }
+        },
+        (err) => {
+          console.warn("User denied location or error:", err);
+          locationText.innerText = "Location unavailable";
+        },
+        { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
+      );
     }
-  </script>
+
+    // Start live location tracking on page load
+    startLiveLocation();
+
+
+
+</script>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+  const locationText = document.getElementById("locationText");
+
+  // 1️⃣ If location already saved in localStorage → load immediately
+  const savedLocation = localStorage.getItem("fe_user_location");
+  if (savedLocation) {
+    locationText.textContent = savedLocation;
+    return;
+  }
+
+  // 2️⃣ If not saved → ask for permission and fetch it
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(async (position) => {
+      const lat = position.coords.latitude;
+      const lon = position.coords.longitude;
+
+      try {
+        // Use reverse geocoding to get readable city name
+        const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`);
+        const data = await res.json();
+
+        const city = data.city || data.locality || data.principalSubdivision || "Unknown location";
+        locationText.textContent = city;
+
+        // 3️⃣ Store for future sessions
+        localStorage.setItem("fe_user_location", city);
+      } catch (err) {
+        console.error("Location fetch failed:", err);
+        locationText.textContent = "Location unavailable";
+      }
+    }, () => {
+      locationText.textContent = "Location access denied";
+    });
+  } else {
+    locationText.textContent = "Geolocation not supported";
+  }
+});
+</script>
+<script>
+/* -----------------------
+   Food Express 🔍 Smart Search Overlay (Zomato/Swiggy style, no recents)
+------------------------*/
+const searchBox = document.getElementById("searchBox");
+const searchOverlay = document.getElementById("searchOverlay");
+const searchInput = document.getElementById("searchInput");
+const closeSearch = document.getElementById("closeSearch");
+
+// Results container
+const resultsContainer = document.getElementById("resultsContainer");
+resultsContainer.className = "p-4 space-y-2 overflow-y-auto max-h-[80vh]";
+
+// 🍴 Mock dataset (replace with Firestore later)
+const data = [
+  { name: "Chicken Biryani", category: "Dish", price: 180, img: "https://source.unsplash.com/80x80/?chicken-biryani" },
+  { name: "Paneer Butter Masala", category: "Dish", price: 160, img: "https://source.unsplash.com/80x80/?paneer-butter-masala" },
+  { name: "Margherita Pizza", category: "Dish", price: 220, img: "https://source.unsplash.com/80x80/?pizza" },
+  { name: "Domino’s Pizza", category: "Restaurant", price: 250, img: "https://source.unsplash.com/80x80/?dominos" },
+  { name: "Starbucks", category: "Restaurant", price: 150, img: "https://source.unsplash.com/80x80/?coffee-shop" },
+  { name: "Burger King", category: "Restaurant", price: 180, img: "https://source.unsplash.com/80x80/?burger" },
+  { name: "Idli & Dosa Corner", category: "Restaurant", price: 120, img: "https://source.unsplash.com/80x80/?idli-dosa" },
+];
+
+
+// 🟠 Open overlay
+searchBox.addEventListener("focus", openSearchOverlay);
+searchBox.addEventListener("click", openSearchOverlay);
+
+function openSearchOverlay() {
+  searchOverlay.classList.remove("hidden");
+  requestAnimationFrame(() => searchOverlay.classList.remove("translate-y-full"));
+  setTimeout(() => searchInput.focus(), 300);
+    showTrending(); // show by default
+}
+searchInput.focus();
+  showShimmer(); // show shimmer immediately on open
+
+
+// 🟠 Close overlay
+closeSearch.addEventListener("click", closeSearchOverlay);
+function closeSearchOverlay() {
+  searchOverlay.classList.add("translate-y-full");
+  setTimeout(() => searchOverlay.classList.add("hidden"), 300);
+}
+
+// 🟠 Handle input typing
+let typingTimeout;
+
+searchInput.addEventListener("input", (e) => {
+  const term = e.target.value.trim().toLowerCase();
+  clearTimeout(typingTimeout);
+
+  if (term === "") {
+    resultsContainer.innerHTML = `<p class="text-gray-400 text-sm text-center py-8">Start typing to search...</p>`;
+    return;
+  }
+
+  // Show shimmer instantly
+  showShimmer();
+
+  // Simulate small network delay
+  typingTimeout = setTimeout(() => {
+    const results = data.filter((item) => item.name.toLowerCase().includes(term));
+    renderResults(results, term);
+  }, 600);
+});
+
+
+// 🟠 Render live results (Zomato-style cards)
+function renderResults(results, term) {
+  fadeOut(resultsContainer, () => {
+    if (results.length === 0) {
+      resultsContainer.innerHTML = `
+        <p class="text-gray-400 text-sm text-center py-8">
+          No matches for "${term}"
+        </p>`;
+      return;
+    }
+
+    resultsContainer.innerHTML = `
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 px-3 py-4">
+        ${results
+          .map(
+            (r) => `
+            <div 
+              class="flex items-center gap-3 bg-white p-3 rounded-xl shadow-sm border border-gray-100 hover:border-orange-300 hover:shadow-md transition cursor-pointer"
+              onclick="selectResult('${r.name}')"
+            >
+              <img src="${r.img}" alt="${r.name}" 
+                class="w-16 h-16 rounded-xl object-cover" />
+              <div class="flex-1">
+                <p class="font-medium text-gray-800">${r.name}</p>
+                <p class="text-xs text-gray-500">${r.category}</p>
+                <p class="text-orange-500 text-sm font-semibold mt-1">₹${r.price}</p>
+              </div>
+              <button 
+                class="bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-medium hover:bg-orange-600 transition"
+                onclick='openFoodSheet(${JSON.stringify(r)})'>
+                 Add
+              </button>
+
+            </div>
+          `
+          )
+          .join("")}
+      </div>`;
+  });
+}
+
+
+// =========================
+// 🍲 Swiggy/Zomato Bottom Sheet Preview
+// =========================
+const foodSheet = document.getElementById("foodSheet");
+const foodSheetInner = document.getElementById("foodSheetInner");
+const foodSheetContent = document.getElementById("foodSheetContent");
+let activeItem = null;
+
+window.selectResult = (term) => {
+  const item = data.find((d) => d.name === term);
+  if (!item) return;
+  openFoodSheet(item);
+};
+
+// 🟠 Open food bottom sheet
+function openFoodSheet(item) {
+  activeItem = item;
+  const fixedPrice = item.price;
+  const rating = (Math.random() * 1.2 + 3.8).toFixed(1);
+  const reviews = Math.floor(Math.random() * 600 + 100);
+
+  foodSheetContent.innerHTML = `
+    <img src="${item.img}" alt="${item.name}" class="w-28 h-28 mx-auto rounded-2xl object-cover shadow-md" />
+    <div>
+      <h3 class="text-xl font-semibold text-gray-800">${item.name}</h3>
+      <p class="text-sm text-gray-500">${item.category}</p>
+      <div class="flex items-center justify-center gap-2 mt-1">
+        <span class="text-yellow-500">⭐</span>
+        <span class="text-gray-700 font-medium">${rating}</span>
+        <span class="text-gray-400 text-sm">(${reviews})</span>
+      </div>
+        <p class="text-orange-500 font-bold text-lg mt-1">₹${fixedPrice}</p>
+    </div>
+
+    <div class="flex items-center justify-center gap-4 mt-4">
+      <button id="decQty" class="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center text-xl font-bold text-gray-700">−</button>
+      <span id="foodQty" class="text-lg font-semibold text-gray-700">1</span>
+      <button id="incQty" class="w-9 h-9 bg-orange-500 text-white rounded-full flex items-center justify-center text-xl font-bold hover:bg-orange-600">+</button>
+    </div>
+
+    <button id="addToCart" class="mt-5 w-full bg-orange-500 text-white font-semibold py-3 rounded-full shadow-md hover:bg-orange-600 transition">Add to Cart</button>
+    <button id="viewDetails" class="mt-2 w-full text-orange-500 font-medium hover:text-orange-600">View Details ➜</button>
+  `;
+
+  foodSheet.classList.remove("hidden");
+  requestAnimationFrame(() => foodSheetInner.classList.remove("translate-y-full"));
+
+  // Quantity logic
+  let qty = 1;
+  const qtyDisplay = document.getElementById("foodQty");
+  document.getElementById("incQty").onclick = () => (qtyDisplay.textContent = ++qty);
+  document.getElementById("decQty").onclick = () => {
+    if (qty > 1) qtyDisplay.textContent = --qty;
+  };
+
+// ✅ Add to cart with animation + global cart update
+document.getElementById("addToCart").onclick = () => {
+  const price = item.price; // use fixed price
+  flyToCart(foodSheetContent.querySelector("img"));
+  for (let i = 0; i < qty; i++) {
+    handleAddToCart(
+      document.getElementById("addToCart"),
+      item.name,
+      price,
+      item.img
+    );
+  }
+  showToast(`${qty} × ${item.name} added to cart 🛒`);
+  closeFoodSheet(); // optional: auto-close after adding
+};
+
+
+
+  // View details
+  document.getElementById("viewDetails").onclick = () => {
+    closeFoodSheet();
+    closeSearchOverlay();
+    window.location.href = `/food.html?item=${encodeURIComponent(item.name)}`;
+  };
+}
+
+// 🟠 Close food sheet
+foodSheet.addEventListener("click", (e) => {
+  if (e.target === foodSheet) closeFoodSheet();
+});
+function closeFoodSheet() {
+  foodSheetInner.classList.add("translate-y-full");
+  setTimeout(() => foodSheet.classList.add("hidden"), 300);
+}
+
+// 🟠 Toast
+function showToast(msg) {
+  const toast = document.createElement("div");
+  toast.textContent = msg;
+  toast.className =
+    "fixed bottom-6 left-1/2 -translate-x-1/2 bg-orange-500 text-white text-sm px-4 py-2 rounded-full shadow-lg opacity-0 transition-opacity z-[70]";
+  document.body.appendChild(toast);
+  requestAnimationFrame(() => (toast.style.opacity = "1"));
+  setTimeout(() => {
+    toast.style.opacity = "0";
+    setTimeout(() => toast.remove(), 500);
+  }, 1800);
+}
+
+// 🟠 Fly-to-cart animation
+function flyToCart(imgSrc) {
+  const cartIcon = document.querySelector("#cartIcon");
+  if (!cartIcon) return;
+  const img = document.createElement("img");
+  img.src = imgSrc;
+  img.className = "fly-img";
+  document.body.appendChild(img);
+
+  const { left, top } = cartIcon.getBoundingClientRect();
+  img.style.cssText = `
+    position: fixed; width: 80px; height: 80px; border-radius: 50%;
+    object-fit: cover; top: ${window.innerHeight - 200}px; left: 50%;
+    transform: translateX(-50%); z-index: 999;
+    transition: all 0.8s cubic-bezier(.25,.8,.25,1);
+  `;
+  requestAnimationFrame(() => {
+    img.style.top = `${top + window.scrollY}px`;
+    img.style.left = `${left}px`;
+    img.style.width = "20px";
+    img.style.height = "20px";
+    img.style.opacity = "0.2";
+  });
+  setTimeout(() => img.remove(), 900);
+  cartIcon.classList.add("animate-bump");
+  setTimeout(() => cartIcon.classList.remove("animate-bump"), 300);
+}
+
+// 🟠 Zomato-style food card shimmer
+function showShimmer() {
+  resultsContainer.innerHTML = `
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 px-3 py-4 shimmer-wrapper opacity-100 transition-opacity duration-300">
+      ${Array(6)
+        .fill(0)
+        .map(
+          () => `
+          <div class="flex items-center gap-3 bg-white p-3 rounded-xl shadow-sm border border-gray-100">
+            <div class="w-16 h-16 rounded-xl shimmer-box"></div>
+            <div class="flex-1 space-y-2">
+              <div class="h-3 w-3/4 rounded shimmer-box"></div>
+              <div class="h-3 w-1/2 rounded shimmer-box"></div>
+              <div class="h-3 w-1/3 rounded shimmer-box"></div>
+            </div>
+          </div>
+        `
+        )
+        .join("")}
+    </div>
+  `;
+}
+
+
+
+// 🟠 Handle input typing with shimmer + fade transition
+searchInput.addEventListener("input", (e) => {
+  const term = e.target.value.trim().toLowerCase();
+
+   if (term === "") {
+    showTrending(); // show “Trending Near You”
+    return;
+  }
+
+  // Show shimmer first
+  showShimmer();
+
+  // Simulate loading delay for visual effect
+  setTimeout(() => {
+    const results = data.filter((item) => item.name.toLowerCase().includes(term));
+    fadeOut(resultsContainer, () => renderResults(results, term)); // fade out shimmer → show results
+  }, 600);
+});
+
+// 🟠 Smooth fade-out before showing results
+function fadeOut(element, callback) {
+  element.style.opacity = "1";
+  element.style.transition = "opacity 0.25s ease";
+  element.style.opacity = "0";
+
+  setTimeout(() => {
+    callback();
+    fadeIn(element);
+  }, 250);
+}
+
+// 🟠 Smooth fade-in for new results
+function fadeIn(element) {
+  element.style.opacity = "0";
+  requestAnimationFrame(() => {
+    element.style.transition = "opacity 0.3s ease";
+    element.style.opacity = "1";
+  });
+}
+
+
+</script>
+
+
+  
+
+
 </body>
 </html>
