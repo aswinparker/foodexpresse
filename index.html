@@ -168,7 +168,59 @@
 
 nav.fixed.bottom-0 {
   transition: all 0.3s ease-in-out;
+
+
 }
+
+  .fade-slide-in {
+    opacity: 0;
+    transform: translateY(4px);
+    animation: fadeSlide 0.4s ease-out forwards;
+  }
+
+  @keyframes fadeSlide {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Smooth appearing animation */
+  .fade-slide-in {
+    opacity: 0;
+    transform: translateY(6px);
+    animation: fadeSlide 0.4s ease-out forwards;
+  }
+  
+  @keyframes fadeSlide {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+
+   /* Glowing hover effect for suggestions */
+  .suggestion {
+    transition: all 0.2s ease-in-out;
+  }
+  .suggestion:hover, .suggestion.active {
+    background-color: #FFEDD5; /* Light orange */
+    box-shadow: 0 0 10px rgba(255,94,0,0.4);
+    transform: scale(1.02);
+  }
+
+  /* Recent locations glow */
+  .recent-location {
+    transition: all 0.2s ease-in-out;
+    background-color: #FFF4E6; /* Soft premium orange */
+    font-weight: 600;
+  }
+  .recent-location:hover {
+    box-shadow: 0 0 10px rgba(255,140,0,0.4);
+    transform: scale(1.02);
+  }
+</style>
 
 
 
@@ -183,31 +235,538 @@ nav.fixed.bottom-0 {
 </script>
 <!-- Top bar -->
 <!-- Header -->
-<header class="p-4 bg-white shadow-sm sticky top-0 z-50">
-  <div class="max-w-7xl mx-auto flex justify-center">
-    <div class="relative w-full max-w-xl">
+<header class="p-4 bg-amber-50 sticky top-0 z-50">
+  <div class="max-w-7xl mx-auto">
+
+<!-- 📍 Premium Swiggy-Style Location Row -->
+<div class="flex items-center space-x-2 mb-2">
+
+  <!-- Premium 3D Icon (Swiggy Style) -->
+  <div class="p-2 rounded-full bg-white shadow-xl transform transition-all duration-300 hover:scale-110 hover:rotate-1">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+         class="w-6 h-6 text-orange-500 drop-shadow-[0_3px_3px_rgba(255,94,0,0.5)]">
+      <path fill="currentColor"
+            d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
+    </svg>
+  </div>
+
+  <!-- Location Bubble -->
+  <div id="locationButton"
+       class="flex items-center space-x-1 px-3 py-1 bg-white rounded-2xl shadow-md cursor-pointer select-none
+              transition-all duration-300 hover:shadow-xl hover:scale-[1.02] active:scale-95">
+    <p id="locationText" class="font-semibold text-gray-900 text-sm tracking-wide">Detecting...</p>
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-gray-700"
+         fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M19 9l-7 7-7-7" />
+    </svg>
+  </div>
+
+</div>
+
+
+
+
+    <!-- 🔍 3D Search Bar -->
+    <div class="relative w-full max-w-xl mx-auto
+                bg-white rounded-full shadow-xl
+                transform transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl">
+
       <input
         type="text"
         placeholder="Search for food or restaurants..."
-        class="w-full border border-gray-300 rounded-full px-4 py-2 pl-10 focus:outline-none focus:ring-2 focus:ring-orange-500"
+        class="w-full rounded-full px-4 py-3 pl-12 text-gray-700 focus:outline-none"
         id="searchBox"
       />
-      <svg
-        class="w-5 h-5 absolute left-3 top-2.5 text-gray-400"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1110.5 3a7.5 7.5 0 016.15 13.65z"
-        />
+
+      <svg class="w-6 h-6 absolute left-4 top-3 text-gray-400"
+        fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1110.5 3a7.5 7.5 0 016.15 13.65z" />
       </svg>
+
     </div>
+
   </div>
 </header>
+
+<!-- Full-Screen Right Slide Panel -->
+<div id="locationPanel" class="fixed top-0 right-0 w-full h-full bg-white z-50
+                             transform translate-x-full transition-transform duration-500 ease-out overflow-y-auto">
+
+  <div class="p-6 flex flex-col">
+
+    <!-- Back Button -->
+    <button onclick="closeLocationPanel()"
+            class="flex items-center text-gray-700 font-semibold mb-4 active:scale-95">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2" fill="none"
+           viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M15 19l-7-7 7-7" />
+      </svg>
+      Back
+    </button>
+
+    <h2 class="text-2xl font-extrabold mb-4">Change Location</h2>
+
+    <!-- Current Location Button -->
+    <button id="currentLocationBtn"
+            class="w-full bg-orange-100 text-orange-700 py-3 rounded-xl font-semibold shadow mb-4
+                   hover:bg-orange-200 active:scale-95">
+      Use Current Location
+    </button>
+
+    <!-- Search Input -->
+    <input type="text" id="newLocation"
+           placeholder="Search or enter your location..."
+           class="w-full px-4 py-3 border rounded-xl shadow-sm focus:ring-2 focus:ring-orange-500 mb-2" />
+
+    <!-- Autocomplete Suggestions -->
+    <div id="suggestions" class="flex flex-col gap-2 mb-4"></div>
+
+    <!-- Recent Locations -->
+    <div id="recentLocations" class="flex flex-col gap-2 text-sm text-gray-600 mb-4"></div>
+
+  </div>
+</div>
+
+<div id="noData"></div>
+
+
+
+
+
+<script>
+
+// ELEMENTS
+const locationButton = document.getElementById("locationButton");
+const locationPanel = document.getElementById("locationPanel");
+const locationText = document.getElementById("locationText");
+const newLocationInput = document.getElementById("newLocation");
+const currentLocationBtn = document.getElementById("currentLocationBtn");
+const suggestionsContainer = document.getElementById("suggestions");
+const recentContainer = document.getElementById("recentLocations");
+const overlay = document.getElementById("overlay");
+const noDataBox = document.getElementById("noData");
+
+const RECENT_KEY = "recentLocations";
+
+
+// ------------------------------------------------------
+// 🔥 LOAD RECENT LOCATIONS
+// ------------------------------------------------------
+function loadRecentLocations() {
+  const recent = JSON.parse(localStorage.getItem(RECENT_KEY) || "[]");
+  recentContainer.innerHTML = "";
+
+  if (recent.length === 0) return;
+
+  const title = document.createElement("p");
+  title.className = "font-semibold mb-2 text-orange-600";
+  title.innerText = "Recent Locations";
+  recentContainer.appendChild(title);
+
+  recent.forEach((loc) => {
+    const div = document.createElement("div");
+    div.className =
+      "px-3 py-2 bg-orange-50 rounded-lg cursor-pointer hover:bg-orange-100 font-semibold";
+    div.innerText = loc;
+    div.onclick = () => selectLocation(loc);
+    recentContainer.appendChild(div);
+  });
+}
+
+
+// ------------------------------------------------------
+// 🔥 SAVE RECENT LOCATIONS
+// ------------------------------------------------------
+function addToRecent(location) {
+  let recent = JSON.parse(localStorage.getItem(RECENT_KEY) || "[]");
+  recent = recent.filter((l) => l !== location);
+  recent.unshift(location);
+  if (recent.length > 5) recent.pop();
+  localStorage.setItem(RECENT_KEY, JSON.stringify(recent));
+}
+
+
+// ------------------------------------------------------
+// 🔥 SELECT LOCATION
+// ------------------------------------------------------
+function selectLocation(loc) {
+  const pureLocation = loc.split(",")[0];
+
+  locationText.innerText = pureLocation;
+  addToRecent(pureLocation);
+
+  closeLocationPanel();
+
+  updateRestaurantList(pureLocation);
+}
+
+
+function updateRestaurantList(selectedLocation) {
+  const restaurants = window.restaurantData || [];
+
+  // Make location clean
+  const location = selectedLocation.toLowerCase().trim();
+
+  // Filter restaurants for the exact location
+  let filtered = restaurants.filter((r) =>
+    r.city.toLowerCase() === location
+  );
+
+  // If strict match fails, try partial match
+  if (filtered.length === 0) {
+    filtered = restaurants.filter((r) =>
+      r.city.toLowerCase().includes(location)
+    );
+  }
+
+  // If still no results → show "No service" (except for Koodankulam)
+  if (filtered.length === 0 && location !== "koodankulam") {
+    noDataBox.innerHTML = `
+      <div class="text-center py-4">
+        <h2 class="text-lg font-bold">Not Available in ${selectedLocation}</h2>
+        <p class="text-sm mt-1">Food Express is coming soon to your area.</p>
+        <p class="text-xs text-gray-500 mt-1">Showing restaurants from Koodankulam.</p>
+      </div>
+    `;
+
+    // Show only Koodankulam restaurants, not all
+    filtered = restaurants.filter((r) =>
+      r.city.toLowerCase() === "koodankulam"
+    );
+  } else {
+    noDataBox.innerHTML = "";
+  }
+
+  renderRestaurants(filtered);
+}
+
+
+
+// ------------------------------------------------------
+// 🔥 LOCATION SEARCH (Nominatim + Recent)
+// ------------------------------------------------------
+newLocationInput.addEventListener("input", () => {
+  const query = newLocationInput.value.trim();
+  suggestionsContainer.innerHTML = "";
+
+  if (query.length < 1) return;
+
+  // Show recent matches first
+  const recent = JSON.parse(localStorage.getItem(RECENT_KEY) || "[]");
+  recent.forEach((loc) => {
+    if (loc.toLowerCase().includes(query.toLowerCase())) {
+      const div = document.createElement("div");
+      div.className =
+        "px-3 py-2 bg-orange-50 rounded-lg cursor-pointer hover:bg-orange-100 font-semibold";
+      div.innerHTML = loc.replace(
+        new RegExp(query, "gi"),
+        (m) => `<span class='bg-yellow-200'>${m}</span>`
+      );
+      div.onclick = () => selectLocation(loc);
+      suggestionsContainer.appendChild(div);
+    }
+  });
+
+  // API search Tamil Nadu places
+  fetch(
+    `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+      query
+    )}&addressdetails=1&limit=10`
+  )
+    .then((res) => res.json())
+    .then((data) => {
+      const valid = data.filter((place) => {
+        const state = place.address.state || "";
+        const type = place.type || "";
+        return (
+          state.includes("Tamil Nadu") &&
+          ["district", "city", "town", "village"].includes(type)
+        );
+      });
+
+      valid.forEach((place) => {
+        const div = document.createElement("div");
+        div.className =
+          "px-3 py-2 bg-gray-50 rounded-lg cursor-pointer hover:bg-orange-100 font-medium";
+        div.innerHTML = place.display_name.replace(
+          new RegExp(query, "gi"),
+          (m) => `<span class='bg-yellow-200'>${m}</span>`
+        );
+        div.onclick = () => selectLocation(place.display_name);
+        suggestionsContainer.appendChild(div);
+      });
+
+      if (recent.length === 0 && valid.length === 0) {
+        const div = document.createElement("div");
+        div.className =
+          "px-3 py-2 bg-red-50 rounded-lg text-red-600 font-semibold";
+        div.innerText = "No results found";
+        suggestionsContainer.appendChild(div);
+      }
+    });
+});
+
+
+// ------------------------------------------------------
+// 🔥 CURRENT LOCATION
+// ------------------------------------------------------
+function detectCurrentLocation() {
+  if (!navigator.geolocation) {
+    alert("GPS not supported.");
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const { latitude, longitude } = pos.coords;
+
+      fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
+      )
+        .then((res) => res.json())
+        .then((data) => {
+          const city =
+            data.address.city ||
+            data.address.town ||
+            data.address.village ||
+            data.display_name;
+
+          selectLocation(city);
+        });
+    },
+    () => alert("Location permission denied.")
+  );
+}
+
+
+// ------------------------------------------------------
+// 🔥 OPEN / CLOSE PANEL
+// ------------------------------------------------------
+locationButton.addEventListener("click", () => {
+  locationPanel.style.transform = "translateX(0%)";
+  overlay.style.opacity = "1";
+  overlay.style.pointerEvents = "auto";
+  loadRecentLocations();
+});
+
+function closeLocationPanel() {
+  locationPanel.style.transform = "translateX(100%)";
+  overlay.style.opacity = "0";
+  overlay.style.pointerEvents = "none";
+}
+
+currentLocationBtn.addEventListener("click", detectCurrentLocation);
+
+
+// ------------------------------------------------------
+// ⚡ AUTO DETECT LOCATION ON PAGE LOAD (IP + GPS)
+// ------------------------------------------------------
+
+// 1) Show saved location immediately
+const savedAutoLocation = localStorage.getItem("user_location");
+if (savedAutoLocation) {
+  locationText.innerText = savedAutoLocation;
+} else {
+  locationText.innerText = "Detecting...";
+}
+
+// 2) Fallback (use if IP/GPS fail or outside Tamil Nadu)
+function fallbackToKoodankulam() {
+  const fallback = "Koodankulam";
+  locationText.innerText = fallback;
+  localStorage.setItem("user_location", fallback);
+  updateRestaurantList(fallback);
+}
+
+// 2) Update location with strict Koodankulam rule
+function setDetectedLocation(city, region) {
+  let loc = city || "Koodankulam";
+
+  // If outside Tamil Nadu → fallback
+  if (!region || region !== "Tamil Nadu") loc = "Koodankulam";
+
+  // If location is Koodankulam → normal
+  if (loc.toLowerCase() === "koodankulam") {
+    locationText.innerText = loc;
+    localStorage.setItem("user_location", loc);
+    updateRestaurantList(loc);
+  } else {
+    // Any other location → show Not Available + Koodankulam restaurants
+    locationText.innerText = loc;
+    localStorage.setItem("user_location", loc);
+    updateRestaurantList(loc); // your current updateRestaurantList() already handles fallback
+  }
+}
+
+// 3) Detect using IP (super fast)
+async function autoDetectIP() {
+  try {
+    const res = await fetch("https://ipapi.co/json/");
+    const data = await res.json();
+    const city = data.city;
+
+    // If not Tamil Nadu → use fallback
+    if (!data.region || data.region !== "Tamil Nadu") {
+      fallbackToKoodankulam();
+      return;
+    }
+
+    if (city) {
+      locationText.innerText = city;
+      localStorage.setItem("user_location", city);
+      updateRestaurantList(city);
+    } else {
+      fallbackToKoodankulam();
+    }
+  } catch (e) {
+    fallbackToKoodankulam();
+  }
+}
+
+// 3) GPS (0.5–1.5 sec, more accurate)
+function autoDetectGPS() {
+  if (!navigator.geolocation) return;
+
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`
+      )
+        .then((r) => r.json())
+        .then((data) => {
+          const city =
+            data.address.city ||
+            data.address.town ||
+            data.address.village ||
+            data.display_name;
+
+          locationText.innerText = city;
+          localStorage.setItem("user_location", city);
+          updateRestaurantList(city);
+        });
+    },
+    (err) => {
+      console.log("GPS blocked or slow");
+    },
+    {
+      enableHighAccuracy: false,
+      timeout: 1500,
+      maximumAge: 300000,
+    }
+  );
+}
+
+window.addEventListener("load", () => {
+  locationText.innerText = "Detecting...";
+
+  // Try GPS first
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`)
+          .then(r => r.json())
+          .then(data => {
+            const city = data.address.city || data.address.town || data.address.village || "Koodankulam";
+            const region = data.address.state || "Tamil Nadu";
+            setDetectedLocation(city, region); // your existing function
+          });
+      },
+      (err) => {
+        console.log("GPS blocked or slow, fallback to IP");
+        autoDetectIP(); // fallback if GPS fails
+      },
+      { enableHighAccuracy: true, timeout: 5000, maximumAge: 300000 }
+    );
+  } else {
+    autoDetectIP(); // fallback if no GPS
+  }
+});
+
+
+
+
+
+// ------------------------------------------------------
+// 🌟 SAMPLE RESTAURANT DATA FOR KOODANKULAM
+// ------------------------------------------------------
+window.restaurantData = [
+  {
+    id: 1,
+    name: "Koodankulam Tiffin Center",
+    city: "Koodankulam",
+    cuisine: "South Indian",
+    rating: 4.5,
+    deliveryTime: "30-40 mins",
+  },
+  {
+    id: 2,
+    name: "Seaside Veg Restaurant",
+    city: "Koodankulam",
+    cuisine: "Vegetarian",
+    rating: 4.2,
+    deliveryTime: "25-35 mins",
+  },
+  {
+    id: 3,
+    name: "Spice Villa",
+    city: "Koodankulam",
+    cuisine: "Indian, Chinese",
+    rating: 4.7,
+    deliveryTime: "35-45 mins",
+  },
+  {
+    id: 4,
+    name: "Ocean Breeze Cafe",
+    city: "Koodankulam",
+    cuisine: "Cafe, Beverages",
+    rating: 4.3,
+    deliveryTime: "20-30 mins",
+  },
+  {
+    id: 5,
+    name: "Coastal Biryani House",
+    city: "Koodankulam",
+    cuisine: "Biryani, North Indian",
+    rating: 4.6,
+    deliveryTime: "40-50 mins",
+  },
+];
+
+// ------------------------------------------------------
+// 🌟 RENDER FUNCTION
+// ------------------------------------------------------
+function renderRestaurants(restaurants) {
+  const container = document.getElementById("restaurantList");
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  restaurants.forEach((r) => {
+    const div = document.createElement("div");
+    div.className =
+      "p-4 mb-3 bg-white rounded-lg shadow-md hover:shadow-lg transition cursor-pointer";
+    div.innerHTML = `
+      <h3 class="font-bold text-lg">${r.name}</h3>
+      <p class="text-sm text-gray-500">${r.cuisine}</p>
+      <p class="text-sm text-gray-500">Rating: ${r.rating} ⭐</p>
+      <p class="text-sm text-gray-500">Delivery: ${r.deliveryTime}</p>
+    `;
+    container.appendChild(div);
+  });
+}
+
+
+</script>
+
+
+
+
+
+
+
 
 <!-- 🔍 Full-Screen Search Overlay -->
 <div id="searchOverlay"
@@ -232,231 +791,6 @@ nav.fixed.bottom-0 {
   </div>
 </div>
 
-
-
-
-
-
-<!-- Hero + Main promos -->
-<main class="max-w-5xl mx-auto px-4 py-6">
-  <section class="hero-gradient rounded-xl p-5 flex flex-col md:flex-row gap-4 items-center">
-    <div class="flex-1">
-      <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Hot Deals Today — Up to <span class="text-orange-600">50% OFF</span></h1>
-      <p class="text-sm text-gray-600 mt-2">Free delivery on orders above ₹199. Exclusive combos & limited-time coupons. Use code <span class="font-semibold">FE50</span></p>
-
-      <div class="mt-4 flex gap-3">
-        <button onclick="scrollToSection('top-picks')" class="bg-orange-500 text-white px-4 py-2 rounded-full shadow">Order Now</button>
-        <button onclick="scrollToSection('offers')" class="bg-white border border-gray-200 px-4 py-2 rounded-full">View Offers</button>
-      </div>
-
-      <div class="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div class="bg-white p-3 rounded-lg flex items-center gap-3 shadow-sm ad-card">
-          <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 3h18v4H3zM5 7v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <div>
-            <div class="text-sm font-semibold">Free Delivery</div>
-            <div class="text-xs text-gray-500">On orders ₹199+</div>
-          </div>
-        </div>
-
-        <div class="bg-white p-3 rounded-lg flex items-center gap-3 shadow-sm ad-card">
-          <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2v6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 11h14" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 22v-6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <div>
-            <div class="text-sm font-semibold">Combo Offers</div>
-            <div class="text-xs text-gray-500">Save up to 30%</div>
-          </div>
-        </div>
-
-        <div class="bg-white p-3 rounded-lg flex items-center gap-3 shadow-sm ad-card">
-          <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2a10 10 0 1 0 0 20" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 6v6l4 2" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <div>
-            <div class="text-sm font-semibold">Quick Delivery</div>
-            <div class="text-xs text-gray-500">Average 30–40 min</div>
-          </div>
-        </div>
-
-        <div class="bg-white p-3 rounded-lg flex items-center gap-3 shadow-sm ad-card">
-          <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2l2 6h6l-5 4 2 6-5-4-5 4 2-6L4 8h6z" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <div>
-            <div class="text-sm font-semibold">Earn Points</div>
-            <div class="text-xs text-gray-500">Rewards & cashback</div>
-          </div>
-        </div>
-      </div>
-
-    </div>
-
-    <div class="w-full md:w-80">
-      <img src="https://i.postimg.cc/1tyQKPD9/promo.jpg" alt="promo" class="rounded-xl shadow-lg w-full object-cover h-48" />
-    </div>
-  </section>
-
-
-
-<!-- Promo strip carousel -->
-<section class="mt-6 relative">
-  <div class="overflow-x-auto snap-x snap-mandatory scroll-smooth px-2 py-2" id="promoCarousel">
-    <div class="flex gap-3 w-max" id="promoInner">
-      <img src="https://i.postimg.cc/rpjTgVCD/Save-50-on-Delicious-Meals.png" class="promo-slide" />
-      <img src="https://i.postimg.cc/ryBpDphK/Promotional-Sale-Carousel-Showcase-1.png" class="promo-slide" />
-      <img src="https://i.postimg.cc/1tyQKPD9/promo.jpg" class="promo-slide" />
-      <img src="https://i.postimg.cc/j5GRn84X/Delicious-Dishes-from-Food-Express.png" class="promo-slide" />
-    </div>
-  </div>
-
-  <!-- Dots -->
-  <div class="flex justify-center mt-2 gap-2" id="promoDots"></div>
-</section>
-
-<style>
-  .promo-slide {
-    height: 140px;
-    flex-shrink: 0;
-    border-radius: 0.75rem;
-    object-fit: cover;
-    scroll-snap-align: start;
-    transition: transform 0.3s ease;
-  }
-
-  @media(min-width:1025px) { .promo-slide { width: 420px; } }
-  @media(max-width:1024px) { .promo-slide { width: 320px; } }
-  @media(max-width:640px) { 
-    .promo-slide { width: 260px; }
-    #promoInner { padding-left: 16px; padding-right: 16px; }
-  }
-
-  #promoCarousel {
-    scroll-behavior: smooth;
-    -webkit-overflow-scrolling: touch;
-  }
-</style>
-
-<script>
-const carousel = document.getElementById("promoCarousel");
-const promoInner = document.getElementById("promoInner");
-let slides = Array.from(promoInner.querySelectorAll(".promo-slide"));
-const originalCount = slides.length;
-
-// --- Clone slides for seamless infinite loop ---
-slides.forEach(slide => {
-  promoInner.appendChild(slide.cloneNode(true)); // clone at end
-  promoInner.insertBefore(slide.cloneNode(true), promoInner.firstChild); // clone at start
-});
-slides = Array.from(promoInner.querySelectorAll(".promo-slide"));
-
-let index = originalCount; // start at the first real slide
-let autoScroll;
-
-// --- Dots setup ---
-const dotsContainer = document.getElementById("promoDots");
-for(let i=0;i<originalCount;i++){
-  const dot = document.createElement("span");
-  dot.className = "w-2 h-2 rounded-full bg-gray-400/50 transition-all";
-  if(i===0) dot.classList.add("bg-orange-500","w-3","h-3");
-  dot.addEventListener("click", ()=>{ goToSlide(i); });
-  dotsContainer.appendChild(dot);
-}
-const dots = dotsContainer.querySelectorAll("span");
-
-function getSlideWidth(idx) {
-  const s = slides[idx];
-  return s.offsetWidth + parseInt(getComputedStyle(s).marginRight);
-}
-
-// Scroll to slide
-function scrollToIndex(instant=false){
-  let offset = 0;
-  for(let i=0;i<index;i++) offset += getSlideWidth(i);
-  carousel.scrollTo({ left: offset, behavior: instant ? "auto" : "smooth" });
-  updateDots();
-}
-
-// Update dots
-function updateDots(){
-  const realIndex = (index - originalCount + originalCount) % originalCount;
-  dots.forEach((d,i)=>{
-    d.className = "w-2 h-2 rounded-full bg-gray-400/50 transition-all";
-    if(i===realIndex) d.classList.add("bg-orange-500","w-3","h-3");
-  });
-}
-
-// Go to a specific real slide
-function goToSlide(i){
-  index = i + originalCount;
-  scrollToIndex();
-}
-
-// Auto-slide
-function slideNext(){
-  index++;
-  scrollToIndex();
-  adjustInfinite();
-}
-
-function startAutoScroll(){ autoScroll = setInterval(slideNext, 3000); }
-function stopAutoScroll(){ clearInterval(autoScroll); }
-
-carousel.addEventListener("mouseenter", stopAutoScroll);
-carousel.addEventListener("mouseleave", startAutoScroll);
-
-scrollToIndex(true);
-startAutoScroll();
-
-// --- Swipe by one slide ---
-let startX = 0;
-let isDragging = false;
-let dragDiff = 0;
-
-function onDragStart(x){
-  isDragging = true;
-  startX = x;
-  dragDiff = 0;
-  stopAutoScroll();
-}
-
-function onDragMove(x){
-  if(!isDragging) return;
-  dragDiff = x - startX;
-}
-
-function onDragEnd(){
-  if(!isDragging) return;
-  isDragging = false;
-  if(Math.abs(dragDiff) > 30){ // swipe threshold
-    if(dragDiff < 0) index++; // next slide
-    else index--; // prev slide
-  }
-  scrollToIndex();
-  adjustInfinite();
-  startAutoScroll();
-}
-
-// Mouse events
-carousel.addEventListener('mousedown', e => onDragStart(e.pageX));
-carousel.addEventListener('mousemove', e => onDragMove(e.pageX));
-carousel.addEventListener('mouseup', onDragEnd);
-carousel.addEventListener('mouseleave', onDragEnd);
-
-// Touch events
-carousel.addEventListener('touchstart', e => onDragStart(e.touches[0].pageX));
-carousel.addEventListener('touchmove', e => onDragMove(e.touches[0].pageX));
-carousel.addEventListener('touchend', onDragEnd);
-
-// --- Seamless infinite loop adjustment ---
-function adjustInfinite(){
-  // Jump to the real slide without animation
-  if(index >= slides.length - originalCount){
-    index = index - originalCount;
-    scrollToIndex(true);
-  }
-  if(index < originalCount){
-    index = index + originalCount;
-    scrollToIndex(true);
-  }
-}
-
-// Handle resize
-window.addEventListener("resize", ()=>scrollToIndex(true));
-</script>
 
 
 
@@ -508,994 +842,8 @@ window.addEventListener("resize", ()=>scrollToIndex(true));
 }
 </style>
 
-<script>
-const strip = document.getElementById("categoryStrip");
-const categories = Array.from(strip.querySelectorAll(".category-card"));
-let selectedIndex = 0;
 
-// Select & center a category
-function selectCategory(idx){
-  categories.forEach((c,i)=> c.classList.toggle("selected", i===idx));
 
-  const card = categories[idx];
-  const stripRect = strip.getBoundingClientRect();
-  const cardRect = card.getBoundingClientRect();
-  const scrollLeft = strip.scrollLeft + (cardRect.left + cardRect.width/2 - stripRect.left - stripRect.width/2);
-  
-  strip.scrollTo({ left: scrollLeft, behavior: "smooth" });
-  selectedIndex = idx;
-}
-
-// Click event
-categories.forEach((c,i)=> c.addEventListener("click", ()=> selectCategory(i)));
-
-// --- Auto-select nearest on scroll ---
-let isScrolling;
-strip.addEventListener("scroll", ()=>{
-  window.clearTimeout(isScrolling);
-
-  isScrolling = setTimeout(()=>{
-    // find nearest card to center
-    const stripRect = strip.getBoundingClientRect();
-    let minDiff = Infinity;
-    let nearestIdx = 0;
-
-    categories.forEach((c,i)=>{
-      const cardRect = c.getBoundingClientRect();
-      const cardCenter = cardRect.left + cardRect.width/2;
-      const diff = Math.abs(stripRect.left + stripRect.width/2 - cardCenter);
-      if(diff < minDiff){
-        minDiff = diff;
-        nearestIdx = i;
-      }
-    });
-
-    if(nearestIdx !== selectedIndex){
-      selectCategory(nearestIdx);
-    }
-
-  }, 100); // debounce to detect scroll end
-});
-
-// --- Auto-scroll on page load ---
-window.addEventListener("load", ()=>{
-  selectCategory(0);
-
-  // Slight auto-scroll to show multiple categories
-  setTimeout(()=> strip.scrollBy({ left: 50, behavior: "smooth" }), 300);
-});
-</script>
-
-
-
-
-
-
- <section id="top-picks" class="mt-6">
-  <h2 class="text-lg font-bold mb-3 px-2">Top picks</h2>
-  <div id="topPicksStrip" class="flex overflow-x-auto space-x-4 pb-6 px-2 snap-x snap-mandatory scroll-smooth touch-pan-x">
-    
-    <!-- Card -->
-    <div class="w-64 bg-white shadow rounded-xl p-3 flex-shrink-0 card snap-start transition-transform duration-300 hover:scale-105 cursor-pointer relative">
-      <img src="https://i.postimg.cc/2y2h7T4B/pexels-valeriya-1639557.jpg" class="w-full h-36 object-cover rounded-lg product-image" />
-      <span class="absolute top-2 left-2 bg-orange-500 text-white text-xs px-2 py-1 rounded-full">POPULAR</span>
-      <h3 class="mt-2 font-bold">Cheese Burger</h3>
-      <p class="text-gray-500 text-sm">Burger Haven • 31 min • 4.8★</p>
-      <p class="text-orange-600 font-bold mt-1">₹89</p>
-      <div class="mt-2 flex gap-2">
-        <button onclick="handleAddToCart(this, 'Cheese Burger', 89, 'https://i.postimg.cc/2y2h7T4B/pexels-valeriya-1639557.jpg')" class="bg-orange-500 text-white rounded-full w-full py-1 hover:scale-105 transition-transform">Add</button>
-        <button class="bg-gray-100 rounded-full px-3">+Fav</button>
-      </div>
-    </div>
-
-    <div class="w-64 bg-white shadow rounded-xl p-3 flex-shrink-0 card snap-start transition-transform duration-300 hover:scale-105 cursor-pointer relative">
-      <img src="https://i.postimg.cc/9fCXcV3r/pexels-valeriya-580612.jpg" class="w-full h-36 object-cover rounded-lg product-image" />
-      <span class="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">HOT</span>
-      <h3 class="mt-2 font-bold">BBQ Bacon Burger</h3>
-      <p class="text-gray-500 text-sm">Burger Haven • 27 min • 4.6★</p>
-      <p class="text-orange-600 font-bold mt-1">₹99</p>
-      <div class="mt-2 flex gap-2">
-        <button onclick="handleAddToCart(this, 'BBQ Bacon Burger', 99, 'https://i.postimg.cc/9fCXcV3r/pexels-valeriya-580612.jpg')" class="bg-orange-500 text-white rounded-full w-full py-1 hover:scale-105 transition-transform">Add</button>
-        <button class="bg-gray-100 rounded-full px-3">+Fav</button>
-      </div>
-    </div>
-
-    <div class="w-64 bg-white shadow rounded-xl p-3 flex-shrink-0 card snap-start transition-transform duration-300 hover:scale-105 cursor-pointer relative">
-      <img src="https://i.postimg.cc/85sSCzZP/pexels-fedigioia-11230267.jpg" class="w-full h-36 object-cover rounded-lg product-image" />
-      <span class="absolute top-2 left-2 bg-orange-500 text-white text-xs px-2 py-1 rounded-full">NEW</span>
-      <h3 class="mt-2 font-bold">Margherita Pizza</h3>
-      <p class="text-gray-500 text-sm">Pizza Palace • 25 min • 4.7★</p>
-      <p class="text-orange-600 font-bold mt-1">₹249</p>
-      <div class="mt-2 flex gap-2">
-        <button onclick="handleAddToCart(this, 'Margherita Pizza', 249, 'https://i.postimg.cc/85sSCzZP/pexels-fedigioia-11230267.jpg')" class="bg-orange-500 text-white rounded-full w-full py-1 hover:scale-105 transition-transform">Add</button>
-        <button class="bg-gray-100 rounded-full px-3">+Fav</button>
-      </div>
-    </div>
-
-    <div class="w-64 bg-white shadow rounded-xl p-3 flex-shrink-0 card snap-start transition-transform duration-300 hover:scale-105 cursor-pointer relative">
-      <img src="https://i.postimg.cc/Y0HBzzp3/flat-lay-assortment-different-pakistan-goodies.png" class="w-full h-36 object-cover rounded-lg product-image" />
-      <span class="absolute top-2 left-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full">RECOMMENDED</span>
-      <h3 class="mt-2 font-bold">Veg Biryani</h3>
-      <p class="text-gray-500 text-sm">Biryani House • 35 min • 4.5★</p>
-      <p class="text-orange-600 font-bold mt-1">₹129</p>
-      <div class="mt-2 flex gap-2">
-        <button onclick="handleAddToCart(this, 'Veg Biryani', 129, 'https://i.postimg.cc/Y0HBzzp3/flat-lay-assortment-different-pakistan-goodies.png')" class="bg-orange-500 text-white rounded-full w-full py-1 hover:scale-105 transition-transform">Add</button>
-        <button class="bg-gray-100 rounded-full px-3">+Fav</button>
-      </div>
-    </div>
-
-  </div>
-</section>
-<section id="offers" class="mt-4 px-2 grid grid-cols-1 gap-4">
-  <div class="bg-white rounded-xl p-4 shadow-lg overflow-hidden relative">
-    <h3 class="font-bold mb-2">Limited Time Offers</h3>
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-
-      <div class="relative rounded-xl overflow-hidden shadow-sm bg-gradient-to-r from-orange-50 to-white flex items-center gap-3 p-3 transition-transform duration-300 hover:scale-105 cursor-pointer">
-        <img src="https://i.postimg.cc/C1DRc0q9/tasty-burger-isolated-white-background-fresh-hamburger-fastfood-with-beef-cheese.jpg" class="w-20 h-16 object-cover rounded" />
-        <div>
-          <div class="font-semibold">Buy 1 Get 1 Free</div>
-          <div class="text-sm text-gray-600">Only at Burger Haven</div>
-        </div>
-        <span class="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full animate-pulse">HOT</span>
-      </div>
-
-      <div class="relative rounded-xl overflow-hidden shadow-sm bg-gradient-to-r from-yellow-50 to-white flex items-center gap-3 p-3 transition-transform duration-300 hover:scale-105 cursor-pointer">
-        <img src="https://i.postimg.cc/qRXktvn4/pizza-pizza-filled-with-tomatoes-salami-olives.jpg" class="w-20 h-16 object-cover rounded" />
-        <div>
-          <div class="font-semibold">Pizza Combo — Save ₹99</div>
-          <div class="text-sm text-gray-600">Use code PIZZA99</div>
-        </div>
-        <span class="absolute top-2 right-2 bg-orange-500 text-white text-xs px-2 py-1 rounded-full">NEW</span>
-      </div>
-
-      <div class="relative rounded-xl overflow-hidden shadow-sm bg-gradient-to-r from-green-50 to-white flex items-center gap-3 p-3 transition-transform duration-300 hover:scale-105 cursor-pointer">
-        <img src="https://i.postimg.cc/Qd8sP3R0/plate-biryani-with-bunch-food-it.jpg" class="w-20 h-16 object-cover rounded" />
-        <div>
-          <div class="font-semibold">Family Biryani Pack</div>
-          <div class="text-sm text-gray-600">Feeds 4+ — Free raita</div>
-        </div>
-      </div>
-
-      <div class="relative rounded-xl overflow-hidden shadow-sm bg-gradient-to-r from-blue-50 to-white flex items-center gap-3 p-3 transition-transform duration-300 hover:scale-105 cursor-pointer">
-        <img src="https://i.postimg.cc/D0PHdWyJ/delicious-street-food-still-life.jpg" class="w-20 h-16 object-cover rounded" />
-        <div>
-          <div class="font-semibold">BBQ Feast</div>
-          <div class="text-sm text-gray-600">Up to 25% off</div>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- Sponsored -->
-  <div class="bg-white rounded-xl p-4 shadow-lg relative overflow-hidden cursor-pointer transition-transform duration-300 hover:scale-105">
-    <h3 class="font-bold mb-2">Sponsored</h3>
-    <img src="https://i.postimg.cc/HsGbbSfk/2004-i121-020-isometric-delivery-food-vertical-banners.jpg" class="w-full rounded-lg object-cover h-40" />
-    <span class="absolute top-2 right-2 bg-purple-500 text-white text-xs px-2 py-1 rounded-full">AD</span>
-  </div>
-</section>
-
-</main>
-
-<!-- Bottom Navigation (mobile) -->
-<nav class="fixed bottom-0 left-0 right-0 pb-[env(safe-area-inset-bottom)] flex justify-center z-50">
-  <div class="w-11/12 bg-white rounded-2xl shadow-lg p-2 flex justify-around items-center">
-
-    <!-- Home -->
-    <div class="nav-item flex flex-col items-center cursor-pointer text-orange-500" id="navHome" onclick="setActiveTab('home'); window.location.href='index.html';">
-      <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-        <path d="M3 9l9-6 9 6v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
-      </svg>
-      <div class="text-xs">Home</div>
-    </div>
-
-    <!-- Orders -->
-    <div class="nav-item flex flex-col items-center cursor-pointer text-gray-500" id="navOrders" onclick="setActiveTab('orders'); goToOrders();">
-      <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-        <path d="M3 3h18v4H3zM5 7v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
-      </svg>
-      <div class="text-xs">Orders</div>
-    </div>
-
-    <!-- Cart -->
-    <div class="nav-item flex flex-col items-center cursor-pointer text-gray-500" id="navCart" onclick="setActiveTab('cart'); goToCart();">
-      <div id="cartIcon" class="relative">
-        <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <path d="M6 6h15l-1.5 9h-12z" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
-          <circle cx="9" cy="20" r="1" />
-          <circle cx="19" cy="20" r="1" />
-        </svg>
-        <span id="cartCount" class="absolute -top-1 -right-2 bg-orange-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">0</span>
-      </div>
-      <div class="text-xs">Cart</div>
-    </div>
-
-    <!-- Account -->
-    <div class="nav-item flex flex-col items-center cursor-pointer text-gray-500" id="navAccount" onclick="handleAccountClick()">
-      <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-        <path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10z" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
-        <path d="M4 20a8 8 0 0 1 16 0" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
-      </svg>
-      <div class="text-xs">Account</div>
-    </div>
-
-  </div>
-</nav>
-
-<!-- Firebase + Auth Logic -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-  import { 
-    getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged,
-    createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut 
-  } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
-  import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyCAGirQsFfQNInhUc9yuMD-QElaDnmRbKE",
-    authDomain: "foodexpress-9b0ff.firebaseapp.com",
-    projectId: "foodexpress-9b0ff",
-    storageBucket: "foodexpress-9b0ff.appspot.com",
-    messagingSenderId: "818281594225",
-    appId: "1:818281594225:web:205774c2914ae2b9b08ad0"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
-  const provider = new GoogleAuthProvider();
-
-  // 🟠 Wait for Firebase to finish restoring session before use
-window.__fe = { auth, db };
-window.__fe.authReady = new Promise((resolve) => {
-  const unsub = onAuthStateChanged(auth, (user) => {
-    window.__fe.currentUser = user;
-    unsub(); // stop listening after first result
-    resolve(user);
-  });
-});
-
-
-  // Create global reference
-  window.__fe = { auth, db, provider, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, signInWithPopup, doc, setDoc, serverTimestamp };
-
-  // Track current user correctly
-  let currentUser = null;
-// Track auth state properly
-onAuthStateChanged(auth, (user) => {
-  currentUser = user;
-  window.__fe.currentUser = user;
-
-  const label = document.querySelector("#navAccount .text-xs");
-  if (label) {
-    if (user) {
-      label.innerHTML = `<img src="${
-        user.photoURL || 'https://cdn-icons-png.flaticon.com/512/847/847969.png'
-      }" class="w-6 h-6 rounded-full mb-1" alt="profile"/>`;
-    } else {
-      label.textContent = "Account";
-    }
-  }
-});
-
-</script>
-
-
-<script>
-/* -------------------------
-   Account Button Behavior
--------------------------- */
-async function handleAccountClick() {
-  const auth = window.__fe.auth;
-  const user = auth.currentUser || window.__fe.currentUser;
-
-  // Wait for Firebase Auth to finish initializing
-  if (!window.__fe.authReady) {
-    // Show a temporary loading spinner or toast
-    const accountBtn = document.getElementById("navAccount");
-    if (accountBtn) {
-      accountBtn.classList.add("opacity-50");
-    }
-
-    // Wait up to 2 seconds for Firebase to be ready
-    await new Promise((resolve) => {
-      const check = setInterval(() => {
-        if (window.__fe.authReady) {
-          clearInterval(check);
-          resolve();
-        }
-      }, 100);
-      setTimeout(() => {
-        clearInterval(check);
-        resolve();
-      }, 2000);
-    });
-
-    if (accountBtn) {
-      accountBtn.classList.remove("opacity-50");
-    }
-  }
-
-  const finalUser = auth.currentUser || window.__fe.currentUser;
-
-  if (finalUser) {
-    // ✅ Logged in → Go to account page
-    setActiveTab("account");
-    window.location.href = "account.html";
-  } else {
-    // ❌ Not logged in → Show login popup
-    openLoginPopup();
-  }
-}
-
-
-
-/* -------------------------
-   Update Avatar on Login
--------------------------- */
-window.__fe.onAuthStateChanged(window.__fe.auth, (user) => {
-  const acc = document.getElementById("navAccount");
-  if (acc) {
-    if (user) {
-      acc.classList.remove("text-gray-500");
-      acc.classList.add("text-orange-500");
-    } else {
-      acc.classList.add("text-gray-500");
-      acc.classList.remove("text-orange-500");
-    }
-  }
-});
-
-</script>
-
-<!-- Login Popup -->
-<div id="loginPopup" class="hidden fixed inset-0 bg-black/60 items-center justify-center z-50 backdrop-blur-sm transition-all">
-  <div class="bg-white rounded-2xl w-80 p-6 shadow-lg animate-slideUp relative">
-<div class="rounded-t-2xl bg-gradient-to-r from-orange-500 to-orange-400 text-white -m-6 mb-4 p-6 pb-4 flex flex-col items-center shadow-md">
-  <img src="assets/logo.png" alt="Food Express" class="w-16 h-16 mb-2 animate-fadeIn drop-shadow-lg" />
-  <h2 id="popupTitle" class="text-lg font-semibold">Login</h2>
-</div>
-
-
-    <!-- Login -->
-    <div id="loginForm" class="space-y-3">
-      <input id="emailField" type="email" placeholder="Email" class="w-full border rounded-lg px-3 py-2" />
-      <input id="passwordField" type="password" placeholder="Password (min 8 chars)" class="w-full border rounded-lg px-3 py-2" />
-      <p id="errorText" class="hidden text-red-500 text-sm"></p>
-      <!-- Food Express Primary Button -->
-<button onclick="submitAuth()" class="fe-btn w-full py-2 rounded-lg text-white font-medium">Continue</button>
-
-<!-- Food Express Google Button -->
-<button onclick="googleLogin()" class="fe-google w-full py-2 rounded-lg font-medium flex items-center justify-center gap-2">
-  <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5" alt="Google" />
-  Continue with Google
-</button>
-
-    </div>
-
-    <!-- Signup -->
-    <div id="signupForm" class="hidden space-y-3">
-      <input id="firstName" type="text" placeholder="First Name" class="w-full border rounded-lg px-3 py-2" />
-      <input id="lastName" type="text" placeholder="Last Name" class="w-full border rounded-lg px-3 py-2" />
-      <input id="signupEmail" type="email" placeholder="Email" class="w-full border rounded-lg px-3 py-2" />
-      <input id="signupPassword" type="password" placeholder="Password (min 8 chars)" class="w-full border rounded-lg px-3 py-2" />
-      <input id="confirmPassword" type="password" placeholder="Confirm Password" class="w-full border rounded-lg px-3 py-2" />
-      <p id="signupErrorText" class="hidden text-red-500 text-sm"></p>
-      <button onclick="createAccount()" class="fe-btn w-full py-2 rounded-lg text-white font-medium">Create Account</button>
-    </div>
-
-    <p id="toggleText" onclick="toggleAuthMode()" class="text-center text-sm text-orange-500 mt-3 cursor-pointer">
-      Create account
-    </p>
-    <button onclick="closeLoginPopup()" class="absolute top-2 right-3 text-gray-400 text-xl">✕</button>
-  </div>
-</div>
-
-<style>
-@keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-.animate-slideUp { animation: slideUp 0.3s ease-out; }
-#loginPopup {
-  transition: opacity 0.25s ease, transform 0.25s ease;
-  backdrop-filter: blur(10px);
-  background: rgba(0, 0, 0, 0.65);
-}
-#loginPopup.flex {
-  opacity: 1;
-  transform: scale(1);
-}
-#loginPopup.hidden {
-  opacity: 0;
-  transform: scale(0.97);
-}
-
-#loginPopup.flex .bg-white {
-  transform: translateY(0);
-  opacity: 1;
-}
-
-#loginPopup img {
-  filter: drop-shadow(0 0 6px rgba(255, 122, 0, 0.3));
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
-}
-.animate-fadeIn {
-  animation: fadeIn 0.6s ease-in-out;
-}
-
-.drop-shadow-lg {
-  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.25));
-}
-#loginPopup .bg-gradient-to-r {
-  border-bottom: 3px solid rgba(255, 255, 255, 0.2);
-}
-
-/* Food Express Orange Button */
-.fe-btn {
-  background: linear-gradient(to right, #ff7300, #ff5e00);
-  box-shadow: 0 4px 10px rgba(255, 94, 0, 0.4);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-.fe-btn:active {
-  transform: scale(0.96);
-  box-shadow: 0 2px 6px rgba(255, 94, 0, 0.3);
-}
-
-/* Google Button */
-.fe-google {
-  border: 1.5px solid #e5e7eb;
-  background-color: #fff;
-  color: #333;
-  transition: background-color 0.15s ease, transform 0.15s ease;
-}
-.fe-google:hover {
-  background-color: #fafafa;
-}
-.fe-google:active {
-  transform: scale(0.97);
-}
-
-/* Simple ripple animation */
-.fe-btn, .fe-google {
-  position: relative;
-  overflow: hidden;
-}
-.fe-btn::after, .fe-google::after {
-  content: "";
-  position: absolute;
-  background: rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  transform: scale(0);
-  animation: ripple 0.6s linear;
-}
-@keyframes ripple {
-  to { transform: scale(4); opacity: 0; }
-}
-
-
-
-/* Food Express Popup Theme */
-#loginPopup .bg-white {
-  border-radius: 1.25rem; /* extra round */
-  box-shadow: 0 10px 30px rgba(255, 94, 31, 0.2);
-  border-top: 3px solid #ff7a00; /* orange accent */
-}
-
-/* Buttons */
-#loginPopup button.bg-orange-500 {
-  background: linear-gradient(90deg, #ff7a00, #ff5200);
-  box-shadow: 0 3px 10px rgba(255, 94, 31, 0.4);
-  transition: all 0.25s ease;
-}
-#loginPopup button.bg-orange-500:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(255, 94, 31, 0.5);
-}
-
-/* Google button */
-#loginPopup button.border {
-  border-color: #ddd;
-  color: #444;
-  background-color: #fff;
-  transition: all 0.25s ease;
-}
-#loginPopup button.border:hover {
-  background-color: #f9f9f9;
-  transform: translateY(-2px);
-}
-
-/* Inputs */
-#loginPopup input {
-  border: 1px solid #ddd;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-#loginPopup input:focus {
-  border-color: #ff7a00;
-  box-shadow: 0 0 0 3px rgba(255, 122, 0, 0.2);
-  outline: none;
-}
-
-
- 
-</style>
-
-<script>
-/* -------------------------
-   Login Popup
--------------------------- */
-window.openLoginPopup = function() {
-  const popup = document.getElementById("loginPopup");
-  const bottomNav = document.querySelector("nav.fixed.bottom-0");
-
-  // Hide nav with animation
-  if (bottomNav) {
-    bottomNav.classList.add("opacity-0", "translate-y-4", "pointer-events-none");
-    setTimeout(() => bottomNav.classList.add("hidden"), 250);
-  }
-
-  // Show popup
-  popup?.classList.remove("hidden");
-  setTimeout(() => popup?.classList.add("flex"), 10);
-};
-
-window.closeLoginPopup = function() {
-  const popup = document.getElementById("loginPopup");
-  const bottomNav = document.querySelector("nav.fixed.bottom-0");
-
-  // Close popup
-  popup?.classList.remove("flex");
-  setTimeout(() => popup?.classList.add("hidden"), 200);
-
-  // Show nav again with smooth fade/slide
-  if (bottomNav) {
-    bottomNav.classList.remove("hidden");
-    setTimeout(() => {
-      bottomNav.classList.remove("opacity-0", "translate-y-4", "pointer-events-none");
-    }, 20);
-  }
-};
-
-
-
-/* Close popup when clicking outside */
-document.addEventListener("click", (e) => {
-  const popup = document.getElementById("loginPopup");
-  if (popup && popup.classList.contains("flex") && !popup.querySelector(".bg-white").contains(e.target) && !e.target.closest("#navAccount")) {
-    closeLoginPopup();
-  }
-});
-
-/* -------------------------
-   Toggle Login / Signup
--------------------------- */
-window.toggleAuthMode = function() {
-  const login = document.getElementById("loginForm");
-  const signup = document.getElementById("signupForm");
-  const title = document.getElementById("popupTitle");
-  const toggle = document.getElementById("toggleText");
-
-  const isLogin = !login.classList.contains("hidden");
-  login.classList.toggle("hidden", isLogin);
-  signup.classList.toggle("hidden", !isLogin);
-  title.innerText = isLogin ? "Create Account" : "Login";
-  toggle.innerText = isLogin ? "Already have an account? Login" : "Create account";
-};
-
-/* -------------------------
-   Email Login
--------------------------- */
-async function submitAuth() {
-  const email = emailField.value.trim();
-  const password = passwordField.value.trim();
-  const errorText = document.getElementById("errorText");
-
-  if (password.length < 8) {
-    errorText.textContent = "Password must be at least 8 characters.";
-    errorText.classList.remove("hidden");
-    return;
-  }
-
-  try {
-    await window.__fe.signInWithEmailAndPassword(window.__fe.auth, email, password);
-    closeLoginPopup();
-    window.location.href = "account.html";
-  } catch (err) {
-    errorText.textContent = err.message;
-    errorText.classList.remove("hidden");
-  }
-}
-
-/* -------------------------
-   Signup
--------------------------- */
-async function createAccount() {
-  const first = firstName.value.trim(), last = lastName.value.trim();
-  const email = signupEmail.value.trim(), pass = signupPassword.value.trim(), confirm = confirmPassword.value.trim();
-  const err = document.getElementById("signupErrorText");
-
-  if (!first || !last || !email || !pass || !confirm) return errMsg("All fields required");
-  if (pass.length < 8) return errMsg("Password must be at least 8 characters");
-  if (pass !== confirm) return errMsg("Passwords do not match");
-
-  try {
-    const { user } = await window.__fe.createUserWithEmailAndPassword(window.__fe.auth, email, pass);
-    await window.__fe.setDoc(window.__fe.doc(window.__fe.db, "users", user.uid), {
-      firstName: first, lastName: last, email, createdAt: window.__fe.serverTimestamp(),
-    });
-    closeLoginPopup();
-    window.location.href = "account.html";
-  } catch (e) { errMsg(e.message); }
-
-  function errMsg(t) { err.textContent = t; err.classList.remove("hidden"); }
-}
-
-/* -------------------------
-   Google Login
--------------------------- */
-async function googleLogin() {
-  try {
-    const { user } = await window.__fe.signInWithPopup(window.__fe.auth, window.__fe.provider);
-    await window.__fe.setDoc(window.__fe.doc(window.__fe.db, "users", user.uid), {
-      name: user.displayName || "Guest", email: user.email, photo: user.photoURL || null,
-      createdAt: window.__fe.serverTimestamp(),
-    }, { merge: true });
-    closeLoginPopup();
-    setTimeout(() => window.location.href = "account.html", 300);
-  } catch (e) {
-    alert("⚠️ Google login failed: " + e.message);
-  }
-}
-
-/* -------------------------
-   Navigation State
--------------------------- */
-function setActiveTab(tab) {
-  document.querySelectorAll(".nav-item").forEach(el => {
-    el.classList.remove("text-orange-500");
-    el.classList.add("text-gray-500");
-  });
-  const active = document.getElementById(`nav${tab.charAt(0).toUpperCase() + tab.slice(1)}`);
-  active?.classList.add("text-orange-500");
-  localStorage.setItem("activeTab", tab);
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-  const saved = localStorage.getItem("activeTab") || "home";
-  setActiveTab(saved);
-});
-
-document.addEventListener("click", (e) => {
-  const btn = e.target.closest(".fe-btn, .fe-google");
-  if (!btn) return;
-  const ripple = document.createElement("span");
-  ripple.classList.add("ripple");
-  const rect = btn.getBoundingClientRect();
-  ripple.style.left = `${e.clientX - rect.left}px`;
-  ripple.style.top = `${e.clientY - rect.top}px`;
-  btn.appendChild(ripple);
-  setTimeout(() => ripple.remove(), 600);
-});
-
-
-function goToOrders() { window.location.href = "orders.html"; }
-function goToCart() { window.location.href = "cart.html"; }
-</script>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<!-- Toast -->
-<div id="toast" class="fixed bottom-20 left-1/2 transform -translate-x-1/2 bg-orange-500 text-white px-5 py-3 rounded-full shadow-lg toast-hidden z-50">Added to Cart ✅</div>
-
-<!-- fly target -->
-<div id="flyContainer"></div>
-
-<script>
-/* -----------------------
-  Cart helpers (kept, same behavior)
-------------------------*/
-const LOCAL_CART_KEY = "fe_cart_v1";
-let cart = JSON.parse(localStorage.getItem(LOCAL_CART_KEY) || "[]");
-function persistLocalCart(){ localStorage.setItem(LOCAL_CART_KEY, JSON.stringify(cart)); }
-function cartTotalQuantity(){ return cart.reduce((s,i) => s + (Number(i.quantity)||0), 0); }
-function cartTotalAmount(){ return cart.reduce((s,i) => s + (Number(i.price)||0) * (Number(i.quantity)||0), 0); }
-function updateCartBadge(){ document.getElementById("cartCount").innerText = cartTotalQuantity(); persistLocalCart(); }
-updateCartBadge();
-
-
-// Highlight active bottom nav tab
-function setActiveTab(tab) {
-  document.querySelectorAll('.nav-item').forEach(item => {
-    item.classList.remove('text-orange-500');
-    item.classList.add('text-gray-500');
-  });
-
-  const active = document.getElementById(`nav${tab.charAt(0).toUpperCase() + tab.slice(1)}`);
-  if (active) {
-    active.classList.add('text-orange-500');
-    active.classList.remove('text-gray-500');
-  }
-}
-
-
-document.addEventListener("DOMContentLoaded", () => {
-  if (window.location.pathname.includes("orders")) setActiveTab("orders");
-  else if (window.location.pathname.includes("cart")) setActiveTab("cart");
-  else if (window.location.pathname.includes("account")) setActiveTab("account");
-  else setActiveTab("home");
-});
-
-
-/* -----------------------
-  Toast
-------------------------*/
-let toastQueue = [], toastShowing = false;
-function showToast(msg){
-  const toast = document.getElementById("toast");
-  toastQueue.push(msg);
-  if(toastShowing) return;
-  toastShowing = true;
-  const next = () => {
-    if(!toastQueue.length){ toastShowing=false; return; }
-    const m = toastQueue.shift();
-    toast.innerText = m;
-    toast.classList.remove("toast-hidden");
-    toast.classList.add("toast-show");
-    setTimeout(()=>{ toast.classList.remove("toast-show"); toast.classList.add("toast-hidden"); setTimeout(next, 450); },1500);
-  };
-  next();
-}
-
-
-/* -----------------------
-  Fly-to-cart animation (curved motion)
-------------------------*/
-function flyToCart(imageEl){
-  if(!imageEl) return;
-  const imgRect = imageEl.getBoundingClientRect();
-  const cartIcon = document.getElementById("cartIcon");
-
-  const clone = imageEl.cloneNode(true);
-  clone.classList.add("fly-img");
-  clone.style.left = imgRect.left + "px";
-  clone.style.top = imgRect.top + "px";
-  clone.style.width = imgRect.width + "px";
-  clone.style.height = imgRect.height + "px";
-  clone.style.opacity = "1";
-  clone.style.zIndex = 10000 + Date.now();
-  document.body.appendChild(clone);
-
-  const startX = imgRect.left;
-  const startY = imgRect.top;
-  const endX = cartIcon.getBoundingClientRect().left;
-  const endY = cartIcon.getBoundingClientRect().top;
-  const dx = endX - startX;
-  const dy = endY - startY;
-  const peak = -Math.min(150, dy - 50);
-
-  let progress = 0, duration = 800, fps = 60, interval = 1000/fps;
-
-  function animate(){
-    progress += interval;
-    const t = Math.min(progress/duration,1);
-    const x = (1-t)*(1-t)*startX + 2*(1-t)*t*(startX+dx/2) + t*t*endX;
-    const y = (1-t)*(1-t)*startY + 2*(1-t)*t*(startY+peak) + t*t*endY;
-    clone.style.transform = `translate(${x-startX}px, ${y-startY}px) scale(${1-0.7*t})`;
-    clone.style.opacity = 1 - 0.5*t;
-    if(t<1) requestAnimationFrame(animate);
-    else {
-      const cartEl = cartIcon.querySelector("span:first-child") || cartIcon;
-      cartEl.animate([{transform:"scale(1)"},{transform:"scale(1.15)"},{transform:"scale(1)"}],{duration:260,easing:"ease-out"});
-      clone.remove();
-    }
-  }
-  animate();
-}
-
-/* -----------------------
-  Add to cart
-------------------------*/
-function handleAddToCart(button,name,price,imageUrl){
-  const card = button.closest(".card") || button.closest(".bg-white");
-  const imageEl = card ? card.querySelector(".product-image, img") : null;
-  if(imageEl) flyToCart(imageEl);
-  if(button) { button.classList.add("animate-bump"); setTimeout(()=>button.classList.remove("animate-bump"),260); }
-
-  const existingIndex = cart.findIndex(i => i.name===name && String(i.price)===String(price));
-  if(existingIndex>=0) cart[existingIndex].quantity=(Number(cart[existingIndex].quantity)||0)+1;
-  else cart.push({name,price:Number(price),quantity:1,image:imageUrl||""});
-  updateCartBadge();
-  showToast(`${name} added ✅`);
-  saveUserCart();
-}
-
-/* -----------------------
-  Save cart to Firestore if logged in
-------------------------*/
-async function saveUserCart(){
-  try{
-    const { auth, db, doc, setDoc } = window.__fe;
-    const user = auth.currentUser;
-    if(!user){ persistLocalCart(); return; }
-    const userRef = doc(db,"users",user.uid);
-    await setDoc(userRef,{cart},{merge:true});
-  }catch(err){ console.error("saveUserCart error:",err); }
-}
-
-
-/* -----------------------
-  Navigation helpers
-------------------------*/
-function goToCart(){ window.location.href = "cart.html"; }
-function goToOrders(){ window.location.href = "orders.html"; }
-function scrollToSection(id){ const el = document.getElementById(id); if(el) el.scrollIntoView({behavior:'smooth', block:'start'}); }
-
-/* -----------------------
-  Promo auto-scroll
-------------------------*/
-setInterval(()=>{
-  const container = document.getElementById("promoInner");
-  if(container) container.scrollBy({left:420,behavior:"smooth"});
-},3500);
-
-/* -----------------------
-  Update location dynamically
-------------------------*/
-async function updateLocation() {
-  const locationText = document.getElementById("locationText");
-
-  // Check if user has already allowed location
-  const storedLocation = localStorage.getItem("fe_user_location");
-  if (storedLocation) {
-    locationText.innerText = storedLocation;
-    return;
-  }
-
-  // Check if browser supports geolocation
-  if (!navigator.geolocation) {
-    locationText.innerText = "Location unavailable";
-    return;
-  }
-
-  // Ask for location
-  navigator.geolocation.getCurrentPosition(
-    async (position) => {
-      const { latitude, longitude } = position.coords;
-
-      try {
-        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`);
-        const data = await res.json();
-
-        let displayLocation = "";
-        if (data.address.city) displayLocation = data.address.city;
-        else if (data.address.town) displayLocation = data.address.town;
-        else if (data.address.village) displayLocation = data.address.village;
-        else displayLocation = data.display_name.split(",")[0];
-
-        locationText.innerText = displayLocation;
-        // Save to localStorage so we don't ask again
-        localStorage.setItem("fe_user_location", displayLocation);
-      } catch (err) {
-        console.error(err);
-        locationText.innerText = "Location unavailable";
-      }
-    },
-    (err) => {
-      console.warn("User denied location or error:", err);
-      locationText.innerText = "Location unavailable";
-    }
-  );
-}
-
-// Run on page load
-updateLocation();
-
-    function startLiveLocation() {
-      const locationText = document.getElementById("locationText");
-
-      // Check if user has already allowed location (localStorage)
-      const storedLocation = localStorage.getItem("fe_user_location");
-      if (storedLocation) {
-        locationText.innerText = storedLocation;
-        return;
-      }
-
-      if (!navigator.geolocation) {
-        locationText.innerText = "Location unavailable";
-        return;
-      }
-
-      // Watch the user's location
-      const watchId = navigator.geolocation.watchPosition(
-        async (position) => {
-          const { latitude, longitude } = position.coords;
-
-          try {
-            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`);
-            const data = await res.json();
-
-            let displayLocation = "";
-            if (data.address.city) displayLocation = data.address.city;
-            else if (data.address.town) displayLocation = data.address.town;
-            else if (data.address.village) displayLocation = data.address.village;
-            else displayLocation = data.display_name.split(",")[0];
-
-            locationText.innerText = displayLocation;
-
-            // Save to localStorage so we don't ask again
-            localStorage.setItem("fe_user_location", displayLocation);
-          } catch (err) {
-            console.error(err);
-            locationText.innerText = "Location unavailable";
-          }
-        },
-        (err) => {
-          console.warn("User denied location or error:", err);
-          locationText.innerText = "Location unavailable";
-        },
-        { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
-      );
-    }
-
-    // Start live location tracking on page load
-    startLiveLocation();
-
-
-
-</script>
-
-
-<script>
-document.addEventListener("DOMContentLoaded", async () => {
-  const locationText = document.getElementById("locationText");
-
-  // 1️⃣ If location already saved in localStorage → load immediately
-  const savedLocation = localStorage.getItem("fe_user_location");
-  if (savedLocation) {
-    locationText.textContent = savedLocation;
-    return;
-  }
-
-  // 2️⃣ If not saved → ask for permission and fetch it
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(async (position) => {
-      const lat = position.coords.latitude;
-      const lon = position.coords.longitude;
-
-      try {
-        // Use reverse geocoding to get readable city name
-        const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`);
-        const data = await res.json();
-
-        const city = data.city || data.locality || data.principalSubdivision || "Unknown location";
-        locationText.textContent = city;
-
-        // 3️⃣ Store for future sessions
-        localStorage.setItem("fe_user_location", city);
-      } catch (err) {
-        console.error("Location fetch failed:", err);
-        locationText.textContent = "Location unavailable";
-      }
-    }, () => {
-      locationText.textContent = "Location access denied";
-    });
-  } else {
-    locationText.textContent = "Geolocation not supported";
-  }
-});
-</script>
 <script>
 /* -----------------------
    Food Express 🔍 Smart Search Overlay (Zomato/Swiggy style, no recents)
@@ -1807,8 +1155,27 @@ function fadeIn(element) {
 
 </script>
 
+<div id="restaurantList"></div>
+
+
+
+
+
+
 
   
+<!-- Toast -->
+<div id="toast"
+     class="fixed bottom-5 left-1/2 -translate-x-1/2 bg-black text-white px-4 py-2 rounded-lg text-sm shadow-lg opacity-0 pointer-events-none transition-all duration-300">
+</div>
+
+
+<!-- Dim Background Overlay -->
+<div id="overlay"
+     class="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm opacity-0 pointer-events-none 
+            transition-all duration-300 z-40">
+</div>
+
 
 
 </body>
