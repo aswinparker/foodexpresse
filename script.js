@@ -79,6 +79,7 @@ function selectLocation(loc) {
 function updateRestaurantList(selectedLocation) {
   const restaurants = window.restaurantData || [];
 
+
   // Make location clean
   const location = selectedLocation.toLowerCase().trim();
 
@@ -286,6 +287,20 @@ currentLocationBtn.addEventListener("click", () => {
     { enableHighAccuracy: true, timeout: 3000 }
   );
 });
+
+
+
+
+const header = document.getElementById('mainHeader');
+
+window.addEventListener('scroll', () => {
+  if (window.scrollY > 30) {
+    header.classList.add('scrolled');
+  } else {
+    header.classList.remove('scrolled');
+  }
+});
+
 
 
 // ------------------------------------------------------
