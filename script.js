@@ -240,7 +240,52 @@ function closeLocationPanel() {
   overlay.style.pointerEvents = "none";
 }
 
-currentLocationBtn.addEventListener("click", detectCurrentLocation);
+currentLocationBtn.addEventListener("click", () => {
+  if (!navigator.geolocation) {
+    showToast("GPS not supported");
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    async (pos) => {
+      const lat = pos.coords.latitude;
+      const lon = pos.coords.longitude;
+
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=ta,en`
+      );
+      const data = await res.json();
+
+      let city =
+        data.address.city ||
+        data.address.town ||
+        data.address.village ||
+        "Koodankulam";
+
+      let region = data.address.state || "";
+
+      // Tamil → English convert
+      if (city === "கூடங்குளம்") city = "Koodankulam";
+
+      // Strict Tamil Nadu rule
+      if (region !== "Tamil Nadu") city = "Koodankulam";
+
+      localStorage.setItem("user_location", city);
+      locationText.innerText = city;
+      updateRestaurantList(city);
+
+      // CLOSE PANEL
+      closeLocationPanel();
+
+      // SHOW TOAST
+      showToast("Location updated!");
+    },
+    (err) => {
+      showToast("Unable to get GPS location");
+    },
+    { enableHighAccuracy: true, timeout: 3000 }
+  );
+});
 
 
 // ------------------------------------------------------
@@ -385,6 +430,19 @@ window.onload = () => {
   loadSavedLocation();  // show saved instantly (no Chennai)
   autoDetectGPS();      // then update with real GPS
 };
+
+
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.innerText = msg;
+  t.style.opacity = "1";
+  t.style.transform = "translate(-50%, -20px)";
+
+  setTimeout(() => {
+    t.style.opacity = "0";
+    t.style.transform = "translate(-50%, 0)";
+  }, 2000);
+}
 
 
 
