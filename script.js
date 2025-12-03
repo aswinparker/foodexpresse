@@ -1,3 +1,25 @@
+window.koodankulamFoods = [
+  {
+    name: "Chicken Biryani",
+    price: "₹160",
+    img: "images/biryani.jpg",
+    restaurantId: 5
+  },
+  {
+    name: "Parotta & Salna",
+    price: "₹60",
+    img: "images/parotta.jpg",
+    restaurantId: 1
+  },
+  {
+    name: "Dosa",
+    price: "₹40",
+    img: "images/dosa.jpg",
+    restaurantId: 2
+  }
+];
+
+
 
 
 // ELEMENTS
@@ -45,9 +67,60 @@ function loadSavedLocation() {
 
   if (saved) {
     locationText.innerText = saved;
+
+    // If Koodankulam → show food cards + category strip
+    if (saved.toLowerCase() === "koodankulam") {
+      renderFoodCards();
+
+      document.getElementById("restaurantList").classList.add("hidden");
+      document.getElementById("foodList").classList.remove("hidden");
+
+      // ✅ FIX: SHOW CATEGORY STRIP
+      document.getElementById("categoryStrip").style.display = "flex";
+
+      noDataBox.innerHTML = "";
+      return;
+    }
+
+    // Not Koodankulam → show coming soon
     updateRestaurantList(saved);
+  } else {
+    fallbackToKoodankulam();
   }
 }
+
+// ------------------------------------------------------
+// 🔥  show suggestion name
+// // ------------------------------------------------------
+function renderSuggestion(name) {
+  return `
+    <div class="flex items-center gap-3 p-3 border rounded-xl shadow-sm active:scale-95 cursor-pointer hover:bg-gray-50">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-orange-500"
+           fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round"
+          d="M17.657 16.657L13.414 12l4.243-4.243m-11.314 0L10.586 12l-4.243 4.243" />
+      </svg>
+      <span class="font-medium text-gray-800">${name}</span>
+    </div>
+  `;
+}
+
+// ------------------------------------------------------
+// 🔥  RENDER RECENT NAME
+// ------------------------------------------------------
+function renderRecent(name) {
+  return `
+    <div class="flex items-center gap-3 p-3 border rounded-xl shadow-sm cursor-pointer hover:bg-gray-50">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-600"
+        fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round"
+        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <span class="font-medium text-gray-700">${name}</span>
+    </div>
+  `;
+}
+
 
 // ------------------------------------------------------
 // 🔥 SAVE RECENT LOCATIONS
@@ -76,39 +149,79 @@ function selectLocation(loc) {
 }
 
 
+
 function updateRestaurantList(selectedLocation) {
   const restaurants = window.restaurantData || [];
-
-
-  // Make location clean
   const location = selectedLocation.toLowerCase().trim();
 
-  // Filter restaurants for the exact location
-  let filtered = restaurants.filter((r) =>
-    r.city.toLowerCase() === location
-  );
+    // ⭐ ALWAYS handle category strip visibility here
+  const categoryStrip = document.getElementById("categoryStrip");
 
-
-  // If still no results → show "No service" (except for Koodankulam)
-  if (filtered.length === 0 && location !== "koodankulam") {
-    noDataBox.innerHTML = `
-      <div class="text-center py-4">
-        <h2 class="text-lg font-bold">Not Available in ${selectedLocation}</h2>
-        <p class="text-sm mt-1">Food Express is coming soon to your area.</p>
-        <p class="text-xs text-gray-500 mt-1">Showing restaurants from Koodankulam.</p>
-      </div>
-    `;
-
-    // Show only Koodankulam restaurants, not all
-    filtered = restaurants.filter((r) =>
-      r.city.toLowerCase() === "koodankulam"
-    );
+  if (location === "koodankulam") {
+    categoryStrip.classList.remove("hidden");
+    categoryStrip.style.display = "flex";
   } else {
-    noDataBox.innerHTML = "";
+    categoryStrip.classList.add("hidden");
+    categoryStrip.style.display = "none";
   }
 
-  renderRestaurants(filtered);
+  // Koodankulam → show food cards, hide restaurants
+  if (location === "koodankulam") {
+    renderFoodCards();
+    document.getElementById("restaurantList").classList.add("hidden");
+    document.getElementById("foodList").classList.remove("hidden");
+    noDataBox.innerHTML = "";
+    return;
+  }
+
+
+  // Filter restaurants for other locations
+let filtered = restaurants.filter((r) =>
+  r.city.toLowerCase() === location
+);
+
+
+
+// ❌ If not Koodankulam → show message ONLY
+// If user is NOT in Koodankulam → show only "Not Available" message
+if (location !== "koodankulam") {
+  noDataBox.innerHTML = `
+    <div class="text-center py-6">
+      <h2 class="text-lg font-bold">Not Available in ${selectedLocation}</h2>
+      <p class="text-sm mt-1">Food Express is coming soon to your area.</p>
+    </div>
+  `;
+
+  // Clear all lists
+  document.getElementById("restaurantList").innerHTML = "";
+  document.getElementById("foodList").innerHTML = "";
+
+  // Hide category strip
+  document.getElementById("categoryStrip").style.display = "none";
+
+  return; // STOP — nothing else should load
 }
+
+// If Koodankulam → show everything
+document.getElementById("categoryStrip").style.display = "flex";
+noDataBox.innerHTML = "";
+
+
+// ✅ If Koodankulam → show restaurants normally
+noDataBox.innerHTML = "";
+filtered = restaurants.filter((r) =>
+  r.city.toLowerCase() === "koodankulam"
+);
+
+
+  renderRestaurants(filtered);
+  document.getElementById("foodList").classList.add("hidden");
+  document.getElementById("restaurantList").classList.remove("hidden");
+
+// ✅ SHOW category strip only in Koodankulam
+document.getElementById("categoryStrip").style.display = "flex";
+}
+
 
 
 
@@ -228,65 +341,122 @@ function setDetectedLocation(city, region) {
 // ------------------------------------------------------
 // 🔥 OPEN / CLOSE PANEL
 // ------------------------------------------------------
+// ----------------------------
+// OPEN PANEL (Swiggy Smooth)
+// ----------------------------
 locationButton.addEventListener("click", () => {
-  locationPanel.style.transform = "translateX(0%)";
+  locationPanel.style.transform = "translateX(0)";
   overlay.style.opacity = "1";
   overlay.style.pointerEvents = "auto";
   loadRecentLocations();
 });
 
+// ----------------------------
+// CLOSE PANEL
+// ----------------------------
 function closeLocationPanel() {
   locationPanel.style.transform = "translateX(100%)";
   overlay.style.opacity = "0";
   overlay.style.pointerEvents = "none";
 }
 
-currentLocationBtn.addEventListener("click", () => {
+// Close when clicking outside
+overlay.addEventListener("click", closeLocationPanel);
+
+// ----------------------------
+// GET CURRENT LOCATION
+// ----------------------------
+currentLocationBtn.addEventListener("click", async () => {
+
+  // Swiggy style loading animation
+  currentLocationBtn.innerHTML = `
+    <svg class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+      <circle class="opacity-25" cx="12" cy="12" r="10"
+              stroke="currentColor" stroke-width="4"></circle>
+      <path class="opacity-75" fill="currentColor"
+            d="M4 12a8 8 0 018-8v8H4z"></path>
+    </svg>
+    Locating…
+  `;
+
+  currentLocationBtn.disabled = true;
+
   if (!navigator.geolocation) {
     showToast("GPS not supported");
+    resetButton();
     return;
   }
 
   navigator.geolocation.getCurrentPosition(
     async (pos) => {
-      const lat = pos.coords.latitude;
-      const lon = pos.coords.longitude;
+      try {
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
 
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=ta,en`
-      );
-      const data = await res.json();
+        // Reverse geocode
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=ta,en`
+        );
 
-      let city =
-        data.address.city ||
-        data.address.town ||
-        data.address.village ||
-        "Koodankulam";
+        const data = await res.json();
 
-      let region = data.address.state || "";
+        let city =
+          data.address.city ||
+          data.address.town ||
+          data.address.village ||
+          "Koodankulam";
 
-      // Tamil → English convert
-      if (city === "கூடங்குளம்") city = "Koodankulam";
+        const region = data.address.state || "";
 
-      // Strict Tamil Nadu rule
-      if (region !== "Tamil Nadu") city = "Koodankulam";
+        // Tamil → English
+        if (city === "கூடங்குளம்") city = "Koodankulam";
 
-      localStorage.setItem("user_location", city);
-      locationText.innerText = city;
-      updateRestaurantList(city);
+        // Only Tamil Nadu allowed
+        if (region !== "Tamil Nadu") city = "Koodankulam";
 
-      // CLOSE PANEL
-      closeLocationPanel();
+        // SAVE
+        localStorage.setItem("user_location", city);
+        locationText.innerText = city;
 
-      // SHOW TOAST
-      showToast("Location updated!");
+        // UPDATE RESTAURANTS
+        updateRestaurantList(city);
+
+        // Close panel
+        closeLocationPanel();
+
+        showToast("Location updated!");
+
+      } catch (e) {
+        showToast("Location fetch failed");
+      }
+
+      resetButton();
     },
     (err) => {
-      showToast("Unable to get GPS location");
+      showToast("Unable to get GPS");
+      resetButton();
     },
-    { enableHighAccuracy: true, timeout: 3000 }
+    { enableHighAccuracy: true, timeout: 4000 }
   );
 });
+
+// ----------------------------
+// RESET BUTTON
+// ----------------------------
+function resetButton() {
+  currentLocationBtn.disabled = false;
+  currentLocationBtn.innerHTML = `
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2" fill="none"
+         viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 8v4l3 3" />
+    </svg>
+    Use Current Location
+  `;
+}
+
+
+
 
 
 
@@ -373,7 +543,6 @@ async function autoDetectIP() {
 }
 
 
-// 3) GPS (0.5–1.5 sec, more accurate)
 // 🍊 GPS Auto Detect (Runs on load)
 function autoDetectGPS() {
   if (!navigator.geolocation) return;
@@ -877,73 +1046,6 @@ function fadeIn(element) {
 
 
 
-// ------------------------------------------------------
-// 🌟 SAMPLE RESTAURANT DATA FOR KOODANKULAM
-// ------------------------------------------------------
-window.restaurantData = [
-  {
-    id: 1,
-    name: "Koodankulam Tiffin Center",
-    city: "Koodankulam",
-    cuisine: "South Indian",
-    rating: 4.5,
-    deliveryTime: "30-40 mins",
-  },
-  {
-    id: 2,
-    name: "Seaside Veg Restaurant",
-    city: "Koodankulam",
-    cuisine: "Vegetarian",
-    rating: 4.2,
-    deliveryTime: "25-35 mins",
-  },
-  {
-    id: 3,
-    name: "Spice Villa",
-    city: "Koodankulam",
-    cuisine: "Indian, Chinese",
-    rating: 4.7,
-    deliveryTime: "35-45 mins",
-  },
-  {
-    id: 4,
-    name: "Ocean Breeze Cafe",
-    city: "Koodankulam",
-    cuisine: "Cafe, Beverages",
-    rating: 4.3,
-    deliveryTime: "20-30 mins",
-  },
-  {
-    id: 5,
-    name: "Coastal Biryani House",
-    city: "Koodankulam",
-    cuisine: "Biryani, North Indian",
-    rating: 4.6,
-    deliveryTime: "40-50 mins",
-  },
-];
 
-// ------------------------------------------------------
-// 🌟 RENDER FUNCTION
-// ------------------------------------------------------
-function renderRestaurants(restaurants) {
-  const container = document.getElementById("restaurantList");
-  if (!container) return;
-
-  container.innerHTML = "";
-
-  restaurants.forEach((r) => {
-    const div = document.createElement("div");
-    div.className =
-      "p-4 mb-3 bg-white rounded-lg shadow-md hover:shadow-lg transition cursor-pointer";
-    div.innerHTML = `
-      <h3 class="font-bold text-lg">${r.name}</h3>
-      <p class="text-sm text-gray-500">${r.cuisine}</p>
-      <p class="text-sm text-gray-500">Rating: ${r.rating} ⭐</p>
-      <p class="text-sm text-gray-500">Delivery: ${r.deliveryTime}</p>
-    `;
-    container.appendChild(div);
-  });
-}
 
 
