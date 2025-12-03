@@ -153,38 +153,34 @@ function selectLocation(loc) {
 function updateRestaurantList(selectedLocation) {
   const restaurants = window.restaurantData || [];
   const location = selectedLocation.toLowerCase().trim();
-
-    // ⭐ ALWAYS handle category strip visibility here
   const categoryStrip = document.getElementById("categoryStrip");
 
-  if (location === "koodankulam") {
-    categoryStrip.classList.remove("hidden");
-    categoryStrip.style.display = "flex";
-  } else {
-    categoryStrip.classList.add("hidden");
-    categoryStrip.style.display = "none";
-  }
+  // RESET UI
+  document.getElementById("restaurantList").classList.add("hidden");
+  document.getElementById("foodList").classList.add("hidden");
+  noDataBox.innerHTML = "";
+  categoryStrip.style.display = "none";
 
-  // Koodankulam → show food cards, hide restaurants
+  // ------------------------------------------------------
+  // ⭐ CASE 1: KOODANKULAM → SHOW FOOD CARDS + CATEGORY STRIP
+  // ------------------------------------------------------
   if (location === "koodankulam") {
     renderFoodCards();
-    document.getElementById("restaurantList").classList.add("hidden");
     document.getElementById("foodList").classList.remove("hidden");
-    noDataBox.innerHTML = "";
+    categoryStrip.style.display = "flex"; // Show categories
+
+    const filtered = restaurants.filter((r) =>
+      r.city.toLowerCase() === "koodankulam"
+    );
+
+    renderRestaurants(filtered);
+    document.getElementById("restaurantList").classList.remove("hidden");
     return;
   }
 
-
-  // Filter restaurants for other locations
-let filtered = restaurants.filter((r) =>
-  r.city.toLowerCase() === location
-);
-
-
-
-// ❌ If not Koodankulam → show message ONLY
-// If user is NOT in Koodankulam → show only "Not Available" message
-if (location !== "koodankulam") {
+  // ------------------------------------------------------
+  // ⭐ CASE 2: OTHER LOCATION → SHOW "COMING SOON"
+  // ------------------------------------------------------
   noDataBox.innerHTML = `
     <div class="text-center py-6">
       <h2 class="text-lg font-bold">Not Available in ${selectedLocation}</h2>
@@ -192,35 +188,11 @@ if (location !== "koodankulam") {
     </div>
   `;
 
-  // Clear all lists
+  // Clear lists
   document.getElementById("restaurantList").innerHTML = "";
   document.getElementById("foodList").innerHTML = "";
-
-  // Hide category strip
-  document.getElementById("categoryStrip").style.display = "none";
-
-  return; // STOP — nothing else should load
 }
 
-// If Koodankulam → show everything
-document.getElementById("categoryStrip").style.display = "flex";
-noDataBox.innerHTML = "";
-
-
-// ✅ If Koodankulam → show restaurants normally
-noDataBox.innerHTML = "";
-filtered = restaurants.filter((r) =>
-  r.city.toLowerCase() === "koodankulam"
-);
-
-
-  renderRestaurants(filtered);
-  document.getElementById("foodList").classList.add("hidden");
-  document.getElementById("restaurantList").classList.remove("hidden");
-
-// ✅ SHOW category strip only in Koodankulam
-document.getElementById("categoryStrip").style.display = "flex";
-}
 
 
 
@@ -656,49 +628,66 @@ window.addEventListener("load", async () => {
 
 
 
-async function detectLocation() {
-  try {
-    // 1) Try GPS first
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (pos) => {
-          // GPS SUCCESS → Reverse API
-          const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&accept-language=ta,en&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`
-          );
-          const data = await res.json();
-
-          const gpsCity =
-            data.address.city ||
-            data.address.town ||
-            data.address.village ||
-            data.display_name;
-
-          const gpsRegion = data.address.state || "";
-
-          setDetectedLocation(gpsCity, gpsRegion);
-        },
-
-        // GPS BLOCKED → use IP
-        async () => {
-          console.log("GPS blocked, using IP");
-          await autoDetectIP();
-        },
-
-        {
-          enableHighAccuracy: false,
-          timeout: 1500,
-          maximumAge: 300000,
-        }
-      );
-    } else {
-      // No GPS on device → fallback to IP
-      await autoDetectIP();
-    }
-  } catch (e) {
-    fallbackToKoodankulam();
+async function detectCurrentLocation() {
+  if (!navigator.geolocation) {
+    showToast("GPS not supported on your device");
+    return;
   }
+
+  navigator.geolocation.getCurrentPosition(async (pos) => {
+    try {
+      const lat = pos.coords.latitude;
+      const lon = pos.coords.longitude;
+
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&addressdetails=1&accept-language=en`
+      );
+
+      const data = await res.json();
+
+      if (!data || !data.address) {
+        showToast("Location fetch failed ❌");
+        return;
+      }
+
+      const addr = data.address;
+
+      // ⭐ Pick best field
+      let locationName =
+        addr.village ||
+        addr.town ||
+        addr.city ||
+        addr.county ||
+        addr.state ||
+        "Unknown";
+
+      // ⭐ Force Tamil Nadu only
+      const region = addr.state || "";
+
+      if (region !== "Tamil Nadu") {
+        locationName = "Koodankulam";
+      }
+
+      // ⭐ Save & update UI
+      localStorage.setItem("user_location", locationName);
+      locationText.innerText = locationName;
+
+      addToRecent(locationName);
+
+      closeLocationPanel();
+
+      // ⭐ Load restaurant & food cards
+      updateRestaurantList(locationName);
+
+      showToast(`Location set to ${locationName}`);
+
+    } catch (err) {
+      showToast("Location fetch failed ❌");
+    }
+  });
 }
+
+
 
 
 
