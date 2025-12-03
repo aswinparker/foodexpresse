@@ -235,3 +235,66 @@ html, body {
 }
 
 
+.premium-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.premium-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 20px;
+  padding: 2px;
+  background: linear-gradient(135deg, #ffcf33, #ff9f1c);
+  opacity: 0;
+  transition: 0.3s;
+  z-index: -1;
+}
+
+.premium-card:hover::before {
+  opacity: 1;
+}
+.premium-card span {
+  z-index: 10;
+}
+
+.restaurantCard img {
+  transition: transform 0.4s;
+}
+.restaurantCard:hover img {
+  transform: scale(1.07);
+}
+
+#locationPanel {
+  backdrop-filter: blur(2px);
+}
+
+/* Swiggy glass suggestion card */
+.suggestion-card {
+  backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.75);
+  border-radius: 14px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.suggestion-card:hover {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+/* Skeleton loader */
+.skeleton {
+  background: linear-gradient(90deg, #f2f2f2 25%, #e6e6e6 50%, #f2f2f2 75%);
+  background-size: 400% 100%;
+  animation: shimmer 1.2s infinite;
+  border-radius: 10px;
+}
+@keyframes shimmer {
+  0% { background-position: -400% 0; }
+  100% { background-position: 400% 0; }
+}
+
