@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Select Location • Food Express</title>
+
+  <!-- GOOGLE FONT LIKE SWIGGY -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="location.css">
+  <script src="location.js" defer></script>
+</head>
+
+<body style="font-family: Inter, sans-serif;">
+
+  <!-- BLUR BACKGROUND OVERLAY -->
+  <div id="panelOverlay" class="panel-overlay"></div>
+
+  <!-- RIGHT SLIDE PANEL (SWIGGY STYLE) -->
+  <div id="locationPanel" class="location-panel">
+
+    <div class="panel-inner">
+      
+      <!-- TOP HEADER -->
+      <div class="panel-header">
+        <button id="backBtn" class="back-btn">
+          <svg width="24" height="24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round">
+            <path d="M15 19l-7-7 7-7"></path>
+          </svg>
+        </button>
+        <h2>Select delivery location</h2>
+      </div>
+
+      <!-- SEARCH BAR LIKE SWIGGY -->
+      <div class="search-box">
+        <svg class="search-icon" width="20" height="20" stroke="currentColor" fill="none" stroke-width="2">
+          <circle cx="11" cy="11" r="7"></circle>
+          <line x1="16.5" y1="16.5" x2="21" y2="21"></line>
+        </svg>
+        <input id="locInput" placeholder="Search for area, street or city" autocomplete="off">
+      </div>
+
+      <!-- SEARCH SUGGESTIONS -->
+      <ul id="suggestionsBox" class="suggestion-list"></ul>
+
+      <!-- CURRENT LOCATION (SWIGGY STYLE BUTTON) -->
+      <button id="detectLocationBtn" class="current-loc-btn">
+        <img src="https://cdn-icons-png.flaticon.com/512/684/684908.png">
+        <span id="currentLocationText">Detecting current location...</span>
+      </button>
+
+      <!-- RECENT LOCATIONS -->
+      <div class="recent-box">
+        <h3>Recent Locations</h3>
+        <div id="recentList" class="recent-list"></div>
+      </div>
+
+    </div>
+
+  </div>
+
+</body>
+</html>
