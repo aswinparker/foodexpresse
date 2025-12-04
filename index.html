@@ -4,11 +4,16 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Food Express</title>
+
+  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
+
   <link rel="stylesheet" href="style.css" />
 </head>
 
 <body class="bg-gray-50 relative">
+
+
 
   <!-- Top-left Swiggy-style Location -->
   <div id="locationButton" class="location-container">
@@ -22,28 +27,29 @@
       <span id="locationText" class="loc-city">Detecting...</span>
     </div>
 
-    <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" stroke-width="2"
-      viewBox="0 0 24 24">
+    <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor"
+      stroke-width="2" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
     </svg>
   </div>
 
-  <!--  Search Bar -->
-<div class="px-4 mt-4">
+<!-- SEARCH BAR (BIG VERSION) -->
+<div class="px-4 mt-5">
   <div class="relative">
     <input
       id="searchBox"
       type="text"
       placeholder="Search for restaurants, food or locations"
-      class="w-full bg-[#F0F0F5] py-3 pl-12 pr-4 
-             rounded-xl text-[15px] text-gray-700 
+      class="w-full bg-[#F0F0F5] py-4 pl-14 pr-5
+             rounded-2xl text-[17px] text-gray-800 font-medium
              placeholder-gray-500
+             shadow-sm
              focus:outline-none focus:ring-2 focus:ring-orange-500
              transition-all duration-300"
     />
 
-    <!-- Search Icon (Swiggy Style) -->
-    <svg class="w-5 h-5 text-gray-600 absolute left-4 top-1/2 -translate-y-1/2"
+    <!-- Bigger Search Icon -->
+    <svg class="w-6 h-6 text-gray-700 absolute left-5 top-1/2 -translate-y-1/2"
          viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <circle cx="11" cy="11" r="7"></circle>
       <line x1="16.5" y1="16.5" x2="21" y2="21"></line>
@@ -51,43 +57,37 @@
   </div>
 </div>
 
-<!-- SLIDE-IN LOCATION PAGE -->
-<iframe id="locationPanel"
-        src="location.html"
-        class="fixed top-0 right-0 w-full max-w-md h-full bg-white shadow-xl
-               translate-x-full transition-transform duration-500 z-50">
-</iframe>
 
-<!-- Overlay -->
-<div id="overlay"
-     class="fixed inset-0 bg-black bg-opacity-40 opacity-0 pointer-events-none
-            transition-opacity duration-500 z-40"></div>
+  <!-- SLIDE PANEL -->
+  <iframe id="locationPanel"
+          src="location.html"
+          class="fixed top-0 right-0 h-full w-full max-w-md bg-white shadow-xl
+                 translate-x-full transition-transform duration-400 z-50">
+  </iframe>
 
-
+  <div id="overlay"
+        class="fixed inset-0 bg-black bg-opacity-40 opacity-0 
+              pointer-events-none transition-opacity duration-300 z-40"></div>
 
 <script>
 window.addEventListener("message", (e) => {
   if (e.data === "redirectToHome") {
-
-    // Prevent double triggers
     if (window.__alreadyRedirecting) return;
     window.__alreadyRedirecting = true;
-
     window.location.href = "index.html";
   }
 });
 
-// Listen for location updates from iframe
+// close panel from iframe
 window.addEventListener("message", (e) => {
-  if (e.data?.action === "updateTopLocation") {
-    const topLocationEl = document.getElementById("topLocation"); // your top location element
-    if (topLocationEl) topLocationEl.innerText = e.data.location;
+  if (e.data === "closeLocationPanel") {
+    closeLocationPanel();
   }
 });
-
 </script>
 
 
-  <script src="script.js"></script>
+
+<script src="script.js"></script>
 </body>
 </html>
