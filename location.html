@@ -49,16 +49,19 @@
       cursor: pointer;
     }
 
-    /* Search Box */
     .search-box {
-      margin: 16px;
-      padding: 12px 16px;
-      width: calc(100% - 32px);
-      border-radius: 10px;
-      background: #f2f2f7;
-      border: none;
-      font-size: 15px;
-    }
+  width: 92%;
+  margin-left: 4%;
+  padding: 15px;
+  border-radius: 12px;
+  border: 1px solid #ddd;
+  font-size: 16px;
+  background: #f2f2f7;
+  outline: none;
+  margin-top: 10px;
+}
+
+
 
     .search-box:focus {
       outline: 2px solid #ff6600;
@@ -135,14 +138,94 @@
   margin: 0 10px;
 }
 
-.search-box {
-  width: 92%;
-  padding: 14px;
-  border-radius: 10px;
-  border: 1px solid #ddd;
-  font-size: 16px;
-  outline: none;
+
+/* SHIMMER ANIMATION */
+.shimmer {
+  position: relative;
+  overflow: hidden;
 }
+
+.shimmer div {
+  background: #cfe2ff;
+  border-radius: 6px;
+}
+
+.detect-btn.shimmer {
+  position: relative;
+}
+
+.detect-btn.shimmer::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0) 0%,
+    rgba(255,255,255,0.7) 50%,
+    rgba(255,255,255,0) 100%
+  );
+  animation: shimmerMove 1.4s infinite;
+}
+
+@keyframes shimmerMove {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+/* During detecting */
+.detect-btn.loading {
+  background: #dbeaff;
+  color: transparent !important;
+  pointer-events: none;
+  position: relative;
+}
+
+
+.detect-btn.loading .loc-icon {
+  opacity: 0;
+}
+
+.detect-btn div {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.detect-btn:active {
+  transform: scale(0.97);
+}
+
+.search-wrapper {
+  width: 92%;
+  margin-left: 4%;
+  margin-top: 10px;
+  position: relative;
+}
+
+.search-wrapper.shimmer::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0) 0%,
+    rgba(255,255,255,0.6) 50%,
+    rgba(255,255,255,0) 100%
+  );
+  animation: shimmerMove 1.4s infinite;
+}
+
+
 
   </style>
 
@@ -174,6 +257,7 @@
 </div>
 
 <!-- SEARCH BAR -->
+<div class="search-wrapper">
 <input
   type="text"
   placeholder="Search for area, street..."
@@ -191,17 +275,67 @@
   </div>
 
   <script>
+
+   // History tracking
+let pageHistory = [];
+
+function trackPage(url) {
+  if (!pageHistory.length || pageHistory[pageHistory.length - 1] !== url) {
+    pageHistory.push(url);
+  }
+}
+
+// Track current page on load
+window.addEventListener("load", () => {
+  trackPage(window.location.href);
+});
+
+
     function goBack() {
-      window.parent.postMessage("closeLocationPanel", "*");
+  const sheet = document.getElementById("locationSheet");
+
+  if (sheet.classList.contains("show")) {
+    sheet.classList.remove("show");
+  } else if (pageHistory.length > 1) {
+    pageHistory.pop(); // remove current page
+    const previousPage = pageHistory.pop(); // get previous page
+    if (previousPage) {
+      window.location.href = previousPage;
+      trackPage(previousPage);
     }
+  } else {
+    console.log("No previous page, stay in app");
+  }
+}
+
+
+
 
     function selectLocation(loc) {
       window.parent.postMessage({ action: "updateTopLocation", location: loc }, "*");
       window.parent.postMessage("closeLocationPanel", "*");
     }
 
-    document.getElementById("detectLocationBtn").addEventListener("click", () => {
+const detectBtn = document.getElementById("detectLocationBtn");
+
+detectBtn.addEventListener("click", () => {
+
+  // Store original HTML (important)
+  const originalHTML = detectBtn.innerHTML;
+
+  // Apply shimmer
+  detectBtn.classList.add("loading", "shimmer");
+  detectBtn.innerHTML = `
+  <div style="
+    height: 22px;
+    width: 160px;
+    border-radius: 6px;
+  "></div>
+
+  `;
+
   if (!navigator.geolocation) {
+    stopShimmer(originalHTML);
     alert("Geolocation not supported");
     return;
   }
@@ -213,13 +347,55 @@
 
       console.log("Your Location:", lat, lon);
 
-      // OPTIONAL — reverse geocode using API (Mapbox, Google, Nominatim)
+      stopShimmer(originalHTML);
     },
     () => {
+      stopShimmer(originalHTML);
       alert("Unable to detect location");
     }
   );
 });
+
+function stopShimmer(originalHTML) {
+  detectBtn.classList.remove("loading", "shimmer");
+  detectBtn.innerHTML = originalHTML;
+}
+
+const searchBox = document.querySelector(".search-box");
+
+searchBox.addEventListener("focus", () => {
+  // Start shimmer
+  searchBox.classList.add("shimmer");
+
+  // Remove shimmer after 1 second just like Swiggy
+  setTimeout(() => {
+    searchBox.classList.remove("shimmer");
+  }, 1000);
+});
+const searchWrapper = document.querySelector(".search-wrapper");
+
+searchBox.addEventListener("focus", () => {
+  searchWrapper.classList.add("shimmer");
+
+  setTimeout(() => {
+    searchWrapper.classList.remove("shimmer");
+  }, 1000);
+});
+   
+    // Handle Android back button
+    document.addEventListener("deviceready", function() {
+  document.addEventListener("backbutton", function(e) {
+    e.preventDefault();
+    goBack();
+  }, false);
+}, false);
+document.addEventListener("keydown", function(e) {
+  if (e.key === "Backspace") {
+    e.preventDefault();
+    goBack();
+  }
+});
+
 
   </script>
 
