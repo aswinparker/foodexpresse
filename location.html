@@ -276,40 +276,10 @@
 
   <script>
 
-   // History tracking
-let pageHistory = [];
-
-function trackPage(url) {
-  if (!pageHistory.length || pageHistory[pageHistory.length - 1] !== url) {
-    pageHistory.push(url);
-  }
-}
-
-// Track current page on load
-window.addEventListener("load", () => {
-  trackPage(window.location.href);
-});
-
 
     function goBack() {
-  const sheet = document.getElementById("locationSheet");
-
-  if (sheet.classList.contains("show")) {
-    sheet.classList.remove("show");
-  } else if (pageHistory.length > 1) {
-    pageHistory.pop(); // remove current page
-    const previousPage = pageHistory.pop(); // get previous page
-    if (previousPage) {
-      window.location.href = previousPage;
-      trackPage(previousPage);
+      window.parent.postMessage("closeLocationPanel", "*");
     }
-  } else {
-    console.log("No previous page, stay in app");
-  }
-}
-
-
-
 
     function selectLocation(loc) {
       window.parent.postMessage({ action: "updateTopLocation", location: loc }, "*");
@@ -381,21 +351,6 @@ searchBox.addEventListener("focus", () => {
     searchWrapper.classList.remove("shimmer");
   }, 1000);
 });
-   
-    // Handle Android back button
-    document.addEventListener("deviceready", function() {
-  document.addEventListener("backbutton", function(e) {
-    e.preventDefault();
-    goBack();
-  }, false);
-}, false);
-document.addEventListener("keydown", function(e) {
-  if (e.key === "Backspace") {
-    e.preventDefault();
-    goBack();
-  }
-});
-
 
   </script>
 
