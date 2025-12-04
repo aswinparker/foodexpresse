@@ -76,6 +76,15 @@ window.addEventListener("message", (e) => {
     window.location.href = "index.html";
   }
 });
+
+// Listen for location updates from iframe
+window.addEventListener("message", (e) => {
+  if (e.data?.action === "updateTopLocation") {
+    const topLocationEl = document.getElementById("topLocation"); // your top location element
+    if (topLocationEl) topLocationEl.innerText = e.data.location;
+  }
+});
+
 </script>
 
 
