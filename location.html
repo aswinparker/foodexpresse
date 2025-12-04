@@ -1,64 +1,227 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Select Location • Food Express</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Select Location</title>
 
-  <!-- GOOGLE FONT LIKE SWIGGY -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      font-family: Inter, sans-serif;
+      background: #fff;
+    }
 
-  <link rel="stylesheet" href="location.css">
-  <script src="location.js" defer></script>
+    /* Bottom Sheet Container */
+    .sheet {
+      position: fixed;
+      left: 0;
+      bottom: 0;
+      width: 100%;
+      height: 100%;
+      background: #fff;
+      border-radius: 20px 20px 0 0;
+      transform: translateY(100%);
+      transition: transform 0.32s cubic-bezier(.25,.1,.25,1);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sheet.show {
+      transform: translateY(0);
+    }
+
+    /* Header Bar */
+    .sheet-header {
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 17px;
+      font-weight: 600;
+      border-bottom: 1px solid #eee;
+    }
+
+    /* Back Icon */
+    .back-icon {
+      width: 26px;
+      height: 26px;
+      cursor: pointer;
+    }
+
+    /* Search Box */
+    .search-box {
+      margin: 16px;
+      padding: 12px 16px;
+      width: calc(100% - 32px);
+      border-radius: 10px;
+      background: #f2f2f7;
+      border: none;
+      font-size: 15px;
+    }
+
+    .search-box:focus {
+      outline: 2px solid #ff6600;
+    }
+
+    /* List Section */
+    .section-title {
+      margin: 20px 16px 8px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #777;
+    }
+
+    .location-item {
+      padding: 16px;
+      border-bottom: 1px solid #eee;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .location-item:hover {
+      background: #fafafa;
+    }
+
+    .top-current-loc {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 15px;
+}
+
+.detect-btn {
+  width: 92%;
+  background: #eef6ff;
+  color: #0284ff;
+  border: none;
+  padding: 14px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.detect-btn .loc-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.or-line {
+  width: 92%;
+  display: flex;
+  align-items: center;
+  margin: 18px 0;
+  text-transform: uppercase;
+  color: #999;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.or-line::before,
+.or-line::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #ddd;
+}
+
+.or-line span {
+  margin: 0 10px;
+}
+
+.search-box {
+  width: 92%;
+  padding: 14px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  font-size: 16px;
+  outline: none;
+}
+
+  </style>
+
 </head>
+<body>
 
-<body style="font-family: Inter, sans-serif;">
+  <!-- SWIGGY-STYLE BOTTOM SHEET -->
+  <div id="locationSheet" class="sheet show">
 
-  <!-- BLUR BACKGROUND OVERLAY -->
-  <div id="panelOverlay" class="panel-overlay"></div>
+    <!-- HEADER -->
+    <div class="sheet-header">
+      <img src="https://cdn-icons-png.flaticon.com/512/93/93634.png"
+           class="back-icon"
+           onclick="goBack()" />
 
-  <!-- RIGHT SLIDE PANEL (SWIGGY STYLE) -->
-  <div id="locationPanel" class="location-panel">
-
-    <div class="panel-inner">
-      
-      <!-- TOP HEADER -->
-      <div class="panel-header">
-        <button id="backBtn" class="back-btn">
-          <svg width="24" height="24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round">
-            <path d="M15 19l-7-7 7-7"></path>
-          </svg>
-        </button>
-        <h2>Select delivery location</h2>
-      </div>
-
-      <!-- SEARCH BAR LIKE SWIGGY -->
-      <div class="search-box">
-        <svg class="search-icon" width="20" height="20" stroke="currentColor" fill="none" stroke-width="2">
-          <circle cx="11" cy="11" r="7"></circle>
-          <line x1="16.5" y1="16.5" x2="21" y2="21"></line>
-        </svg>
-        <input id="locInput" placeholder="Search for area, street or city" autocomplete="off">
-      </div>
-
-      <!-- SEARCH SUGGESTIONS -->
-      <ul id="suggestionsBox" class="suggestion-list"></ul>
-
-      <!-- CURRENT LOCATION (SWIGGY STYLE BUTTON) -->
-      <button id="detectLocationBtn" class="current-loc-btn">
-        <img src="https://cdn-icons-png.flaticon.com/512/684/684908.png">
-        <span id="currentLocationText">Detecting current location...</span>
-      </button>
-
-      <!-- RECENT LOCATIONS -->
-      <div class="recent-box">
-        <h3>Recent Locations</h3>
-        <div id="recentList" class="recent-list"></div>
-      </div>
-
+      Select Delivery Location
     </div>
 
+<!-- TOP CURRENT LOCATION BUTTON (SWIGGY STYLE) -->
+<div class="top-current-loc">
+  <button id="detectLocationBtn" class="detect-btn">
+    <img src="https://cdn-icons-png.flaticon.com/512/535/535239.png" class="loc-icon" />
+    Use Current Location
+  </button>
+
+  <div class="or-line">
+    <span>OR</span>
   </div>
+</div>
+
+<!-- SEARCH BAR -->
+<input
+  type="text"
+  placeholder="Search for area, street..."
+  class="search-box"
+/>
+
+
+    <!-- RECENT LOCATIONS -->
+    <div class="section-title">RECENT LOCATIONS</div>
+
+    <div class="location-item" onclick="selectLocation('Kulasai')">Kulasai</div>
+    <div class="location-item" onclick="selectLocation('Koodankulam')">Koodankulam</div>
+    <div class="location-item" onclick="selectLocation('Tirunelveli')">Tirunelveli</div>
+
+  </div>
+
+  <script>
+    function goBack() {
+      window.parent.postMessage("closeLocationPanel", "*");
+    }
+
+    function selectLocation(loc) {
+      window.parent.postMessage({ action: "updateTopLocation", location: loc }, "*");
+      window.parent.postMessage("closeLocationPanel", "*");
+    }
+
+    document.getElementById("detectLocationBtn").addEventListener("click", () => {
+  if (!navigator.geolocation) {
+    alert("Geolocation not supported");
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const lat = pos.coords.latitude;
+      const lon = pos.coords.longitude;
+
+      console.log("Your Location:", lat, lon);
+
+      // OPTIONAL — reverse geocode using API (Mapbox, Google, Nominatim)
+    },
+    () => {
+      alert("Unable to detect location");
+    }
+  );
+});
+
+  </script>
 
 </body>
 </html>
