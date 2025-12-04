@@ -1,28 +1,31 @@
-const locationBtn = document.getElementById("locationButton");
 const panel = document.getElementById("locationPanel");
 const overlay = document.getElementById("overlay");
+const locationButton = document.getElementById("locationButton");
 
 // OPEN PANEL
-locationBtn.addEventListener("click", () => {
-  panel.style.transform = "translateX(0)";
+locationButton.addEventListener("click", () => {
+  panel.style.transform = "translateX(0%)";
   overlay.style.opacity = "1";
   overlay.style.pointerEvents = "auto";
+
+  // Swiggy freeze background scroll
+  document.body.style.overflow = "hidden";
 });
 
-
-// OPEN PANEL
-locationBtn.addEventListener("click", () => {
-  panel.contentWindow.postMessage("openPanel", "*"); // tell iframe to activate
-  overlay.style.opacity = "1";
-  overlay.style.pointerEvents = "auto";
-});
-
-// CLOSE PANEL on overlay click
+// CLOSE PANEL FROM OVERLAY TAP
 overlay.addEventListener("click", () => {
-  panel.contentWindow.postMessage("closePanel", "*");
+  closeLocationPanel();
+});
+
+function closeLocationPanel() {
+  panel.style.transform = "translateX(100%)";
   overlay.style.opacity = "0";
   overlay.style.pointerEvents = "none";
-});
+
+  // Unfreeze body scroll
+  document.body.style.overflow = "auto";
+}
+
 
 // AUTO-DETECT LOCATION
 window.onload = () => {
