@@ -200,11 +200,11 @@ locInput.addEventListener("input", () => {
 
 
 /* ================================
-   DETECT LOCATION BUTTON — TN ONLY + SHIMMER
+   DETECT LOCATION BUTTON — WORLDWIDE + SHIMMER + REDIRECT
 ================================ */
 detectBtn.addEventListener("click", () => {
   const currentText = document.getElementById("currentLocationText");
-  
+
   // Show shimmer while detecting
   currentText.innerHTML = `<span class="shimmer shimmer-text" style="display:inline-block;width:80px;height:16px;"></span>`;
 
@@ -225,27 +225,28 @@ detectBtn.addEventListener("click", () => {
                            data.address?.town ||
                            data.address?.village ||
                            data.address?.county ||
+                           data.address?.state ||
                            "Unknown";
 
-          const match = TN_DISTRICTS.find(d => d.toLowerCase() === detected.toLowerCase());
+          currentText.innerText = detected;
+          localStorage.setItem("userLocation", detected);
 
-          if (match) {
-            currentText.innerText = match;
-            localStorage.setItem("userLocation", match);
+          // Update recent locations
+          let recent = JSON.parse(localStorage.getItem("recentLocations") || "[]");
+          recent = [detected, ...recent.filter(x => x !== detected)].slice(0, 6);
+          localStorage.setItem("recentLocations", JSON.stringify(recent));
+          loadRecent();
 
-            let recent = JSON.parse(localStorage.getItem("recentLocations") || "[]");
-            recent = [match, ...recent.filter(x => x !== match)].slice(0, 6);
-            localStorage.setItem("recentLocations", JSON.stringify(recent));
-            loadRecent();
+          // Optional: send message to parent iframe (if using iframe)
+          parent.postMessage({ action: "updateTopLocation", location: detected }, "*");
 
-            setTimeout(() => {
-              parent.postMessage("closeLocationPanel", "*");
-              setLeave();
-            }, 260);
-          } else {
-            currentText.innerText = "Not in Tamil Nadu";
-            alert("Detected location is outside Tamil Nadu. Please select a district manually.");
-          }
+          // Close panel
+          setLeave();
+
+          // Redirect to index.html after short delay to allow animation
+          setTimeout(() => {
+            window.location.href = "index.html";
+          }, 300); // 300ms delay for smooth exit animation
         })
         .catch(() => {
           currentText.innerText = "";
@@ -258,3 +259,6 @@ detectBtn.addEventListener("click", () => {
     }
   );
 });
+
+
+
