@@ -85,6 +85,42 @@ window.addEventListener("message", (e) => {
   }
 });
 </script>
+<script>
+window.addEventListener("load", () => {
+  const loc = localStorage.getItem("userLocation") || "Select Location";
+  document.getElementById("locationText").textContent = loc;
+});
+</script>
+
+<script>
+  const saved = localStorage.getItem("userLocation");
+
+  if (saved) {
+    document.getElementById("locationText").textContent = saved;
+  }
+</script>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const locationText = document.getElementById("locationText");
+
+  // Add shimmer immediately
+  locationText.classList.add("shimmer");
+  locationText.textContent = "Detecting...";
+
+  const savedLoc = localStorage.getItem("userLocation");
+
+  if (savedLoc) {
+    // Show saved location within 300ms
+    setTimeout(() => {
+      locationText.classList.remove("shimmer");
+      locationText.textContent = savedLoc;
+    }, 300);
+  }
+});
+</script>
+
 
 
 
