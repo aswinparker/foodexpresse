@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Select Location</title>
-
+  <script src="https://unpkg.com/lottie-web/build/player/lottie.min.js"></script>
   <style>
     body {
       margin: 0;
@@ -66,6 +66,15 @@
     .search-box:focus {
       outline: 2px solid #ff6600;
     }
+    
+    /* --- Success UI Upgrade --- */
+#successBox {
+  animation: fadeIn 0.4s ease-out;
+}
+    @keyframes fadeIn {
+  from { opacity:0; transform: translateY(10px); }
+  to { opacity:1; transform: translateY(0); }
+}
 
     /* List Section */
     .section-title {
@@ -225,6 +234,18 @@
   animation: shimmerMove 1.4s infinite;
 }
 
+/* --- Toast Upgrade --- */
+.toast {
+  padding: 14px 26px;
+  background: rgba(0,0,0,0.85);
+  backdrop-filter: blur(5px);
+  font-size: 15px;
+}
+/* Trigger shimmer on focus */
+.search-box:focus + .shimmer-layer,
+.search-wrapper.active::after {
+  display: block;
+}
 
 
   </style>
@@ -237,12 +258,13 @@
 
     <!-- HEADER -->
     <div class="sheet-header">
-      <img src="https://cdn-icons-png.flaticon.com/512/93/93634.png"
-           class="back-icon"
-           onclick="goBack()" />
+  <img src="https://cdn-icons-png.flaticon.com/512/93/93634.png"
+       class="back-icon"
+       onclick="goBack()" />
 
-      Select Delivery Location
-    </div>
+  <span style="font-weight:600;">Select Delivery Location</span>
+</div>
+
 
 <!-- TOP CURRENT LOCATION BUTTON (SWIGGY STYLE) -->
 <div class="top-current-loc">
@@ -258,11 +280,11 @@
 
 <!-- SEARCH BAR -->
 <div class="search-wrapper">
-<input
-  type="text"
-  placeholder="Search for area, street..."
-  class="search-box"
-/>
+  <input type="text" placeholder="Search for area, street..." class="search-box" id="searchInput">
+  <div id="searchResults" class="search-results"></div>
+
+</div>
+
 
 
     <!-- RECENT LOCATIONS -->
@@ -271,8 +293,96 @@
     <div class="location-item" onclick="selectLocation('Kulasai')">Kulasai</div>
     <div class="location-item" onclick="selectLocation('Koodankulam')">Koodankulam</div>
     <div class="location-item" onclick="selectLocation('Tirunelveli')">Tirunelveli</div>
-
+          
+  
   </div>
+  <div id="lottieBox" style="display:none; text-align:center; margin-top:20px;">
+    <div id="lottieAnim" styl   e="width:120px; height:120px; margin:auto;"></div>
+    <p style="font-size:14px; color:#555; margin-top:10px;">Detecting your location…</p>
+</div>
+<div id="successBox" style="display:none; text-align:center; margin-top:40px;">
+  <div id="successAnim" style="width:120px; height:120px; margin:auto;"></div>
+  <p style="font-size:16px; font-weight:600; color:#333; margin-top:10px;">Location Updated</p>
+</div>
+<!-- TRENDING SEARCHES (SWIGGY STYLE) -->
+<div id="trendingBox" style="margin-top:18px;">
+
+  <div style="margin-left:16px; font-size:14px; font-weight:600; color:#777;">
+    TRENDING SEARCHES
+  </div>
+
+  <div style="
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin:12px 16px;
+  ">
+    <!-- Trending list auto-generated -->
+  </div>
+
+</div>
+
+
+<style>
+.toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #222;
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 8px;
+  opacity: 0;
+  pointer-events: none;
+  transition: 0.3s;
+}
+.toast.show {
+  opacity: 1;
+}
+.search-results {
+  width: 92%;
+  margin-left: 4%;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  margin-top: 8px;
+  display: none;
+  max-height: 260px;
+  overflow-y: auto;
+  position: absolute;
+  z-index: 999;
+}
+
+.result-item {
+  padding: 14px;
+  font-size: 15px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+}
+
+.result-item:hover {
+  background: #fafafa;
+}
+
+.result-highlight {
+  color: #ff6a00;
+  font-weight: 700;
+}
+
+</style>
+
+<div id="toast" class="toast"></div>
+
+<script>
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 2000);
+}
+</script>
+
 
   <script>
 
@@ -287,49 +397,88 @@
     }
 
 const detectBtn = document.getElementById("detectLocationBtn");
+const lottieBox = document.getElementById("lottieBox");
+const successBox = document.getElementById("successBox");
+
+let loadingAnim = lottie.loadAnimation({
+    container: document.getElementById("lottieAnim"),
+    renderer: "svg",
+    loop: true,
+    autoplay: false,
+    path: "https://assets10.lottiefiles.com/packages/lf20_puciaact.json"
+});
+
+let successAnim = lottie.loadAnimation({
+    container: document.getElementById("successAnim"),
+    renderer: "svg",
+    loop: false,
+    autoplay: false,
+    path: "https://assets10.lottiefiles.com/packages/lf20_qp1q7mct.json"
+});
 
 detectBtn.addEventListener("click", () => {
 
-  // Store original HTML (important)
-  const originalHTML = detectBtn.innerHTML;
+  detectBtn.classList.add("loading");
+  detectBtn.style.display = "none";
 
-  // Apply shimmer
-  detectBtn.classList.add("loading", "shimmer");
-  detectBtn.innerHTML = `
-  <div style="
-    height: 22px;
-    width: 160px;
-    border-radius: 6px;
-  "></div>
-
-  `;
-
-  if (!navigator.geolocation) {
-    stopShimmer(originalHTML);
-    alert("Geolocation not supported");
-    return;
-  }
+  lottieBox.style.display = "block";
+  loadingAnim.play();
 
   navigator.geolocation.getCurrentPosition(
-    (pos) => {
+    async (pos) => {
       const lat = pos.coords.latitude;
       const lon = pos.coords.longitude;
 
-      console.log("Your Location:", lat, lon);
+      let locationName = "Your Location";
 
-      stopShimmer(originalHTML);
+      try {
+        const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`;
+        const res = await fetch(url);
+        const data = await res.json();
+
+        locationName =
+          data.address.suburb ||
+          data.address.village ||
+          data.address.town ||
+          data.address.city ||
+          data.address.county ||
+          "Unknown Area";
+      } catch (e) {
+        console.log("Reverse API failed", e);
+      }
+
+      // SAVE LOCATION
+      localStorage.setItem("userLocation", locationName);
+
+      // STOP LOADING
+      loadingAnim.stop();
+      lottieBox.style.display = "none";
+
+      // SHOW SUCCESS LOTTIE
+      successBox.style.display = "block";
+      successAnim.play();
+
+      // TOAST
+      showToast(`Location set to ${locationName}`);
+
+      // REDIRECT FAST
+      setTimeout(() => {
+  window.location.href = "index.html";
+}, 1200);
+
     },
+
     () => {
-      stopShimmer(originalHTML);
-      alert("Unable to detect location");
+      loadingAnim.stop();
+      lottieBox.style.display = "none";
+      detectBtn.style.display = "block";
+      detectBtn.classList.remove("loading");
+      showToast("Unable to fetch location");
     }
   );
 });
 
-function stopShimmer(originalHTML) {
-  detectBtn.classList.remove("loading", "shimmer");
-  detectBtn.innerHTML = originalHTML;
-}
+
 
 const searchBox = document.querySelector(".search-box");
 
@@ -352,7 +501,144 @@ searchBox.addEventListener("focus", () => {
   }, 1000);
 });
 
+function saveLocation(areaName) {
+  localStorage.setItem("userLocation", areaName);
+
+  // Show toast (optional)
+  showToast(`Location set to ${areaName}`);
+
+  // Redirect back to index
+  setTimeout(() => {
+    window.location.href = "index.html";
+  }, 500);
+}
+
   </script>
+  <script>
+const locationData = [
+  "Koodankulam",
+  "Kulasai",
+  "Eruvadi",
+  "Aralvaimozhi",
+  "Thisayanvilai",
+  "Tirunelveli",
+  "Nagercoil",
+  "Madurai",
+  "Tuticorin",
+  "Tiruchendur",
+  "Kanyakumari",
+  "Thoothukudi"
+];
+</script>
+<script>
+// SMART SWIGGY STYLE LIVE SEARCH
+const input = document.getElementById("searchInput");
+const resultsBox = document.getElementById("searchResults");
+
+input.addEventListener("input", () => {
+  const query = input.value.trim().toLowerCase();
+
+  if (!query) {
+    resultsBox.style.display = "none";
+    resultsBox.innerHTML = "";
+    return;
+  }
+
+  let matches = locationDB.filter(item =>
+    item.name.toLowerCase().includes(query)
+  );
+
+  if (matches.length === 0) {
+    resultsBox.style.display = "block";
+    resultsBox.innerHTML =
+      `<div class='result-item' style='color:#888;'>No areas found</div>`;
+    return;
+  }
+
+  resultsBox.style.display = "block";
+  resultsBox.innerHTML = matches
+    .map(item => {
+      let regex = new RegExp(query, "gi");
+      let highlighted = item.name.replace(regex, (txt) =>
+        `<span class='result-highlight'>${txt}</span>`
+      );
+
+      let tag = (item.type === "landmark")
+        ? "📍 Landmark"
+        : (item.type === "city")
+        ? "🏙 City"
+        : "📌 Area";
+
+      return `
+      <div class="result-item" onclick="saveLocation('${item.name}')">
+        <div style="font-weight:600">${highlighted}</div>
+        <div style="font-size:12px; color:#777;">${tag}</div>
+      </div>`;
+    })
+    .join("");
+});
+
+  const query = input.value.trim().toLowerCase();
+
+  if (!query) {
+    resultsBox.style.display = "none";
+    resultsBox.innerHTML = "";
+    return;
+  }
+
+  // Match custom database
+  let matches = locationData.filter(loc =>
+    loc.toLowerCase().includes(query)
+  );
+
+  // No results
+  if (matches.length === 0) {
+    resultsBox.style.display = "block";
+    resultsBox.innerHTML = `<div class='result-item' style='color:#888;'>No matching areas</div>`;
+    return;
+  }
+
+  // Generate UI list
+  resultsBox.style.display = "block";
+  resultsBox.innerHTML = matches.map(loc => {
+    let regex = new RegExp(query, "gi");
+    let highlighted = loc.replace(regex, (txt) => `<span class='result-highlight'>${txt}</span>`);
+
+    return `
+      <div class="result-item" onclick="saveLocation('${loc}')">
+        ${highlighted}
+      </div>
+    `;
+  }).join("");
+
+</script>
+<script>
+// FULL CUSTOM LOCATION DATABASE
+const locationDB = [
+  { name: "Koodankulam", type: "area" },
+  { name: "Kulasai", type: "area" },
+  { name: "Eruvadi", type: "area" },
+  { name: "Aralvaimozhi", type: "town" },
+  { name: "Tirunelveli Junction", type: "landmark" },
+  { name: "Tirunelveli Town", type: "town" },
+  { name: "Vadaseri", type: "area" },
+  { name: "Nagercoil", type: "city" },
+  { name: "Madurai Meenakshi Temple", type: "landmark" },
+  { name: "Tuticorin Airport", type: "landmark" },
+  { name: "Tiruchendur Beach", type: "landmark" },
+  { name: "Kanyakumari", type: "city" }
+];
+
+// TRENDING AREAS
+const trendingAreas = [
+  "Tirunelveli Junction", 
+  "Koodankulam",
+  "Nagercoil",
+  "Kulasai"
+];
+</script>
+
+
 
 </body>
 </html>
