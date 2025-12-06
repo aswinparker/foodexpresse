@@ -75,4 +75,3 @@ window.addEventListener("message", (e) => {
   }
 });
 
-
