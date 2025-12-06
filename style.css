@@ -44,3 +44,48 @@
 #locationPanel.active {
   transform: translateX(0);      /* Slide into screen */
 }
+.shimmer {
+  background: linear-gradient(90deg, #ececec 25%, #f6f6f6 37%, #ececec 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: 5px;
+  color: transparent !important;
+}
+
+@keyframes shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+.location-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.location-container:active {
+  transform: scale(0.98);
+  background: rgba(255, 165, 0, 0.08);
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.6s ease-out;
+}
+
+#lottieParallax {
+  will-change: transform, opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #lottieParallax {
+    transform: none !important;
+    opacity: 1 !important;
+  }
+}
